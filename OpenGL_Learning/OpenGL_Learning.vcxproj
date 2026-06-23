@@ -1,0 +1,399 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{d1fc305a-2d18-4fce-b233-ffeb49b774a3}</ProjectGuid>
+    <RootNamespace>OpenGLLearning</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);C:\Users\35718\Desktop\My_Libs\Include\GLFW;C:\Users\35718\Desktop\My_Libs\Libs\GLFW;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);C:\Users\35718\Desktop\My_Libs\Include\GLFW;C:\Users\35718\Desktop\My_Libs\Libs\GLFW;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LibraryPath>$(LibraryPath);C:\Users\35718\Desktop\My_Libs\Libs</LibraryPath>
+    <IncludePath>$(IncludePath);C:\Users\35718\Desktop\My_Libs\Include</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LibraryPath>$(LibraryPath);C:\Users\35718\Desktop\My_Libs\Libs</LibraryPath>
+    <IncludePath>$(IncludePath);C:\Users\35718\Desktop\My_Libs\Include</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);glfw3.lib;opengl32.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);glfw3.lib;opengl32.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);glfw3.lib;opengl32.lib;assimp-vc143-mt.lib;assimp-vc143-mtd.lib;unit.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);glfw3.lib;opengl32.lib;assimp-vc143-mt.lib;assimp-vc143-mtd.lib;unit.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\BezierCurve.cpp" />
+    <ClCompile Include="src\Camera_ver2.cpp" />
+    <ClCompile Include="src\05_AdvancedLighting\Billing_Phong\AdvancedLighting.cpp" />
+    <ClCompile Include="src\05_AdvancedLighting\Billing_Phong\AdvancedLighting2.0.cpp" />
+    <ClCompile Include="src\05_AdvancedLighting\GammaCorrection\GammaCorrection.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\Geometry\Advanced GLSL.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\Geometry\BoomModel.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\Geometry\NormalModel.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\Instancing\Instancing.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\Instancing\Instancing2.0_stars.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\Instancing\Instancing3.0_galaxy.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\Instancing\Instancing4.0_SunStar.cpp" />
+    <ClCompile Include="src\Model.cpp" />
+    <ClCompile Include="src\Model\model_ver3_Light_combine.cpp" />
+    <ClCompile Include="src\05_AdvancedLighting\NormalMap\NormalMap.cpp" />
+    <ClCompile Include="src\05_AdvancedLighting\NormalMap\NormalMap_Model.cpp" />
+    <ClCompile Include="src\05_AdvancedLighting\ParallaxMap\ParallaxMap2.0.cpp" />
+    <ClCompile Include="src\05_AdvancedLighting\ParallaxMap\ParallaxMap.cpp" />
+    <ClCompile Include="src\05_AdvancedLighting\Shadow\Shadow1.0.cpp" />
+    <ClCompile Include="src\05_AdvancedLighting\Shadow\Shadow2.0.cpp" />
+    <ClCompile Include="src\05_AdvancedLighting\Shadow\Shadow3.0.cpp" />
+    <ClCompile Include="src\SkyBox\cubeMap_SkyBox.cpp" />
+    <ClCompile Include="src\SkyBox\cubeMap_SkyBox_Model.cpp" />
+    <ClCompile Include="src\SkyBox\fail_cubeMap_SkyBox_move.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\Geometry\GeometryShader.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\Blending1.0.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\Blending2.0.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\Framebuffers.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\The four_Stencil\Framebuffers2.0.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\FrameBuffer\Framebuffers2.0.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\The four 混合—Alpha\Blending1.0.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\The four 混合—Alpha\Blending2.0.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\Faceculling.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\FrameBuffer\Framebuffers.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\The four_Stencil\Depth_Stencil1.0.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\The four_Stencil\Depth_Stencil2.0.cpp" />
+    <ClCompile Include="src\04_AdvancedOpenGL\The four_Depth\Depth_Test1.0.cpp" />
+    <ClCompile Include="src\Mesh.cpp" />
+    <ClCompile Include="src\Camera.cpp" />
+    <ClCompile Include="src\glad.c" />
+    <ClCompile Include="src\Model\model_ver2_Light_combine.cpp" />
+    <ClCompile Include="src\02_BasicLight\Light_ver5--Multiple lights.cpp" />
+    <ClCompile Include="src\Model\model_ver1_Model_backpack.cpp" />
+    <ClCompile Include="src\02_BasicLight\Light_ver1.cpp" />
+    <ClCompile Include="src\02_BasicLight\Light_ver2--Material.cpp" />
+    <ClCompile Include="src\02_BasicLight\Light_ver3--LightTexture.cpp" />
+    <ClCompile Include="src\Shader.cpp" />
+    <ClCompile Include="src\01_BasicOpenGL\Test.cpp" />
+    <ClCompile Include="src\01_BasicOpenGL\ver2.cpp" />
+    <ClCompile Include="src\01_BasicOpenGL\ver1.cpp" />
+    <ClCompile Include="src\01_BasicOpenGL\ver3_texture.cpp" />
+    <ClCompile Include="src\01_BasicOpenGL\ver4_coordinate.cpp" />
+    <ClCompile Include="src\01_BasicOpenGL\ver5_camera.cpp" />
+    <ClCompile Include="src\01_BasicOpenGL\源_tex.cpp" />
+    <ClCompile Include="src\02_BasicLight\Light_ver4--Light-casters-dot.cpp" />
+    <ClCompile Include="src\02_BasicLight\Light_ver4--Light-casters-parallel.cpp" />
+    <ClCompile Include="src\02_BasicLight\Light_ver4--Light-casters-spotlight.cpp" />
+    <ClCompile Include="src\03_Model\model_ver1_Model_backpack.cpp" />
+    <ClCompile Include="src\03_Model\model_ver2_Light_combine.cpp" />
+    <ClCompile Include="src\03_Model\model_ver3_Light_combine.cpp" />
+    <ClCompile Include="src\SpaceShip4.0.cpp" />
+    <ClCompile Include="src\SpaceShip3.0.cpp" />
+    <ClCompile Include="src\SpaceShip2.0.cpp" />
+    <ClCompile Include="src\SpaceShip.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\BezierCurve.h" />
+    <ClInclude Include="src\Camera_ver2.h" />
+    <ClInclude Include="src\Mesh.h" />
+    <ClInclude Include="src\Camera.h" />
+    <ClInclude Include="src\Model.h" />
+    <ClInclude Include="src\Shader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\model\backpack\backpack.mtl" />
+    <None Include="res\model\planet\planet.mtl" />
+    <None Include="res\model\rock\rock.mtl" />
+    <None Include="res\shader\BloomShaders\blur_frag.shader" />
+    <None Include="res\shader\BloomShaders\blur_ver.shader" />
+    <None Include="res\shader\BloomShaders\bright_pass_frag.shader" />
+    <None Include="res\shader\BloomShaders\bright_pass_ver.shader" />
+    <None Include="res\shader\Advanced_GLSL\greenfrag.shader" />
+    <None Include="res\shader\Advanced_GLSL\greenver.shader" />
+    <None Include="res\shader\Advanced_GLSL\redfrag.shader" />
+    <None Include="res\shader\Advanced_GLSL\redver.shader" />
+    <None Include="res\shader\Advanced_lighting\Blinn\advanced_lightingFRAG2.0.shader" />
+    <None Include="res\shader\Advanced_lighting\Blinn\advanced_lightingVER2.0.shader" />
+    <None Include="res\shader\Advanced_lighting\Blinn\advanced_lightingFRAG1.0.shader" />
+    <None Include="res\shader\Advanced_lighting\Blinn\advanced_lightingVER1.0.shader" />
+    <None Include="res\shader\Advanced_lighting\Gamma\GammaFRAG1.0.shader" />
+    <None Include="res\shader\Advanced_lighting\Gamma\GammaVER1.0.shader" />
+    <None Include="res\shader\Advanced_lighting\NormalMap\Normal_frag.shader" />
+    <None Include="res\shader\Advanced_lighting\NormalMap\Normal_frag2.0.shader" />
+    <None Include="res\shader\Advanced_lighting\NormalMap\Normal_ver.shader" />
+    <None Include="res\shader\Advanced_lighting\NormalMap\Normal_ver2.0.shader" />
+    <None Include="res\shader\Advanced_lighting\Parallax\Parallax_frag.shader" />
+    <None Include="res\shader\Advanced_lighting\Parallax\Parallax_frag2.0.shader" />
+    <None Include="res\shader\Advanced_lighting\Parallax\Parallax_ver.shader" />
+    <None Include="res\shader\Advanced_lighting\Parallax\Parallax_ver2.0.shader" />
+    <None Include="res\shader\BloomShaders\composite_frag.shader" />
+    <None Include="res\shader\BloomShaders\composite_ver.shader" />
+    <None Include="res\shader\CubeMapsShader\cubeMap_frag.shader" />
+    <None Include="res\shader\CubeMapsShader\cubeMap_ver.shader" />
+    <None Include="res\shader\DeeptestShader\deeptest_frag1.0.shader" />
+    <None Include="res\shader\DeeptestShader\deeptest_ver1.0.shader" />
+    <None Include="res\shader\FrameBuffersShader\framebuffers_screen_frag.shader" />
+    <None Include="res\shader\FrameBuffersShader\framebuffers_screen_ver.shader" />
+    <None Include="res\shader\Advanced_GLSL\bluefrag.shader" />
+    <None Include="res\shader\Advanced_GLSL\bluever.shader" />
+    <None Include="res\shader\Advanced_GLSL\yellowfrag.shader" />
+    <None Include="res\shader\Advanced_GLSL\yellowver.shader" />
+    <None Include="res\shader\GeometryShader\frag.shader" />
+    <None Include="res\shader\GeometryShader\geo.shader" />
+    <None Include="res\shader\GeometryShader\ver.shader" />
+    <None Include="res\shader\InstancingShader\aster_frag.shader" />
+    <None Include="res\shader\InstancingShader\aster_ver.shader" />
+    <None Include="res\shader\InstancingShader\instancingFRAG.shader" />
+    <None Include="res\shader\InstancingShader\instancingVER.shader" />
+    <None Include="res\shader\ModelShader\model_frag.shader" />
+    <None Include="res\shader\ModelShader\model_frag1.0.shader" />
+    <None Include="res\shader\ModelShader\model_frag3.0.shader" />
+    <None Include="res\shader\ModelShader\model_ver.shader" />
+    <None Include="res\shader\ModelShader\model_ver1.0.shader" />
+    <None Include="res\shader\ModelShader\model_ver3.0.shader" />
+    <None Include="res\shader\ShadowShader\debug_quad_frag.shader" />
+    <None Include="res\shader\ShadowShader\debug_quad_ver.shader" />
+    <None Include="res\shader\ShadowShader\point_shadow\depth_point_frag.shader" />
+    <None Include="res\shader\ShadowShader\point_shadow\depth_point_geo.shader" />
+    <None Include="res\shader\ShadowShader\point_shadow\depth_point_ver.shader" />
+    <None Include="res\shader\ShadowShader\map_depth_frag.shader" />
+    <None Include="res\shader\ShadowShader\map_depth_ver.shader" />
+    <None Include="res\shader\ShadowShader\point_shadow\point_shadow_frag.shader" />
+    <None Include="res\shader\ShadowShader\point_shadow\point_shadow_ver.shader" />
+    <None Include="res\shader\ShadowShader\shadow_mapping_frag.shader" />
+    <None Include="res\shader\ShadowShader\shadow_mapping_ver.shader" />
+    <None Include="res\shader\SkyBoxShader\SkyBox_frag.shader" />
+    <None Include="res\shader\SkyBoxShader\SkyBox_ver.shader" />
+    <None Include="res\shader\StarShader\StarList2.0\core_frag.shader" />
+    <None Include="res\shader\StarShader\StarList2.0\core_ver.shader" />
+    <None Include="res\shader\StarShader\StarList2.0\corona_frag.shader" />
+    <None Include="res\shader\StarShader\StarList2.0\corona_quad_frag.shader" />
+    <None Include="res\shader\StarShader\StarList2.0\corona_quad_ver.shader" />
+    <None Include="res\shader\StarShader\StarList2.0\corona_ver.shader" />
+    <None Include="res\shader\StarShader\StarList2.0\glow_frag.shader" />
+    <None Include="res\shader\StarShader\StarList2.0\glow_ver.shader" />
+    <None Include="res\shader\StarShader\StarList\star_core_frag.shader" />
+    <None Include="res\shader\StarShader\StarList\star_core_ver.shader" />
+    <None Include="res\shader\StarShader\StarList\star_corona_frag.shader" />
+    <None Include="res\shader\StarShader\StarList\star_corona_ver.shader" />
+    <None Include="res\shader\StarShader\StarList\star_glow_frag.shader" />
+    <None Include="res\shader\StarShader\StarList\star_glow_ver.shader" />
+    <None Include="res\shader\StarShader\star_frag.shader" />
+    <None Include="res\shader\StarShader\star_ver.shader" />
+    <None Include="res\shader\test_frag.shader" />
+    <None Include="res\shader\test_ver.shader" />
+    <None Include="res\shader\TheFourShader\deeptest_frag1.0.shader" />
+    <None Include="res\shader\TheFourShader\deeptest_ver1.0.shader" />
+    <None Include="res\shader\TheFourShader\stencil_frag.shader" />
+    <None Include="res\shader\TheFourShader\stencil_ver.shader" />
+    <None Include="res\shader\TheFourShader_depth_stencil\stencil_frag.shader" />
+    <None Include="res\shader\TheFourShader_depth_stencil\stencil_ver.shader" />
+    <None Include="res\shader\TheFourShader_depth_stencil\deeptest_frag1.0.shader" />
+    <None Include="res\shader\TheFourShader_depth_stencil\deeptest_ver1.0.shader" />
+    <None Include="res\shader\LightShader\2.0_frag_color.shader" />
+    <None Include="res\shader\LightShader\2.0_ver_color.shader" />
+    <None Include="res\shader\TheFirstShader_Basic\fragmentShader.shader" />
+    <None Include="res\shader\LightShader\frag_color.shader" />
+    <None Include="res\shader\TheFirstShader_Basic\vertexShader.shader" />
+    <None Include="res\shader\LightShader\frag_light_cube.shader" />
+    <None Include="res\shader\ModelShader\model_frag2.0.shader" />
+    <None Include="res\shader\ModelShader\model_ver2.0.shader" />
+    <None Include="res\shader\TheSecondShader\frag_color.shader" />
+    <None Include="res\shader\TheSecondShader\ver_color.shader" />
+    <None Include="res\shader\LightShader\ver_color.shader" />
+    <None Include="res\shader\LightShader\ver_light_cube.shader" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\model\backpack\ao.jpg" />
+    <Image Include="res\model\backpack\diffuse.jpg" />
+    <Image Include="res\model\backpack\normal.png" />
+    <Image Include="res\model\backpack\roughness.jpg" />
+    <Image Include="res\model\backpack\specular.jpg" />
+    <Image Include="res\model\planet\planet_Quom1200.png" />
+    <Image Include="res\model\rock\Rock-Texture-Surface.jpg" />
+    <Image Include="res\texture\awesomeface.png" />
+    <Image Include="res\texture\container.jpg" />
+    <Image Include="res\texture\container2.png" />
+    <Image Include="res\texture\container2_specular.png" />
+    <Image Include="res\texture\floor.jpg" />
+    <Image Include="res\texture\grass.png" />
+    <Image Include="res\texture\lighting_maps_specular_color.png" />
+    <Image Include="res\texture\M-31\back.png" />
+    <Image Include="res\texture\M-31\bottom.png" />
+    <Image Include="res\texture\M-31\front.png" />
+    <Image Include="res\texture\M-31\left.png" />
+    <Image Include="res\texture\M-31\right.png" />
+    <Image Include="res\texture\M-31\top.png" />
+    <Image Include="res\texture\marbel.jpg" />
+    <Image Include="res\texture\matrix.jpg" />
+    <Image Include="res\texture\NightSky1024\nx.png" />
+    <Image Include="res\texture\NightSky1024\ny.png" />
+    <Image Include="res\texture\NightSky1024\nz.png" />
+    <Image Include="res\texture\NightSky1024\px.png" />
+    <Image Include="res\texture\NightSky1024\py.png" />
+    <Image Include="res\texture\NightSky1024\pz.png" />
+    <Image Include="res\texture\NightSky\nx.png" />
+    <Image Include="res\texture\NightSky\ny.png" />
+    <Image Include="res\texture\NightSky\nz.png" />
+    <Image Include="res\texture\NightSky\px.png" />
+    <Image Include="res\texture\NightSky\py.png" />
+    <Image Include="res\texture\NightSky\pz.png" />
+    <Image Include="res\texture\NormalMap\brickwall.jpg" />
+    <Image Include="res\texture\NormalMap\brickwall_normal.jpg" />
+    <Image Include="res\texture\ParallaxMap\bricks2.jpg" />
+    <Image Include="res\texture\ParallaxMap\bricks2_disp.jpg" />
+    <Image Include="res\texture\ParallaxMap\bricks2_normal.jpg" />
+    <Image Include="res\texture\ParallaxMap\toy_box_disp.png" />
+    <Image Include="res\texture\ParallaxMap\toy_box_normal.png" />
+    <Image Include="res\texture\ParallaxMap\wood.png" />
+    <Image Include="res\texture\skybox\back.jpg" />
+    <Image Include="res\texture\skybox\bottom.jpg" />
+    <Image Include="res\texture\skybox\front.jpg" />
+    <Image Include="res\texture\skybox\left.jpg" />
+    <Image Include="res\texture\skybox\right.jpg" />
+    <Image Include="res\texture\skybox\top.jpg" />
+    <Image Include="res\texture\SpaceFox1024\nx.png" />
+    <Image Include="res\texture\SpaceFox1024\ny.png" />
+    <Image Include="res\texture\SpaceFox1024\nz.png" />
+    <Image Include="res\texture\SpaceFox1024\px.png" />
+    <Image Include="res\texture\SpaceFox1024\py.png" />
+    <Image Include="res\texture\SpaceFox1024\pz.png" />
+    <Image Include="res\texture\spacefox\back.png" />
+    <Image Include="res\texture\spacefox\bottom.png" />
+    <Image Include="res\texture\spacefox\front.png" />
+    <Image Include="res\texture\spacefox\left.png" />
+    <Image Include="res\texture\spacefox\right.png" />
+    <Image Include="res\texture\spacefox\top.png" />
+    <Image Include="res\texture\space\back.png" />
+    <Image Include="res\texture\space\bottom.png" />
+    <Image Include="res\texture\space\front.png" />
+    <Image Include="res\texture\space\left.png" />
+    <Image Include="res\texture\space\right.png" />
+    <Image Include="res\texture\space\top.png" />
+    <Image Include="res\texture\window.png" />
+    <Image Include="res\texture\wood.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="res\model\backpack\backpack.obj">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </Object>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

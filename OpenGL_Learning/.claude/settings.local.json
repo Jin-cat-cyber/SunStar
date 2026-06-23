@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/35718/Desktop/OpenGL_Learning/**)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\35718\\Desktop\\OpenGL_Learning"
+    ]
+  }
+}

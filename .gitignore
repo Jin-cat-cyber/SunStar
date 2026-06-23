@@ -1,0 +1,24 @@
+# VS 配置
+.vs/
+
+# 编译产物
+Debug/
+Release/
+x64/
+*.exe
+*.obj
+*.o
+*.dll
+*.lib
+*.exp
+*.pdb
+*.ilk
+*.iobj
+*.ipdb
+
+# VS 用户设置
+*.vcxproj.user
+*.user
+
+# 临时快照
+CopilotSnapshots/
