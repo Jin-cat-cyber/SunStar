@@ -22,3 +22,6 @@ x64/
 
 # 临时快照
 CopilotSnapshots/
+
+# Claude 配置
+.claude/
