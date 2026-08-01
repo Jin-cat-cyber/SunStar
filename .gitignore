@@ -25,3 +25,4 @@ CopilotSnapshots/
 
 # Claude 配置
 .claude/
+/.github
