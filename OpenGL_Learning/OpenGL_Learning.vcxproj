@@ -131,7 +131,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SHIP_5_0_MY_METHOD;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -163,6 +163,9 @@
     <ClCompile Include="src\05_AdvancedLighting\Shadow\Shadow1.0.cpp" />
     <ClCompile Include="src\05_AdvancedLighting\Shadow\Shadow2.0.cpp" />
     <ClCompile Include="src\05_AdvancedLighting\Shadow\Shadow3.0.cpp" />
+    <ClCompile Include="src\Shadow4.0.cpp" />
+    <ClCompile Include="src\SpaceShip5.0_my_method.cpp" />
+    <ClCompile Include="src\SpaceShip5.0_ds_method.cpp" />
     <ClCompile Include="src\SkyBox\cubeMap_SkyBox.cpp" />
     <ClCompile Include="src\SkyBox\cubeMap_SkyBox_Model.cpp" />
     <ClCompile Include="src\SkyBox\fail_cubeMap_SkyBox_move.cpp" />

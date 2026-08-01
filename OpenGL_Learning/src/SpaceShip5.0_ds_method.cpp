@@ -5,6 +5,7 @@
 
 
 
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -17,7 +18,7 @@
 #include "Shader.h" // 包含自定义着色器类
 
 
-#ifdef SHIP_5_0
+#ifdef SHIP_5_0_DS_METHOD
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -327,7 +328,7 @@ int main()
         coreModel = glm::scale(coreModel, SunScale * 1.0f * starPulse2);
 
 		// HDR增强核心亮度
-        float starHDRMutilplier = 5.0f;
+        float starHDRMutilplier = 10.0f;
 
         sunCoreShader.setMat4("model", coreModel);
         sunCoreShader.setMat4("view", view);
@@ -542,6 +543,14 @@ int main()
         glBlitFramebuffer(0, 0, windowwidth, windowheight,
             0, 0, windowwidth, windowheight,
             GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+        // 【新增】把深度从 msFBO 复制到默认帧缓冲，供后面的光晕使用
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, msFBO);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(0, 0, windowwidth, windowheight,
+            0, 0, windowwidth, windowheight,
+            GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
         // 恢复为默认帧缓冲或绑定 hdrFBO 以便后续读取 hdrColorBuffer
         glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 
@@ -557,7 +566,9 @@ int main()
 
         // ------- 合成到屏幕 -------
         glBindFramebuffer(GL_FRAMEBUFFER, 0);   // 回到默认帧缓冲
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		// glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // 老版本
+		// 只清理颜色缓冲，不清理深度缓冲，以此来保留深度信息，确保后续渲染的物体不会被清除
+        glClear(GL_COLOR_BUFFER_BIT);
         compositeShader.use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
@@ -573,7 +584,8 @@ int main()
 
         // 5. 渲染镜头光晕
         glDepthMask(GL_FALSE); // 不写入深度
-        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE); // 使用加法混合,保留Alpha控制强度
         lensFlareShader.use();
@@ -586,7 +598,6 @@ int main()
         // 光晕大小，比辉光略大
         float flareSize = SunScale.x * 3.0f;
         flareModel = glm::scale(flareModel, glm::vec3(flareSize));
-
         lensFlareShader.setMat4("model", flareModel);
         lensFlareShader.setMat4("view", view);
         lensFlareShader.setMat4("projection", projection);
@@ -596,13 +607,11 @@ int main()
         lensFlareShader.setInt("flareTexture", 0);
         glBindVertexArray(coronaQuadVAO); // 复用日冕四边形
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
         //glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, flareTexture1);
         lensFlareShader.setInt("flareTexture", 0);
         //glBindVertexArray(coronaQuadVAO); // 复用日冕四边形
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
         glBindVertexArray(0);
 
 

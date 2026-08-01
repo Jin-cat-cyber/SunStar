@@ -5,6 +5,7 @@
 
 
 
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -17,7 +18,7 @@
 #include "Shader.h" // 包含自定义着色器类
 
 
-#ifdef SHIP_5_0
+#ifdef SHIP_5_0_MY_METHOD
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -327,7 +328,7 @@ int main()
         coreModel = glm::scale(coreModel, SunScale * 1.0f * starPulse2);
 
 		// HDR增强核心亮度
-        float starHDRMutilplier = 5.0f;
+        float starHDRMutilplier = 10.0f;
 
         sunCoreShader.setMat4("model", coreModel);
         sunCoreShader.setMat4("view", view);
@@ -509,6 +510,41 @@ int main()
             glBindVertexArray(0);
         }
 
+        // 5. 渲染镜头光晕
+        glDepthMask(GL_FALSE); // 不写入深度
+        glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LESS); // 等于或更大深度通过
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE); // 使用加法混合,保留Alpha控制强度
+        lensFlareShader.use();
+        glm::vec3 dirToCamera2 = camera.Position - pointSunPositions;
+        glm::mat4 flareModel = glm::mat4(1.0f);
+        flareModel = glm::translate(flareModel, pointSunPositions);
+        // 公告板始终面向相机
+        glm::mat4 flareRotate = glm::inverse(glm::lookAt(glm::vec3(0.f), dirToCamera2, camera.WorldUp));
+        flareModel = flareModel * flareRotate;
+        // 光晕大小，比辉光略大
+        float flareSize = SunScale.x * 3.0f;
+        flareModel = glm::scale(flareModel, glm::vec3(flareSize));
+
+        lensFlareShader.setMat4("model", flareModel);
+        lensFlareShader.setMat4("view", view);
+        lensFlareShader.setMat4("projection", projection);
+        lensFlareShader.setVec4("flareColor", glm::vec4(1.0f, 0.8f, 0.5f, 0.6f)); // 光晕颜色和透明度
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, flareTexture);
+        lensFlareShader.setInt("flareTexture", 0);
+        glBindVertexArray(coronaQuadVAO); // 复用日冕四边形
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+        //glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, flareTexture1);
+        lensFlareShader.setInt("flareTexture", 0);
+        //glBindVertexArray(coronaQuadVAO); // 复用日冕四边形
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+        glBindVertexArray(0);
+
         //==========================================
         // 渲染到屏幕
         glDisable(GL_DEPTH_TEST);
@@ -571,39 +607,36 @@ int main()
         glBindVertexArray(quadVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        // 5. 渲染镜头光晕
-        glDepthMask(GL_FALSE); // 不写入深度
-        glDisable(GL_DEPTH_TEST);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE); // 使用加法混合,保留Alpha控制强度
-        lensFlareShader.use();
-        glm::vec3 dirToCamera2 = camera.Position - pointSunPositions;
-        glm::mat4 flareModel = glm::mat4(1.0f);
-        flareModel = glm::translate(flareModel, pointSunPositions);
-        // 公告板始终面向相机
-        glm::mat4 flareRotate = glm::inverse(glm::lookAt(glm::vec3(0.f), dirToCamera2, camera.WorldUp));
-        flareModel = flareModel * flareRotate;
-        // 光晕大小，比辉光略大
-        float flareSize = SunScale.x * 3.0f;
-        flareModel = glm::scale(flareModel, glm::vec3(flareSize));
-
-        lensFlareShader.setMat4("model", flareModel);
-        lensFlareShader.setMat4("view", view);
-        lensFlareShader.setMat4("projection", projection);
-        lensFlareShader.setVec4("flareColor", glm::vec4(1.0f, 0.8f, 0.5f, 0.6f)); // 光晕颜色和透明度
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, flareTexture);
-        lensFlareShader.setInt("flareTexture", 0);
-        glBindVertexArray(coronaQuadVAO); // 复用日冕四边形
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-        //glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, flareTexture1);
-        lensFlareShader.setInt("flareTexture", 0);
+        //// 5. 渲染镜头光晕
+        //glDepthMask(GL_FALSE); // 不写入深度
+        //glDisable(GL_DEPTH_TEST);
+        //glEnable(GL_BLEND);
+        //glBlendFunc(GL_SRC_ALPHA, GL_ONE); // 使用加法混合,保留Alpha控制强度
+        //lensFlareShader.use();
+        //glm::vec3 dirToCamera2 = camera.Position - pointSunPositions;
+        //glm::mat4 flareModel = glm::mat4(1.0f);
+        //flareModel = glm::translate(flareModel, pointSunPositions);
+        //// 公告板始终面向相机
+        //glm::mat4 flareRotate = glm::inverse(glm::lookAt(glm::vec3(0.f), dirToCamera2, camera.WorldUp));
+        //flareModel = flareModel * flareRotate;
+        //// 光晕大小，比辉光略大
+        //float flareSize = SunScale.x * 3.0f;
+        //flareModel = glm::scale(flareModel, glm::vec3(flareSize));
+        //lensFlareShader.setMat4("model", flareModel);
+        //lensFlareShader.setMat4("view", view);
+        //lensFlareShader.setMat4("projection", projection);
+        //lensFlareShader.setVec4("flareColor", glm::vec4(1.0f, 0.8f, 0.5f, 0.6f)); // 光晕颜色和透明度
+        //glActiveTexture(GL_TEXTURE0);
+        //glBindTexture(GL_TEXTURE_2D, flareTexture);
+        //lensFlareShader.setInt("flareTexture", 0);
         //glBindVertexArray(coronaQuadVAO); // 复用日冕四边形
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-        glBindVertexArray(0);
+        //glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        ////glActiveTexture(GL_TEXTURE1);
+        //glBindTexture(GL_TEXTURE_2D, flareTexture1);
+        //lensFlareShader.setInt("flareTexture", 0);
+        ////glBindVertexArray(coronaQuadVAO); // 复用日冕四边形
+        //glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        //glBindVertexArray(0);
 
 
         // 恢复深度测试和混合状态

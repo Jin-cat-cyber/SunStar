@@ -4,8 +4,7 @@
 #include <assimp/revision.h>
 
 #include "Shader.h" // 包含自定义着色器类
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+
 
 #include <iostream>
 #include <glm/glm.hpp>
@@ -15,6 +14,10 @@
 #include "camera.h"
 #include "Model.h"
 
+
+#ifdef SHADOW_4_0
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height); // 窗口大小回调函数
@@ -543,5 +546,6 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
     return textureID;
 }
 
+#endif
 
 
