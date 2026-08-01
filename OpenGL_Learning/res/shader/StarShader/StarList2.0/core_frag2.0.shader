@@ -5,12 +5,11 @@ in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoords;
 
-
-uniform vec3 sunCenter;		// 恒星中心位置
+uniform vec3 starColor = vec3(1.0, 0.8, 0.6);	// 恒星主颜色
+uniform vec3 coreColor = vec3(1.0, 0.9, 0.7);	// 恒星核心颜色
 uniform float time;
-uniform vec3 coronaColor;
-uniform float coronaIntensity = 1.0;		// 恒星亮度
-uniform float coronaRadius = 204.0;
+uniform float intensity = 1.0;		// 恒星亮度
+uniform vec3 viewPos;				// 观察者位置
 
 float snoise(vec4 v); // 4D simplex noise 函数声明 
 
@@ -34,83 +33,66 @@ float fractalNoise(vec4 p, int octaves, float frequency, float persistence)
 
 void main()
 {
-    // ver1.0
-    // // 计算片段位置相对于恒星中心的向量
-    // vec3 pos = FragPos - sunCenter;
+    vec3 dir = normalize(Normal);
+    vec2 uv = TexCoords * 2.0 - 1.0; // 将 UV 映射到 [-1, 1]
+    float distFromCenter = length(uv);  // 计算距离中心的距离
+    
+    // 湍流/米粒噪声
+    float turb = fractalNoise(vec4(dir * 6.0, time * 0.3), 6, 1.0, 0.5);
+    float baseTex = turb * 0.5 + 0.5; // 将噪声值映射到 [0, 1]
+    // 太阳黑子
+    float s = 0.3;
+    float freq = 5.0;
+    vec4 pos1 = vec4(dir * freq, time * 0.5);
+    vec4 pos2 = vec4(dir * freq + 5000.0, time * 0.15);
+    float t1 = snoise(pos1) - s;
+    float t2 = snoise(pos2) - s;
+    float sunspot = max(t1, 0.0) * max(t2, 0.0) * 2.0;
+    baseTex = clamp(baseTex - sunspot, 0.0, 1.0);   // 混合黑子暗区
 
-    // // 扰动方向
-    // float frequency = 0.8;
-    // float ox = snoise(vec4(pos * frequency, time));
-    // float oy = snoise(vec4((pos + 2000.0) * frequency, time));
-    // float oz = snoise(vec4((pos + 4000.0) * frequency, time));
-    // vec3 distance = normalize(pos + vec3(ox, oy, oz) * 0.25); // 添加扰动
-    // // 时间从内向外流逝
-    // float t = time - length(pos);
-    // // 分型噪声扭曲
-    // float noiseVal = fractalNoise(vec4(distance, t), 3, 3.0, 0.7);
-    // vec3 n = pos + vec3(noiseVal * 0.5);
-    // // 亮度衰减
-    // float dist = length(n) * 1.0;
-    // float brightness = (1.0 / (dist * dist) - 0.1) * 0.7;
-    // brightness = max(brightness, 0.0);
-    // float total = pow(brightness, 4.0);
-    // // 最终颜色
-    // vec3 coronaColor = vec3(1.0, 0.9, 0.6);
-    // vec3 finalColor = coronaColor * total * coronaIntensity * 2.5;
-    // //加法混合下不需要alpha， 设为1.0即可
-    // FragColor = vec4(finalColor, 1.0);
+    // 亮度与脉冲
+    float pulse = sin(time * 1.5) * 0.1 + 1.0;
+    float centerBrightness = 1.0 - smoothstep(0.0, 1.0, distFromCenter * 1.5);
+    float edgeBrightness   = exp(-distFromCenter * distFromCenter * 5.0);
+    
+    // 菲涅尔边缘辉光
+    vec3 viewDir = normalize(viewPos - FragPos);
+    float fresnel = pow(1.0 - abs(dot(normalize(Normal), viewDir)), 2.0) * 0.5;
+    
+    // 最终亮度
+    float finalIntensity = intensity * pulse * (baseTex * 0.7 + 0.3 * centerBrightness);
+    
+    // 颜色混合
+    vec3 finalColor = mix(starColor, coreColor, centerBrightness * 0.8);
+    
+    // 边缘红移
+    float redShift = smoothstep(0.7, 1.0, distFromCenter) * 0.25;
+    finalColor.r += redShift;
+    finalColor.g -= redShift * 0.5;
+    finalColor.b -= redShift * 0.8;
 
-    // ver2.0
-    //  vec3 pos = FragPos - sunCenter;
-    // float distFromCenter = length(pos);
-    // float relDist = distFromCenter / coronaRadius;   // 0~1范围
-    // // 放大频率和扰动幅度以适配模型尺寸
-    // float scale = coronaRadius;
-    // float frequency = 0.8 * scale;
-    // float ox = snoise(vec4(pos * frequency, time));
-    // float oy = snoise(vec4((pos + vec3(2000.0)) * frequency, time));
-    // float oz = snoise(vec4((pos + vec3(4000.0)) * frequency, time));
-    // vec3 distVec = normalize(pos + vec3(ox, oy, oz) * (0.25 * scale));
-    // float t = time - distFromCenter * 0.1;
-    // float noiseVal = fractalNoise(vec4(distVec, t), 3, 3.0 * scale, 0.7);
-    // vec3 n = pos + vec3(noiseVal * 0.5 * scale);
-    // // 用相对距离计算亮度（修复-0.1）
-    // float finalRelDist = length(n) / coronaRadius;
-    // float brightness = (1.0 / (finalRelDist * finalRelDist) - 0.1) * 0.7;
-    // brightness = max(brightness, 0.0);
-    // float total = pow(brightness, 4.0);
-    // vec3 coronaColor = vec3(1.0, 0.9, 0.6);
-    // vec3 finalColor = coronaColor * total * coronaIntensity * 2.5;
-    // FragColor = vec4(finalColor, 1.0);
+    // 菲涅尔发光
+    finalColor += vec3(1.0, 0.6, 0.3) * fresnel * edgeBrightness;
+    
+    // HDR 色调映射
+    
+    // VER 1.0 (这个版本太暗了)
+    // vec3 hdrColor = finalColor * finalIntensity;
+    // vec3 mapped = hdrColor / (hdrColor + vec3(1.0)); // Reinhard 色调映射
+    
+    // VER 2.0 (高亮版本)
+    // 更亮的映射：hdr - hdr/(1+hdr) 的变种，或直接用没有映射的原色
+    // vec3 hdrColor = finalColor * finalIntensity;
+    // // 保留高光的 HDR 映射
+    // vec3 mapped = vec3(1.0) - exp(-hdrColor * 1.5); // 指数映射，更亮
 
-        vec3 pos = FragPos - sunCenter;
-    float distFromCenter = length(pos);
-    vec3 dir = normalize(pos);
-    // ---------- 径向因子：只在日冕壳表面附近亮 ----------
-    float relDist = distFromCenter / coronaRadius;
-    // 让亮度在 0.85~1.0 之间达到峰值（即日冕外缘），内侧和外侧都衰减
-    float radial = smoothstep(0.85, 0.95, relDist) * (1.0 - smoothstep(0.95, 1.05, relDist));
-    // ---------- 方向噪声生成流束 ----------
-    // 基础频率较低，产生大尺度结构
-    float baseNoise = fractalNoise(vec4(dir * 5.0, time * 0.2), 4, 2.0, 0.6);
-    // 加上高频细节，使丝更锐利
-    float detailNoise = snoise(vec4(dir * 15.0, time * 0.3)) * 0.5;
-    float noiseVal = baseNoise + detailNoise;
-    noiseVal = noiseVal * 0.5 + 0.5;   // 映射到 0~1
-    // 阈值：只让噪声值超过 0.6 的区域亮，形成丝状
-    float threshold = 0.6;
-    float streak = smoothstep(threshold, threshold + 0.2, noiseVal);
-    // ---------- 最终亮度 ----------
-    float brightness = streak * radial * coronaIntensity * 2.0;
-    // 颜色
-    vec3 coronaColor = vec3(1.0, 0.9, 0.6);
-    vec3 finalColor = coronaColor * brightness;
-    FragColor = vec4(finalColor, 1.0);
-    // float alpha = clamp(brightness, 0.0, 1.0);
-    // FragColor = vec4(finalColor, alpha);
+    // FragColor = vec4(mapped, 1.0);
+
+    // VER 3.0 (线性 HDR 输出，后续在后处理阶段做 tone-mapping)
+    vec3 hdrColor = finalColor * finalIntensity;
+
+    FragColor = vec4(hdrColor, 1.0);
 }
-
-
 
 //================= 下面是 4D simplex noise 的实现 =================
 // 4D simplex noise

@@ -87,6 +87,11 @@ void main()
     vec3 mapped = vec3(1.0) - exp(-hdrColor * 1.5); // 指数映射，更亮
 
     FragColor = vec4(mapped, 1.0);
+
+    // VER 3.0 (线性 HDR 输出，后续在后处理阶段做 tone-mapping)
+    // vec3 hdrColor = finalColor * finalIntensity;
+
+    // FragColor = vec4(hdrColor, 1.0);
 }
 
 //================= 下面是 4D simplex noise 的实现 =================

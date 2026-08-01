@@ -52,6 +52,17 @@ void main()
     // 7. 输出，alpha也设置为total以配合 glBlendFunc(GL_SRC_ALPHA, GL_ONE)
     vec3 col = coronaColor * total * coronaIntensity;
     FragColor = vec4(col, total * coronaIntensity);
+
+    // // 避免除0，控制最大值，输出线性 HDR（不要在这里做 tone-mapping）
+    // float dist = max(length(n), 0.0001);
+    // float brightness = (1.0 / (dist * dist + 1e-6) - 0.1) * 0.7;
+    // brightness = clamp(brightness, 0.0, 10.0); // 防止数值爆炸
+    // float total = pow(brightness, 4.0);
+
+    // // 输出线性辐照（由后处理做 tone-mapping / gamma）
+    // vec3 col = coronaColor * total * coronaIntensity;
+    // float alpha = clamp(total * coronaIntensity, 0.0, 1.0);
+    // FragColor = vec4(col, alpha);
 }
 
 

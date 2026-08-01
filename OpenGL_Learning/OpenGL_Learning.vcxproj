@@ -153,6 +153,7 @@
     <ClCompile Include="src\04_AdvancedOpenGL\Instancing\Instancing2.0_stars.cpp" />
     <ClCompile Include="src\04_AdvancedOpenGL\Instancing\Instancing3.0_galaxy.cpp" />
     <ClCompile Include="src\04_AdvancedOpenGL\Instancing\Instancing4.0_SunStar.cpp" />
+    <ClCompile Include="src\HDR.cpp" />
     <ClCompile Include="src\Model.cpp" />
     <ClCompile Include="src\Model\model_ver3_Light_combine.cpp" />
     <ClCompile Include="src\05_AdvancedLighting\NormalMap\NormalMap.cpp" />
@@ -202,9 +203,10 @@
     <ClCompile Include="src\03_Model\model_ver2_Light_combine.cpp" />
     <ClCompile Include="src\03_Model\model_ver3_Light_combine.cpp" />
     <ClCompile Include="src\SpaceShip4.0.cpp" />
-    <ClCompile Include="src\SpaceShip3.0.cpp" />
-    <ClCompile Include="src\SpaceShip2.0.cpp" />
-    <ClCompile Include="src\SpaceShip.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip3.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip2.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip.cpp" />
+    <ClCompile Include="src\SpaceShip5.0.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\BezierCurve.h" />
@@ -241,6 +243,7 @@
     <None Include="res\shader\Advanced_lighting\Parallax\Parallax_ver.shader" />
     <None Include="res\shader\Advanced_lighting\Parallax\Parallax_ver2.0.shader" />
     <None Include="res\shader\BloomShaders\composite_frag.shader" />
+    <None Include="res\shader\BloomShaders\composite_frag2.0.shader" />
     <None Include="res\shader\BloomShaders\composite_ver.shader" />
     <None Include="res\shader\CubeMapsShader\cubeMap_frag.shader" />
     <None Include="res\shader\CubeMapsShader\cubeMap_ver.shader" />
@@ -255,10 +258,18 @@
     <None Include="res\shader\GeometryShader\frag.shader" />
     <None Include="res\shader\GeometryShader\geo.shader" />
     <None Include="res\shader\GeometryShader\ver.shader" />
+    <None Include="res\shader\HDR\hdr_frag.shader" />
+    <None Include="res\shader\HDR\hdr_lighting_frag.shader" />
+    <None Include="res\shader\HDR\hdr_lighting_ver.shader" />
+    <None Include="res\shader\HDR\hdr_ver.shader" />
     <None Include="res\shader\InstancingShader\aster_frag.shader" />
+    <None Include="res\shader\InstancingShader\aster_frag2.0.shader" />
     <None Include="res\shader\InstancingShader\aster_ver.shader" />
     <None Include="res\shader\InstancingShader\instancingFRAG.shader" />
+    <None Include="res\shader\InstancingShader\instancingFRAG2.0.shader" />
     <None Include="res\shader\InstancingShader\instancingVER.shader" />
+    <None Include="res\shader\LensFlareShader\lens_flare_frag.shader" />
+    <None Include="res\shader\LensFlareShader\lens_flare_ver.shader" />
     <None Include="res\shader\ModelShader\model_frag.shader" />
     <None Include="res\shader\ModelShader\model_frag1.0.shader" />
     <None Include="res\shader\ModelShader\model_frag3.0.shader" />
@@ -279,9 +290,12 @@
     <None Include="res\shader\SkyBoxShader\SkyBox_frag.shader" />
     <None Include="res\shader\SkyBoxShader\SkyBox_ver.shader" />
     <None Include="res\shader\StarShader\StarList2.0\core_frag.shader" />
+    <None Include="res\shader\StarShader\StarList2.0\core_frag2.0.shader" />
     <None Include="res\shader\StarShader\StarList2.0\core_ver.shader" />
     <None Include="res\shader\StarShader\StarList2.0\corona_frag.shader" />
+    <None Include="res\shader\StarShader\StarList2.0\corona_frag2.0.shader" />
     <None Include="res\shader\StarShader\StarList2.0\corona_quad_frag.shader" />
+    <None Include="res\shader\StarShader\StarList2.0\corona_quad_frag2.0.shader" />
     <None Include="res\shader\StarShader\StarList2.0\corona_quad_ver.shader" />
     <None Include="res\shader\StarShader\StarList2.0\corona_ver.shader" />
     <None Include="res\shader\StarShader\StarList2.0\glow_frag.shader" />
@@ -306,9 +320,9 @@
     <None Include="res\shader\TheFourShader_depth_stencil\deeptest_ver1.0.shader" />
     <None Include="res\shader\LightShader\2.0_frag_color.shader" />
     <None Include="res\shader\LightShader\2.0_ver_color.shader" />
-    <None Include="res\shader\TheFirstShader_Basic\fragmentShader.shader" />
+    <None Include="res\shader\TheFourShader\TheFirstShader_Basic\fragmentShader.shader" />
     <None Include="res\shader\LightShader\frag_color.shader" />
-    <None Include="res\shader\TheFirstShader_Basic\vertexShader.shader" />
+    <None Include="res\shader\TheFourShader\TheFirstShader_Basic\vertexShader.shader" />
     <None Include="res\shader\LightShader\frag_light_cube.shader" />
     <None Include="res\shader\ModelShader\model_frag2.0.shader" />
     <None Include="res\shader\ModelShader\model_ver2.0.shader" />
@@ -331,6 +345,23 @@
     <Image Include="res\texture\container2_specular.png" />
     <Image Include="res\texture\floor.jpg" />
     <Image Include="res\texture\grass.png" />
+    <Image Include="res\texture\lens_flare\blue Rainbow.jpg" />
+    <Image Include="res\texture\lens_flare\blue Rainbow.png" />
+    <Image Include="res\texture\lens_flare\flickering blue light.png" />
+    <Image Include="res\texture\lens_flare\glow light lens flare(1).png" />
+    <Image Include="res\texture\lens_flare\glow light lens flare.png" />
+    <Image Include="res\texture\lens_flare\lens boom.jpg" />
+    <Image Include="res\texture\lens_flare\Lens Flare Stock.jpg" />
+    <Image Include="res\texture\lens_flare\lens flare TRY.png" />
+    <Image Include="res\texture\lens_flare\lensflare1.jpg" />
+    <Image Include="res\texture\lens_flare\lens_boom.png" />
+    <Image Include="res\texture\lens_flare\Lens_Flare_Stock.png" />
+    <Image Include="res\texture\lens_flare\lens_white.jpg" />
+    <Image Include="res\texture\lens_flare\Prism.jpg" />
+    <Image Include="res\texture\lens_flare\Prismatic rays light.jpg" />
+    <Image Include="res\texture\lens_flare\Starburst Stock.jpg" />
+    <Image Include="res\texture\lens_flare\sur Flare.jpg" />
+    <Image Include="res\texture\lens_flare\sur Flare.png" />
     <Image Include="res\texture\lighting_maps_specular_color.png" />
     <Image Include="res\texture\M-31\back.png" />
     <Image Include="res\texture\M-31\bottom.png" />

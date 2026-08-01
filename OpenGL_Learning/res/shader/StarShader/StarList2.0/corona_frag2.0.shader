@@ -103,11 +103,11 @@ void main()
     // ---------- ◊Ó÷’¡¡∂» ----------
     float brightness = streak * radial * coronaIntensity * 2.0;
     // —’…´
-    vec3 coronaColor = vec3(1.0, 0.9, 0.6);
+    //vec3 coronaColor = vec3(1.0, 0.9, 0.6);
     vec3 finalColor = coronaColor * brightness;
-    FragColor = vec4(finalColor, 1.0);
-    // float alpha = clamp(brightness, 0.0, 1.0);
-    // FragColor = vec4(finalColor, alpha);
+    // FragColor = vec4(finalColor, 1.0);
+    float alpha = clamp(brightness, 0.0, 1.0);
+    FragColor = vec4(finalColor, alpha);
 }
 
 

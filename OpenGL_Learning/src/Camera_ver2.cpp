@@ -25,7 +25,7 @@ glm::mat4 Camera_ver2::GetViewMatrix()
 // 键盘控制函数
 void Camera_ver2::ProcessKeyboard(Camera_Movement direction, float deltaTime)
 {
-	float velocity = Speed * deltaTime; // 刷新率
+	float velocity = Speed * deltaTime * 10; // 刷新率
 	if (direction == FORWARD)
 		Position += Front * velocity;
 	if (direction == BACKWARD)

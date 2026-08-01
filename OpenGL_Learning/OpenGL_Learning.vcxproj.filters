@@ -195,16 +195,22 @@
     <ClCompile Include="src\Model.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip2.0.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip2.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip3.0.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip3.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\SpaceShip4.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\HDR.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip5.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -229,8 +235,8 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\shader\TheFirstShader_Basic\vertexShader.shader" />
-    <None Include="res\shader\TheFirstShader_Basic\fragmentShader.shader" />
+    <None Include="res\shader\TheFourShader\TheFirstShader_Basic\vertexShader.shader" />
+    <None Include="res\shader\TheFourShader\TheFirstShader_Basic\fragmentShader.shader" />
     <None Include="res\shader\LightShader\ver_color.shader" />
     <None Include="res\shader\LightShader\frag_color.shader" />
     <None Include="res\shader\LightShader\ver_light_cube.shader" />
@@ -326,10 +332,22 @@
     <None Include="res\shader\StarShader\StarList2.0\corona_quad_frag.shader" />
     <None Include="res\shader\BloomShaders\bright_pass_ver.shader" />
     <None Include="res\shader\BloomShaders\bright_pass_frag.shader" />
-    <None Include="res\shader\BloomShaders\blur_ver.shader" />
-    <None Include="res\shader\BloomShaders\blur_frag.shader" />
     <None Include="res\shader\BloomShaders\composite_ver.shader" />
     <None Include="res\shader\BloomShaders\composite_frag.shader" />
+    <None Include="res\shader\BloomShaders\blur_frag.shader" />
+    <None Include="res\shader\BloomShaders\blur_ver.shader" />
+    <None Include="res\shader\LensFlareShader\lens_flare_ver.shader" />
+    <None Include="res\shader\LensFlareShader\lens_flare_frag.shader" />
+    <None Include="res\shader\HDR\hdr_lighting_ver.shader" />
+    <None Include="res\shader\HDR\hdr_lighting_frag.shader" />
+    <None Include="res\shader\HDR\hdr_ver.shader" />
+    <None Include="res\shader\HDR\hdr_frag.shader" />
+    <None Include="res\shader\BloomShaders\composite_frag2.0.shader" />
+    <None Include="res\shader\StarShader\StarList2.0\core_frag2.0.shader" />
+    <None Include="res\shader\StarShader\StarList2.0\corona_frag2.0.shader" />
+    <None Include="res\shader\StarShader\StarList2.0\corona_quad_frag2.0.shader" />
+    <None Include="res\shader\InstancingShader\aster_frag2.0.shader" />
+    <None Include="res\shader\InstancingShader\instancingFRAG2.0.shader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\texture\container.jpg">
@@ -534,6 +552,57 @@
       <Filter>资源文件</Filter>
     </Image>
     <Image Include="res\texture\ParallaxMap\wood.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\lens_white.jpg">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\lensflare1.jpg">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\Lens Flare Stock.jpg">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\Starburst Stock.jpg">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\blue Rainbow.jpg">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\lens boom.jpg">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\Prism.jpg">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\Prismatic rays light.jpg">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\sur Flare.jpg">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\lens flare TRY.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\sur Flare.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\blue Rainbow.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\lens_boom.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\Lens_Flare_Stock.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\flickering blue light.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\glow light lens flare.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\texture\lens_flare\glow light lens flare(1).png">
       <Filter>资源文件</Filter>
     </Image>
   </ItemGroup>

@@ -25,13 +25,10 @@
 //void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);   // 鼠标 滚轮 回调函数
 //unsigned int loadTexture(char const* path);     // 纹理加载函数
 //unsigned int loadCubemap(std::vector<std::string> faces);   // 立方体贴图加载函数
-//void setupFramebuffers(int eidth, int height);  //  离屏渲染帧缓冲
-//void rebuildFramebuffers(int width, int height);  //  重建离屏渲染帧缓冲
+//
 //
 //const unsigned int SCR_WIDTH = 960; // 窗口宽度
 //const unsigned int SCR_HEIGHT = 600; // 窗口高度
-//int windowwidth = SCR_WIDTH;
-//int windowheight = SCR_HEIGHT;
 //
 //// 摄像机相关
 //Camera_ver2 camera(glm::vec3(-40.0f, 10.0f, 200.0f));
@@ -49,24 +46,6 @@
 //// 设置光源位置
 //glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 //
-//// 恒星相关函数
-//void coronaQuadInit(unsigned int& coronaQuadVAO, unsigned int& coronaQuadVBO);
-//void RocksModelMatricesInit(unsigned int& amount, Model& rock);
-//void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& starIndices,
-//    const unsigned int X_SEGMENTS, const unsigned int Y_SEGMENTS, const float PI);
-//
-//void starInit(unsigned int& starVAO, unsigned int& starVBO, unsigned int& starEBO,
-//    std::vector<float>& starVertices, std::vector<unsigned int>& starIndices);
-//
-//// 后处理帧缓冲变量
-//unsigned int hdrFBO, blurFBO1, blurFBO2;
-//unsigned int hdrColorBuffer, blurColorBuffer1, blurColorBuffer2;
-//unsigned int hdrDepthRBO;
-//// 后处理四边形顶点数组对象和顶点缓冲对象
-//void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO);
-//
-//// 天空盒相关函数
-//void SkyBoxInit(unsigned int& skyboxVAO, unsigned int& skyboxVBO);
 //
 //int main()
 //{
@@ -80,10 +59,6 @@
 //
 //    // 创建窗口对象
 //    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Hello OpenGL", NULL, NULL);
-//
-//	// 获取实际窗口大小（因为在某些平台上，窗口的实际大小可能与请求的大小不同）
-//	glfwGetFramebufferSize(window, &windowwidth, &windowheight);
-//
 //    if (window == NULL)
 //    {
 //        std::cout << "Failed to create GLFW window" << std::endl;
@@ -111,7 +86,6 @@
 //    //加载深度缓冲
 //    glEnable(GL_DEPTH_TEST);
 //    glEnable(GL_MULTISAMPLE); // 启用多重采样抗锯齿
-//	setupFramebuffers(windowwidth, windowheight); // 设置离屏渲染帧缓冲
 //
 //    // 创建着色器对象
 //    Shader planetshader("res/shader/InstancingShader/instancingVER.shader", "res/shader/InstancingShader/instancingFRAG.shader");
@@ -125,24 +99,97 @@
 //
 //    Shader spaceboxShader("res/shader/SkyBoxShader/SkyBox_ver.shader", "res/shader/SkyBoxShader/SkyBox_frag.shader");
 //
-//	Shader brightPassShader("res/shader/BloomShaders/bright_pass_ver.shader", "res/shader/BloomShaders/bright_pass_frag.shader");
-//	Shader blurShader("res/shader/BloomShaders/blur_ver.shader", "res/shader/BloomShaders/blur_frag.shader");
-//	Shader compositeShader("res/shader/BloomShaders/composite_ver.shader", "res/shader/BloomShaders/composite_frag.shader");
-//
-//    Shader lensFlareShader("res/shader/LensFlareShader/lens_flare_ver.shader", "res/shader/LensFlareShader/lens_flare_frag.shader");
-//
 //    Model rock("res/model/rock/rock.obj");
 //    Model planet("res/model/planet/planet.obj");
 //
-//    // 加载光晕贴图
-//    unsigned int flareTexture = loadTexture("res/texture/lens_flare/lens_white.jpg");
-//	//unsigned int flareTexture = loadTexture("res/texture/lens_flare/lensflare1.jpg");
 //
 //
 //    // 生成一个大型的半随机模型变换矩阵列表
 //    // ------------------------------------------------------------------
 //    unsigned int amount = 50000;
-//    RocksModelMatricesInit(amount, rock);
+//    glm::mat4* modelMatrices;
+//    modelMatrices = new glm::mat4[amount];
+//    srand(static_cast<unsigned int>(glfwGetTime())); // 生成随机种子
+//    float radius = 200.0;
+//    float offset = 20.0f;
+//    for (unsigned int i = 0; i < amount; i++)
+//    {
+//        glm::mat4 model = glm::mat4(1.0f);
+//        // 1.  平移  ：沿圆周位移，'半径'在范围内 [-offset, offset]
+//        float angle = (float)i / (float)amount * 360.0f;
+//        float displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
+//        float x = sin(angle) * radius + displacement;
+//
+//        displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
+//        float y = displacement * 0.1f; // 保持场地的高度小于x轴和z轴的宽度。
+//
+//        displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
+//        float z = cos(angle) * radius + displacement;
+//
+//        model = glm::translate(model, glm::vec3(x, y, z));
+//
+//        // 2.  缩放  ：在 0.05 和 0.25f 之间进行缩放 
+//        float scale = static_cast<float>((rand() % 30) / 100.0 + 0.01); // 在 0.05 和 0.17f 之间缩放，使得小行星更小一些
+//        // 添加尺寸变化以模拟更真实的小行星带
+//        if (i % 200 == 0)
+//        {
+//            scale *= 6.0f; // 每200个小行星中有一个更大一些
+//        }
+//        else if (i % 20 == 0)
+//        {
+//            scale *= 3.0f; // 每20个小行星中有一个中等大小
+//        }
+//        else if (i % 5 == 0)
+//        {
+//            scale *= 1.5f; // 每5个小行星中有一个稍微大一些
+//        }
+//        model = glm::scale(model, glm::vec3(scale));
+//
+//        // 3.  旋转  ：围绕一个（半）随机选取的旋转轴向量进行随机旋转。
+//        float rotAngle = static_cast<float>((rand() % 360));
+//        //model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
+//            // 更复杂的旋转 - 多个旋转轴组合
+//        glm::mat4 rotation = glm::mat4(1.0f);
+//        rotation = glm::rotate(rotation, rotAngle * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
+//        rotation = glm::rotate(rotation, rotAngle * 0.3f, glm::vec3(0.0f, 1.0f, 0.0f));
+//        rotation = glm::rotate(rotation, rotAngle * 0.2f, glm::vec3(0.0f, 0.0f, 1.0f));
+//        model = model * rotation;
+//
+//        // 4. 现在添加到矩阵列表中
+//        modelMatrices[i] = model;
+//    }
+//
+//    // 设置实例化顶点属性
+//    unsigned int buffer;
+//    glGenBuffers(1, &buffer);
+//    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+//    glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+//
+//    // 将变换矩阵设置为实例顶点属性（使用除数1）
+//    // 注意：我们这里有点取巧，直接获取模型网格（多个网格时）现在公开声明的VAO，并添加新的vertexAttribPointers
+//    // 正常情况下，你会希望以更有条理的方式来做这件事，但出于学习目的，这样做就可以了。
+//    // 
+//    for (unsigned int i = 0; i < rock.meshes.size(); i++)
+//    {
+//        unsigned int VAO = rock.meshes[i].VAO;
+//        glBindVertexArray(VAO);
+//        // 设置顶点属性指针
+//        glEnableVertexAttribArray(3);
+//        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+//        glEnableVertexAttribArray(4);
+//        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+//        glEnableVertexAttribArray(5);
+//        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+//        glEnableVertexAttribArray(6);
+//        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+//
+//        glVertexAttribDivisor(3, 1);
+//        glVertexAttribDivisor(4, 1);
+//        glVertexAttribDivisor(5, 1);
+//        glVertexAttribDivisor(6, 1);
+//
+//        glBindVertexArray(0);
+//    }
 //
 //
 //    // =======================================================
@@ -154,27 +201,150 @@
 //    const unsigned int X_SEGMENTS = 64;
 //    const unsigned int Y_SEGMENTS = 64;
 //    const float PI = 3.14159265359f;
-//    BallGenerate(starVertices, starIndices, X_SEGMENTS, Y_SEGMENTS, PI);
 //
+//    // 生成球体顶点数据
+//    for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
+//    {
+//        for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+//        {
+//            float xSegment = (float)x / (float)X_SEGMENTS;
+//            float ySegment = (float)y / (float)Y_SEGMENTS;
+//            float xPos = cos(xSegment * 2.0f * PI) * sin(ySegment * PI);
+//            float yPos = cos(ySegment * PI);
+//            float zPos = sin(xSegment * 2.0f * PI) * sin(ySegment * PI);
+//            // 位置
+//            starVertices.push_back(xPos);
+//            starVertices.push_back(yPos);
+//            starVertices.push_back(zPos);
+//            // 法线
+//            starVertices.push_back(xPos);
+//            starVertices.push_back(yPos);
+//            starVertices.push_back(zPos);
+//            // 纹理坐标
+//            starVertices.push_back(xSegment);
+//            starVertices.push_back(ySegment);
+//        }
+//    }
+//
+//    // 索引生成
+//    for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
+//    {
+//        for (unsigned int x = 0; x < X_SEGMENTS; ++x)
+//        {
+//            starIndices.push_back(y * (X_SEGMENTS + 1) + x);
+//            starIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+//            starIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x + 1);
+//            starIndices.push_back(y * (X_SEGMENTS + 1) + x);
+//            starIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x + 1);
+//            starIndices.push_back(y * (X_SEGMENTS + 1) + x + 1);
+//        }
+//    }
 //
 //    // 恒星 VAO, VBO, EBO
 //    unsigned int starVAO, starVBO, starEBO;
-//    starInit(starVAO, starVBO, starEBO, starVertices, starIndices);
-//       
+//    glGenVertexArrays(1, &starVAO);
+//    glGenBuffers(1, &starVBO);
+//    glGenBuffers(1, &starEBO);
+//    glBindVertexArray(starVAO);
+//    glBindBuffer(GL_ARRAY_BUFFER, starVBO);
+//    glBufferData(GL_ARRAY_BUFFER, starVertices.size() * sizeof(float), &starVertices[0], GL_STATIC_DRAW);
+//    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, starEBO);
+//    glBufferData(GL_ELEMENT_ARRAY_BUFFER, starIndices.size() * sizeof(unsigned int), &starIndices[0], GL_STATIC_DRAW);
+//    // 位置属性
+//    glEnableVertexAttribArray(0);
+//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+//    // 法线属性
+//    glEnableVertexAttribArray(1);
+//    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+//    // 纹理坐标属性
+//    glEnableVertexAttribArray(2);
+//    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+//
 //
 //    // 日冕公告板顶点数据
 //    unsigned int coronaQuadVAO, coronaQuadVBO;
-//    coronaQuadInit(coronaQuadVAO, coronaQuadVBO);
+//    float coronaQuadVertices[] = {
+//        // positions   // texCoords
+//        /*-1.0f,  1.0f, 0.0f, 1.0f,
+//        -1.0f, -1.0f, 0.0f, 0.0f,
+//         1.0f, -1.0f, 1.0f, 0.0f,
+//        -1.0f,  1.0f, 0.0f, 1.0f,
+//         1.0f, -1.0f, 1.0f, 0.0f,
+//         1.0f,  1.0f, 1.0f, 1.0f*/
+//         // positions        // texcoords
+//        -2.0f, -2.0f, 0.0f,  0.0f, 0.0f,
+//         2.0f, -2.0f, 0.0f,  1.0f, 0.0f,
+//         2.0f,  2.0f, 0.0f,  1.0f, 1.0f,
+//        -2.0f,  2.0f, 0.0f,  0.0f, 1.0f
+//    };
+//    glGenVertexArrays(1, &coronaQuadVAO);
+//    glGenBuffers(1, &coronaQuadVBO);
+//    glBindVertexArray(coronaQuadVAO);
+//    glBindBuffer(GL_ARRAY_BUFFER, coronaQuadVBO);
+//    glBufferData(GL_ARRAY_BUFFER, sizeof(coronaQuadVertices), coronaQuadVertices, GL_STATIC_DRAW);
 //
-//    // =============================================
-//    // 帧缓冲四边形
-//    unsigned int quadVAO, quadVBO;
-//    FrameQuadInit(quadVAO, quadVBO);
+//    glEnableVertexAttribArray(0);
+//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 //
-//    // =============================================
-//    // 天空盒顶点数据绑定
+//    glEnableVertexAttribArray(2);
+//    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+//
+//
+//    // ==============================================
+//    // 天空盒顶点数据
+//    float skyboxVertices[] = {
+//        // positions          
+//        -1.0f,  1.0f, -1.0f,
+//        -1.0f, -1.0f, -1.0f,
+//         1.0f, -1.0f, -1.0f,
+//         1.0f, -1.0f, -1.0f,
+//         1.0f,  1.0f, -1.0f,
+//        -1.0f,  1.0f, -1.0f,
+//
+//        -1.0f, -1.0f,  1.0f,
+//        -1.0f, -1.0f, -1.0f,
+//        -1.0f,  1.0f, -1.0f,
+//        -1.0f,  1.0f, -1.0f,
+//        -1.0f,  1.0f,  1.0f,
+//        -1.0f, -1.0f,  1.0f,
+//
+//         1.0f, -1.0f, -1.0f,
+//         1.0f, -1.0f,  1.0f,
+//         1.0f,  1.0f,  1.0f,
+//         1.0f,  1.0f,  1.0f,
+//         1.0f,  1.0f, -1.0f,
+//         1.0f, -1.0f, -1.0f,
+//
+//        -1.0f, -1.0f,  1.0f,
+//        -1.0f,  1.0f,  1.0f,
+//         1.0f,  1.0f,  1.0f,
+//         1.0f,  1.0f,  1.0f,
+//         1.0f, -1.0f,  1.0f,
+//        -1.0f, -1.0f,  1.0f,
+//
+//        -1.0f,  1.0f, -1.0f,
+//         1.0f,  1.0f, -1.0f,
+//         1.0f,  1.0f,  1.0f,
+//         1.0f,  1.0f,  1.0f,
+//        -1.0f,  1.0f,  1.0f,
+//        -1.0f,  1.0f, -1.0f,
+//
+//        -1.0f, -1.0f, -1.0f,
+//        -1.0f, -1.0f,  1.0f,
+//         1.0f, -1.0f, -1.0f,
+//         1.0f, -1.0f, -1.0f,
+//        -1.0f, -1.0f,  1.0f,
+//         1.0f, -1.0f,  1.0f
+//    };
+//    // spacebox VAO, VBO
 //    unsigned int skyboxVAO, skyboxVBO;
-//    SkyBoxInit(skyboxVAO, skyboxVBO);
+//    glGenVertexArrays(1, &skyboxVAO);
+//    glGenBuffers(1, &skyboxVBO);
+//    glBindVertexArray(skyboxVAO);
+//    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+//    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+//    glEnableVertexAttribArray(0);
+//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 //
 //
 //    // 加载天空纹理
@@ -228,9 +398,6 @@
 //        // 渲染
 //        // ------
 //        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-//
-//		glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);  // 绑定到HDR帧缓冲
-//        glViewport(0, 0, windowwidth, windowheight);
 //        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 //
 //
@@ -487,101 +654,23 @@
 //            glBindVertexArray(0);
 //        }
 //
-//		//==========================================
-//		// 渲染到屏幕
-//        glDisable(GL_DEPTH_TEST);
-//        glDisable(GL_BLEND);
 //
-//		// 1. 亮度提取：从hdrColorBuffer中提取亮度信息到blurFBO1
-//		glBindFramebuffer(GL_FRAMEBUFFER, blurFBO1);
-//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//		brightPassShader.use();
-//        glActiveTexture(GL_TEXTURE0);
-//		glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
-//		brightPassShader.setInt("hdrImage", 0);
-//		brightPassShader.setFloat("threshold", 1.2f); // 设置亮度阈值
-//		glBindVertexArray(quadVAO);
-//		glDrawArrays(GL_TRIANGLES, 0, 6);
+//        // 最后绘制天空盒
+//        //glDepthFunc(GL_LEQUAL);  // 更改深度函数，允许绘制
+//        //glEnable(GL_BLEND);
+//        //glBlendFunc(GL_SRC_ALPHA, GL_ONE); // 使用加法混合！
+//        //spaceboxShader.use();
+//        //view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // 去除平移部分
+//        //spaceboxShader.setMat4("view", view);
+//        //spaceboxShader.setMat4("projection", projection);
 //
-//		// 2. 水平高斯模糊
-//		glBindFramebuffer(GL_FRAMEBUFFER, blurFBO2);
-//        glClear(GL_COLOR_BUFFER_BIT);
-//        blurShader.use();
-//		glActiveTexture(GL_TEXTURE0);
-//        glBindTexture(GL_TEXTURE_2D, blurColorBuffer1);
-//		blurShader.setInt("image", 0);
-//        blurShader.setBool("horizontal", true); // 水平模糊
-//		glBindVertexArray(quadVAO);
-//		glDrawArrays(GL_TRIANGLES, 0, 6);
+//        //glBindVertexArray(skyboxVAO);
+//        //glActiveTexture(GL_TEXTURE0);
+//        //glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+//        //glDrawArrays(GL_TRIANGLES, 0, 36);
+//        //glBindVertexArray(0);
+//        //glDepthFunc(GL_LESS); // 恢复默认深度函数
 //
-//		// 3. 垂直高斯模糊
-//		glBindFramebuffer(GL_FRAMEBUFFER, blurFBO1);
-//        glClear(GL_COLOR_BUFFER_BIT);
-//		blurShader.use();
-//		glActiveTexture(GL_TEXTURE0);
-//		glBindTexture(GL_TEXTURE_2D, blurColorBuffer2);
-//		blurShader.setBool("horizontal", false); // 垂直模糊
-//		glBindVertexArray(quadVAO);
-//		glDrawArrays(GL_TRIANGLES, 0, 6);
-//
-//		// ------- 合成到屏幕 -------
-//		glBindFramebuffer(GL_FRAMEBUFFER, 0);   // 回到默认帧缓冲
-//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//        compositeShader.use();
-//		glActiveTexture(GL_TEXTURE0);
-//		glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
-//		compositeShader.setInt("sceneTexture", 0);
-//		glActiveTexture(GL_TEXTURE1);
-//		glBindTexture(GL_TEXTURE_2D, blurColorBuffer1); // 最终模糊结果在 blurFBO1 的颜色附件
-//		compositeShader.setInt("bloomTexture", 1);
-//		compositeShader.setFloat("exposure", 1.0f); // 曝光值
-//		compositeShader.setFloat("bloomStrength", 0.6f); // Bloom强度
-//		compositeShader.setVec3("colorTint", glm::vec3(1.0f, 0.95f, 0.6f)); // Bloom颜色
-//		glBindVertexArray(quadVAO);
-//		glDrawArrays(GL_TRIANGLES, 0, 6);
-//
-//        // 5. 渲染镜头光晕
-//		glDepthMask(GL_FALSE); // 不写入深度
-//		glDisable(GL_DEPTH_TEST);
-//        glEnable(GL_BLEND);
-//		glBlendFunc(GL_SRC_ALPHA, GL_ONE); // 使用加法混合,保留Alpha控制强度
-//        lensFlareShader.use();
-//        glm::vec3 dirToCamera2 = camera.Position - pointSunPositions;
-//        glm::mat4 flareModel = glm::mat4(1.0f);
-//		flareModel = glm::translate(flareModel, pointSunPositions);
-//        // 公告板始终面向相机
-//		glm::mat4 flareRotate = glm::inverse(glm::lookAt(glm::vec3(0.f), dirToCamera2, camera.WorldUp));
-//        flareModel = flareModel * flareRotate;
-//        // 光晕大小，比辉光略大
-//        float flareSize = SunScale.x * 3.0f;
-//		flareModel = glm::scale(flareModel, glm::vec3(flareSize));
-//
-//        lensFlareShader.setMat4("model", flareModel);
-//		lensFlareShader.setMat4("view", view);
-//		lensFlareShader.setMat4("projection", projection);
-//		lensFlareShader.setVec4("flareColor", glm::vec4(1.0f, 0.8f, 0.5f, 0.6f)); // 光晕颜色和透明度
-//		glActiveTexture(GL_TEXTURE0);
-//		glBindTexture(GL_TEXTURE_2D, flareTexture);
-//		lensFlareShader.setInt("flareTexture", 0);
-//		glBindVertexArray(coronaQuadVAO); // 复用日冕四边形
-//		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-//		glBindVertexArray(0);
-//
-//		// 恢复深度测试和混合状态
-//		glEnable(GL_DEPTH_TEST);
-//		glDepthFunc(GL_LESS);
-//		glDepthMask(GL_TRUE);
-//		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // 恢复默认混合函数
-//
-//
-//        // 恢复原始状态
-//        if (!depthEnabled) glDisable(GL_DEPTH_TEST);
-//        else glEnable(GL_DEPTH_TEST);
-//        glDepthMask(depthMask ? GL_TRUE : GL_FALSE);
-//        glDepthFunc(depthFunc);
-//        if (blendEnabled) glEnable(GL_BLEND);
-//        else glDisable(GL_BLEND);
-//        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // 恢复默认混合函数
 //
 //        glfwSwapBuffers(window);
 //        glfwPollEvents();
@@ -603,12 +692,6 @@
 //void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 //{
 //    glViewport(0, 0, width, height); // glViewport 用于设置视口大小
-//
-//	windowwidth = width;
-//	windowheight = height;
-//
-//	rebuildFramebuffers(width, height); // 重新创建帧缓冲对象
-//
 //    lastX = width / 2.0f;
 //    lastY = height / 2.0f;
 //}
@@ -656,7 +739,6 @@
 //    }
 //}
 //
-//// 鼠标回调函数
 //void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 //{
 //    float xpos = static_cast<float>(xposIn);
@@ -678,13 +760,11 @@
 //    camera.ProcessMouseMovement(xoffset, yoffset);
 //}
 //
-//// 滚轮回调函数
 //void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 //{
 //    camera.ProcessMouseScroll(static_cast<float>(yoffset));
 //}
 //
-//// 加载纹理函数
 //unsigned int loadTexture(char const* path)
 //{
 //    unsigned int textureID;
@@ -793,349 +873,7 @@
 //    return textureID;
 //}
 //
-//// 帧缓冲对象和纹理
-////unsigned int hdrFBO, blurFBO1, blurFBO2;
-////unsigned int hdrColorBuffer, blurColorBuffer1, blurColorBuffer2;
-////unsigned int hdrDepthRBO;
-//void setupFramebuffers(int width, int height)
-//{
-//    glGenFramebuffers(1, &hdrFBO);
-//    glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-//    glGenTextures(1, &hdrColorBuffer);
-//    glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
-//    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrColorBuffer, 0);
 //
-//    glGenRenderbuffers(1, &hdrDepthRBO);
-//    glBindRenderbuffer(GL_RENDERBUFFER, hdrDepthRBO);
-//    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-//    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, hdrDepthRBO);
-//    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-//        std::cout << "HDR FBO incomplete!" << std::endl;
-//    
 //
-//    glGenFramebuffers(1, &blurFBO1);
-//    glBindFramebuffer(GL_FRAMEBUFFER, blurFBO1);
-//    glGenTextures(1, &blurColorBuffer1);
-//    glBindTexture(GL_TEXTURE_2D, blurColorBuffer1);
-//    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blurColorBuffer1, 0);
-//    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-//        std::cout << "Blur FBO1 incomplete!" << std::endl;
-//    
 //
-//    glGenFramebuffers(1, &blurFBO2);
-//    glBindFramebuffer(GL_FRAMEBUFFER, blurFBO2);
-//    glGenTextures(1, &blurColorBuffer2);
-//    glBindTexture(GL_TEXTURE_2D, blurColorBuffer2);
-//    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blurColorBuffer2, 0);
-//    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-//        std::cout << "Blur FBO2 incomplete!" << std::endl;
-//    
 //
-//    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//}
-//
-//// 重新创建帧缓冲对象
-//void rebuildFramebuffers(int width, int height)
-//{
-//    // 安全解绑
-//	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//    // 删除旧的帧缓冲和纹理
-//    glDeleteFramebuffers(1, &hdrFBO);
-//    glDeleteTextures(1, &hdrColorBuffer);
-//    glDeleteRenderbuffers(1, &hdrDepthRBO);
-//
-//    glDeleteFramebuffers(1, &blurFBO1);
-//    glDeleteTextures(1, &blurColorBuffer1);
-//
-//    glDeleteFramebuffers(1, &blurFBO2);
-//    glDeleteTextures(1, &blurColorBuffer2);
-//    // 重新创建帧缓冲
-//    setupFramebuffers(width, height);
-//}
-//
-//// 小行星带初始化
-//void RocksModelMatricesInit(unsigned int& amount, Model& rock)
-//{
-//    glm::mat4* modelMatrices;
-//    modelMatrices = new glm::mat4[amount];
-//    srand(static_cast<unsigned int>(glfwGetTime())); // 生成随机种子
-//    float radius = 200.0;
-//    float offset = 20.0f;
-//    for (unsigned int i = 0; i < amount; i++)
-//    {
-//        glm::mat4 model = glm::mat4(1.0f);
-//        // 1.  平移  ：沿圆周位移，'半径'在范围内 [-offset, offset]
-//        float angle = (float)i / (float)amount * 360.0f;
-//        float displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
-//        float x = sin(angle) * radius + displacement;
-//
-//        displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
-//        float y = displacement * 0.1f; // 保持场地的高度小于x轴和z轴的宽度。
-//
-//        displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
-//        float z = cos(angle) * radius + displacement;
-//
-//        model = glm::translate(model, glm::vec3(x, y, z));
-//
-//        // 2.  缩放  ：在 0.05 和 0.25f 之间进行缩放 
-//        float scale = static_cast<float>((rand() % 30) / 100.0 + 0.01); // 在 0.05 和 0.17f 之间缩放，使得小行星更小一些
-//        // 添加尺寸变化以模拟更真实的小行星带
-//        if (i % 200 == 0)
-//        {
-//            scale *= 6.0f; // 每200个小行星中有一个更大一些
-//        }
-//        else if (i % 20 == 0)
-//        {
-//            scale *= 3.0f; // 每20个小行星中有一个中等大小
-//        }
-//        else if (i % 5 == 0)
-//        {
-//            scale *= 1.5f; // 每5个小行星中有一个稍微大一些
-//        }
-//        model = glm::scale(model, glm::vec3(scale));
-//
-//        // 3.  旋转  ：围绕一个（半）随机选取的旋转轴向量进行随机旋转。
-//        float rotAngle = static_cast<float>((rand() % 360));
-//        //model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
-//            // 更复杂的旋转 - 多个旋转轴组合
-//        glm::mat4 rotation = glm::mat4(1.0f);
-//        rotation = glm::rotate(rotation, rotAngle * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
-//        rotation = glm::rotate(rotation, rotAngle * 0.3f, glm::vec3(0.0f, 1.0f, 0.0f));
-//        rotation = glm::rotate(rotation, rotAngle * 0.2f, glm::vec3(0.0f, 0.0f, 1.0f));
-//        model = model * rotation;
-//
-//        // 4. 现在添加到矩阵列表中
-//        modelMatrices[i] = model;
-//    }
-//
-//    // 设置实例化顶点属性
-//    unsigned int buffer;
-//    glGenBuffers(1, &buffer);
-//    glBindBuffer(GL_ARRAY_BUFFER, buffer);
-//    glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
-//
-//    // 将变换矩阵设置为实例顶点属性（使用除数1）
-//    // 注意：我们这里有点取巧，直接获取模型网格（多个网格时）现在公开声明的VAO，并添加新的vertexAttribPointers
-//    // 正常情况下，你会希望以更有条理的方式来做这件事，但出于学习目的，这样做就可以了。
-//    // 
-//    for (unsigned int i = 0; i < rock.meshes.size(); i++)
-//    {
-//        unsigned int VAO = rock.meshes[i].VAO;
-//        glBindVertexArray(VAO);
-//        // 设置顶点属性指针
-//        glEnableVertexAttribArray(3);
-//        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
-//        glEnableVertexAttribArray(4);
-//        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
-//        glEnableVertexAttribArray(5);
-//        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
-//        glEnableVertexAttribArray(6);
-//        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
-//
-//        glVertexAttribDivisor(3, 1);
-//        glVertexAttribDivisor(4, 1);
-//        glVertexAttribDivisor(5, 1);
-//        glVertexAttribDivisor(6, 1);
-//
-//        glBindVertexArray(0);
-//    }
-//}
-//
-//// 球体生成程序
-//void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& starIndices,
-//    const unsigned int X_SEGMENTS, const unsigned int Y_SEGMENTS, const float PI)
-//{
-//    // 生成球体顶点数据
-//    for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
-//    {
-//        for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
-//        {
-//            float xSegment = (float)x / (float)X_SEGMENTS;
-//            float ySegment = (float)y / (float)Y_SEGMENTS;
-//            float xPos = cos(xSegment * 2.0f * PI) * sin(ySegment * PI);
-//            float yPos = cos(ySegment * PI);
-//            float zPos = sin(xSegment * 2.0f * PI) * sin(ySegment * PI);
-//            // 位置
-//            starVertices.push_back(xPos);
-//            starVertices.push_back(yPos);
-//            starVertices.push_back(zPos);
-//            // 法线
-//            starVertices.push_back(xPos);
-//            starVertices.push_back(yPos);
-//            starVertices.push_back(zPos);
-//            // 纹理坐标
-//            starVertices.push_back(xSegment);
-//            starVertices.push_back(ySegment);
-//        }
-//    }
-//
-//    // 索引生成
-//    for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
-//    {
-//        for (unsigned int x = 0; x < X_SEGMENTS; ++x)
-//        {
-//            starIndices.push_back(y * (X_SEGMENTS + 1) + x);
-//            starIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-//            starIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x + 1);
-//            starIndices.push_back(y * (X_SEGMENTS + 1) + x);
-//            starIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x + 1);
-//            starIndices.push_back(y * (X_SEGMENTS + 1) + x + 1);
-//        }
-//    }
-//}
-//
-//// 恒星初始化
-//void starInit(unsigned int& starVAO, unsigned int& starVBO, unsigned int& starEBO,
-//    std::vector<float>& starVertices, std::vector<unsigned int>& starIndices)
-//{
-//    glGenVertexArrays(1, &starVAO);
-//    glGenBuffers(1, &starVBO);
-//    glGenBuffers(1, &starEBO);
-//    glBindVertexArray(starVAO);
-//    glBindBuffer(GL_ARRAY_BUFFER, starVBO);
-//    glBufferData(GL_ARRAY_BUFFER, starVertices.size() * sizeof(float), &starVertices[0], GL_STATIC_DRAW);
-//    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, starEBO);
-//    glBufferData(GL_ELEMENT_ARRAY_BUFFER, starIndices.size() * sizeof(unsigned int), &starIndices[0], GL_STATIC_DRAW);
-//    // 位置属性
-//    glEnableVertexAttribArray(0);
-//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-//    // 法线属性
-//    glEnableVertexAttribArray(1);
-//    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-//    // 纹理坐标属性
-//    glEnableVertexAttribArray(2);
-//    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-//    
-//	glBindVertexArray(0);
-//}
-//
-//// 日冕层四边形初始化
-//void coronaQuadInit(unsigned int& coronaQuadVAO, unsigned int& coronaQuadVBO)
-//{
-//    float coronaQuadVertices[] = {
-//        // positions   // texCoords
-//        /*-1.0f,  1.0f, 0.0f, 1.0f,
-//        -1.0f, -1.0f, 0.0f, 0.0f,
-//         1.0f, -1.0f, 1.0f, 0.0f,
-//        -1.0f,  1.0f, 0.0f, 1.0f,
-//         1.0f, -1.0f, 1.0f, 0.0f,
-//         1.0f,  1.0f, 1.0f, 1.0f*/
-//         // positions        // texcoords
-//        -2.0f, -2.0f, 0.0f,  0.0f, 0.0f,
-//         2.0f, -2.0f, 0.0f,  1.0f, 0.0f,
-//         2.0f,  2.0f, 0.0f,  1.0f, 1.0f,
-//        -2.0f,  2.0f, 0.0f,  0.0f, 1.0f
-//    };
-//    glGenVertexArrays(1, &coronaQuadVAO);
-//    glGenBuffers(1, &coronaQuadVBO);
-//    glBindVertexArray(coronaQuadVAO);
-//    glBindBuffer(GL_ARRAY_BUFFER, coronaQuadVBO);
-//    glBufferData(GL_ARRAY_BUFFER, sizeof(coronaQuadVertices), coronaQuadVertices, GL_STATIC_DRAW);
-//
-//    glEnableVertexAttribArray(0);
-//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-//
-//    glEnableVertexAttribArray(2);
-//    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-//
-//	glBindVertexArray(0);
-//}
-//
-//// 帧缓冲四边形初始化
-//void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO)
-//{
-//    float quadVertices[] = {
-//        // 位置(x,y)      纹理坐标(u,v)
-//        -1.0f,  1.0f,     0.0f, 1.0f,
-//        -1.0f, -1.0f,     0.0f, 0.0f,
-//         1.0f, -1.0f,     1.0f, 0.0f,
-//        -1.0f,  1.0f,     0.0f, 1.0f,
-//         1.0f, -1.0f,     1.0f, 0.0f,
-//         1.0f,  1.0f,     1.0f, 1.0f
-//    };
-//
-//    glGenVertexArrays(1, &quadVAO);
-//    glGenBuffers(1, &quadVBO);
-//    glBindVertexArray(quadVAO);
-//    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-//    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
-//    glEnableVertexAttribArray(0);
-//    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-//    glEnableVertexAttribArray(1);
-//    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-//    glBindVertexArray(0);
-//}
-//
-//// 天空盒初始化
-//void SkyBoxInit(unsigned int& skyboxVAO, unsigned int& skyboxVBO)
-//{
-//    float skyboxVertices[] = {
-//        // positions          
-//        -1.0f,  1.0f, -1.0f,
-//        -1.0f, -1.0f, -1.0f,
-//         1.0f, -1.0f, -1.0f,
-//         1.0f, -1.0f, -1.0f,
-//         1.0f,  1.0f, -1.0f,
-//        -1.0f,  1.0f, -1.0f,
-//
-//        -1.0f, -1.0f,  1.0f,
-//        -1.0f, -1.0f, -1.0f,
-//        -1.0f,  1.0f, -1.0f,
-//        -1.0f,  1.0f, -1.0f,
-//        -1.0f,  1.0f,  1.0f,
-//        -1.0f, -1.0f,  1.0f,
-//
-//         1.0f, -1.0f, -1.0f,
-//         1.0f, -1.0f,  1.0f,
-//         1.0f,  1.0f,  1.0f,
-//         1.0f,  1.0f,  1.0f,
-//         1.0f,  1.0f, -1.0f,
-//         1.0f, -1.0f, -1.0f,
-//
-//        -1.0f, -1.0f,  1.0f,
-//        -1.0f,  1.0f,  1.0f,
-//         1.0f,  1.0f,  1.0f,
-//         1.0f,  1.0f,  1.0f,
-//         1.0f, -1.0f,  1.0f,
-//        -1.0f, -1.0f,  1.0f,
-//
-//        -1.0f,  1.0f, -1.0f,
-//         1.0f,  1.0f, -1.0f,
-//         1.0f,  1.0f,  1.0f,
-//         1.0f,  1.0f,  1.0f,
-//        -1.0f,  1.0f,  1.0f,
-//        -1.0f,  1.0f, -1.0f,
-//
-//        -1.0f, -1.0f, -1.0f,
-//        -1.0f, -1.0f,  1.0f,
-//         1.0f, -1.0f, -1.0f,
-//         1.0f, -1.0f, -1.0f,
-//        -1.0f, -1.0f,  1.0f,
-//         1.0f, -1.0f,  1.0f
-//    };
-//    // spacebox VAO, VBO
-//    glGenVertexArrays(1, &skyboxVAO);
-//    glGenBuffers(1, &skyboxVBO);
-//    glBindVertexArray(skyboxVAO);
-//    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-//    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-//    glEnableVertexAttribArray(0);
-//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-//
-//	glBindVertexArray(0);
-//}

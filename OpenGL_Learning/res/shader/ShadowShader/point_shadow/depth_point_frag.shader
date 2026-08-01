@@ -6,7 +6,7 @@ uniform float far_plane;
 
 void main()
 {
-	float lightDistance = length(FragPos.xzy - lightPos);
+	float lightDistance = length(FragPos.xyz - lightPos);
 
 	// 通过将距离除以far_plane，将距离值归一化到[0,1]范围内
 	lightDistance = lightDistance / far_plane;

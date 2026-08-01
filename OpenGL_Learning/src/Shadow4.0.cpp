@@ -42,6 +42,8 @@ Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0F;
 float lastY = SCR_HEIGHT / 2.0F;
 bool firstMouse = true;
+bool cursorLocked = true;
+bool tabKeyPressed = false;   // 用于检测 TAB 键的上升沿
 
 // 设置帧数渲染位置
 float deltaTime = 0.0f;	// 当前帧与上一帧的时间差
@@ -76,7 +78,7 @@ int main()
     glfwSetScrollCallback(window, scroll_callback); // 设置鼠标滚轮回调函数
 
     // 捕获鼠标（隐藏鼠标光标，并提供无限的鼠标移动）
-    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 
     // 初始化GLAD，管理OpenGL函数指针，加载所有OpenGL函数指针
@@ -407,6 +409,7 @@ void processInput(GLFWwindow* window)
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
+
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !shadowsKeyPressed)
     {
         shadows = !shadows;
@@ -415,6 +418,26 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE)
     {
         shadowsKeyPressed = false;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS && !tabKeyPressed)
+    {
+        tabKeyPressed = true;
+        if (cursorLocked)
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            cursorLocked = false;
+        }
+        else
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            cursorLocked = true;
+            firstMouse = true;
+        }
+    }
+    if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_RELEASE)
+    {
+        tabKeyPressed = false;
     }
 }
 
