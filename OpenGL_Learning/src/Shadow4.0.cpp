@@ -137,7 +137,7 @@ int main()
     // --------------------
     shader.use();
     shader.setInt("diffuseTexture", 0);
-    shader.setInt("shadowMap", 1);
+    shader.setInt("depthMap", 1);
 
     // 光源位置
     // -------------
@@ -165,7 +165,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-        // glCullFace(GL_FRONT); // 在渲染深度图时，剔除正面三角形（只渲染背面三角形），以减少阴影失真
+        glCullFace(GL_BACK); // 在渲染深度图时，剔除正面三角形（只渲染背面三角形），以减少阴影失真
 
         // 0. create depth cubemap transformation matrices
         // -----------------------------------------------

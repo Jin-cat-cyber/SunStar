@@ -5,6 +5,7 @@
 
 
 
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -17,7 +18,7 @@
 #include "Shader.h" // 包含自定义着色器类
 
 
-#ifdef SHIP_4_0
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -65,11 +66,17 @@ void starInit(unsigned int& starVAO, unsigned int& starVBO, unsigned int& starEB
 unsigned int hdrFBO, blurFBO1, blurFBO2;
 unsigned int hdrColorBuffer, blurColorBuffer1, blurColorBuffer2;
 unsigned int hdrDepthRBO;
+// 新增多重采样 FBO 句柄
+unsigned int msFBO = 0;
+unsigned int msColorRBO = 0;
+unsigned int msDepthRBO = 0;
 // 后处理四边形顶点数组对象和顶点缓冲对象
 void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO);
 
 // 天空盒相关函数
 void SkyBoxInit(unsigned int& skyboxVAO, unsigned int& skyboxVBO);
+
+
 
 int main()
 {
@@ -84,8 +91,8 @@ int main()
     // 创建窗口对象
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Hello OpenGL", NULL, NULL);
 
-	// 获取实际窗口大小（因为在某些平台上，窗口的实际大小可能与请求的大小不同）
-	glfwGetFramebufferSize(window, &windowwidth, &windowheight);
+    // 获取实际窗口大小（因为在某些平台上，窗口的实际大小可能与请求的大小不同）
+    glfwGetFramebufferSize(window, &windowwidth, &windowheight);
 
     if (window == NULL)
     {
@@ -114,32 +121,45 @@ int main()
     //加载深度缓冲
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE); // 启用多重采样抗锯齿
-	setupFramebuffers(windowwidth, windowheight); // 设置离屏渲染帧缓冲
+    setupFramebuffers(windowwidth, windowheight); // 设置离屏渲染帧缓冲
 
     // 创建着色器对象
-    Shader planetshader("res/shader/InstancingShader/instancingVER.shader", "res/shader/InstancingShader/instancingFRAG.shader");
-    Shader asteroidShader("res/shader/InstancingShader/aster_ver.shader", "res/shader/InstancingShader/aster_frag.shader");
+    Shader planetshader("res/shader/InstancingShader/instancingVER.shader", "res/shader/InstancingShader/instancingFRAG2.0.shader");
+    Shader asteroidShader("res/shader/InstancingShader/aster_ver.shader", "res/shader/InstancingShader/aster_frag2.0.shader");
 
     //Shader sunCoreShader("res/shader/StarShader/StarList/star_core_ver.shader", "res/shader/StarShader/StarList/star_core_frag.shader");
-    Shader sunCoreShader("res/shader/StarShader/StarList2.0/core_ver.shader", "res/shader/StarShader/StarList2.0/core_frag.shader");
-    Shader CoreCoronaShader("res/shader/StarShader/StarList2.0/corona_ver.shader", "res/shader/StarShader/StarList2.0/corona_frag.shader");
-    Shader sunCoronaShader("res/shader/StarShader/StarList2.0/corona_quad_ver.shader", "res/shader/StarShader/StarList2.0/corona_quad_frag.shader");
+    Shader sunCoreShader("res/shader/StarShader/StarList2.0/core_ver.shader", "res/shader/StarShader/StarList2.0/core_frag2.0.shader");
+    Shader CoreCoronaShader("res/shader/StarShader/StarList2.0/corona_ver.shader", "res/shader/StarShader/StarList2.0/corona_frag2.0.shader");
+    Shader sunCoronaShader("res/shader/StarShader/StarList2.0/corona_quad_ver.shader", "res/shader/StarShader/StarList2.0/corona_quad_frag2.0.shader");
     Shader sunGlowShader("res/shader/StarShader/StarList/star_glow_ver.shader", "res/shader/StarShader/StarList/star_glow_frag.shader");
 
     Shader spaceboxShader("res/shader/SkyBoxShader/SkyBox_ver.shader", "res/shader/SkyBoxShader/SkyBox_frag.shader");
 
-	Shader brightPassShader("res/shader/BloomShaders/bright_pass_ver.shader", "res/shader/BloomShaders/bright_pass_frag.shader");
-	Shader blurShader("res/shader/BloomShaders/blur_ver.shader", "res/shader/BloomShaders/blur_frag.shader");
-	Shader compositeShader("res/shader/BloomShaders/composite_ver.shader", "res/shader/BloomShaders/composite_frag.shader");
+    Shader brightPassShader("res/shader/BloomShaders/bright_pass_ver.shader", "res/shader/BloomShaders/bright_pass_frag.shader");
+    Shader blurShader("res/shader/BloomShaders/blur_ver.shader", "res/shader/BloomShaders/blur_frag.shader");
+    Shader compositeShader("res/shader/BloomShaders/composite_ver.shader", "res/shader/BloomShaders/composite_frag2.0.shader");
 
     Shader lensFlareShader("res/shader/LensFlareShader/lens_flare_ver.shader", "res/shader/LensFlareShader/lens_flare_frag.shader");
+
+	Shader simpleDepthShader("res/shader/ShadowShader/point_shadow/depth_point_ver.shader", "res/shader/ShadowShader/point_shadow/depth_point_frag.shader", "res/shader/ShadowShader/point_shadow/depth_point_geo.shader");
 
     Model rock("res/model/rock/rock.obj");
     Model planet("res/model/planet/planet.obj");
 
     // 加载光晕贴图
     unsigned int flareTexture = loadTexture("res/texture/lens_flare/lens_white.jpg");
-	//unsigned int flareTexture = loadTexture("res/texture/lens_flare/lensflare1.jpg");
+    //unsigned int flareTexture = loadTexture("res/texture/lens_flare/lens flare TRY.png");
+    unsigned int flareTexture1 = loadTexture("res/texture/lens_flare/glow light lens flare(1).png");
+    //unsigned int flareTexture = loadTexture("res/texture/lens_flare/Prismatic rays light.jpg");
+
+    //unsigned int flareTexture = loadTexture("res/texture/lens_flare/Lens_Flare_Stock.png");
+    //unsigned int flareTexture = loadTexture("res/texture/lens_flare/Starburst Stock.jpg");
+    //unsigned int flareTexture = loadTexture("res/texture/lens_flare/blue Rainbow.jpg");
+    //unsigned int flareTexture = loadTexture("res/texture/lens_flare/lens boom.jpg");
+    //unsigned int flareTexture = loadTexture("res/texture/lens_flare/sur Flare.png");
+
+    //unsigned int flareTexture = loadTexture("res/texture/lens_flare/Prism.jpg");
+    //unsigned int flareTexture = loadTexture("res/texture/lens_flare/lensflare1.jpg");
 
 
     // 生成一个大型的半随机模型变换矩阵列表
@@ -163,7 +183,7 @@ int main()
     // 恒星 VAO, VBO, EBO
     unsigned int starVAO, starVBO, starEBO;
     starInit(starVAO, starVBO, starEBO, starVertices, starIndices);
-       
+
 
     // 日冕公告板顶点数据
     unsigned int coronaQuadVAO, coronaQuadVBO;
@@ -210,7 +230,7 @@ int main()
     glm::vec3 pointSunPositions = glm::vec3(-50.0f, 50.0f, -600.0f);
     glm::vec3 SunScale = glm::vec3(120.0f);
     glm::vec3 planetPosition = glm::vec3(0.0f, -3.0f, 0.0f);
-    glm::vec3 planetScale = glm::vec3(4.0f);
+    glm::vec3 planetScale = glm::vec3(8.0f);
 
     // 激活着色器纹理单元
     planetshader.use();
@@ -232,7 +252,7 @@ int main()
         // ------
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);  // 绑定到HDR帧缓冲
+        glBindFramebuffer(GL_FRAMEBUFFER, msFBO);  // 绑定到HDR帧缓冲
         glViewport(0, 0, windowwidth, windowheight);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -243,7 +263,7 @@ int main()
         glfwGetFramebufferSize(window, &winWidth, &winHeight);
         float aspect = winWidth / (float)winHeight;
         //glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 2000.0f);
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), aspect, 0.1f, 2000.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), aspect, 0.1f, 2000.0f);
         glm::mat4 view = camera.GetViewMatrix();
 
         // =================================
@@ -309,6 +329,9 @@ int main()
         coreModel = glm::rotate(coreModel, starTime * 0.5f, glm::vec3(0.0f, 1.0f, 0.0f));
         coreModel = glm::scale(coreModel, SunScale * 1.0f * starPulse2);
 
+        // HDR增强核心亮度
+        float starHDRMutilplier = 10.0f;
+
         sunCoreShader.setMat4("model", coreModel);
         sunCoreShader.setMat4("view", view);
         sunCoreShader.setMat4("projection", projection);
@@ -317,7 +340,7 @@ int main()
         //sunCoreShader.setVec3("coreColor", glm::vec3(1.0f, 0.9f, 0.7f));
         sunCoreShader.setVec3("coreColor", coreColor);
         sunCoreShader.setVec3("viewPos", camera.Position);
-        sunCoreShader.setFloat("intensity", starIntensity);
+        sunCoreShader.setFloat("intensity", starIntensity * starHDRMutilplier);
 
         glBindVertexArray(starVAO);
         glDrawElements(GL_TRIANGLES, starIndices.size(), GL_UNSIGNED_INT, 0);
@@ -340,14 +363,14 @@ int main()
         coronaModel = glm::translate(coronaModel, pointSunPositions);
         glm::mat4 rotate = glm::inverse(glm::lookAt(glm::vec3(0.f), dirToCamera, camera.WorldUp));
         coronaModel = coronaModel * rotate;
-        
+
         coronaModel = glm::scale(coronaModel, SunScale * 2.0f * starPulse); // 日冕层比核心大
 
         sunCoronaShader.setMat4("model", coronaModel);
         sunCoronaShader.setMat4("view", view);
         sunCoronaShader.setMat4("projection", projection);
-        sunCoronaShader.setFloat("time", starTime * 0.1f);
-		sunCoronaShader.setVec3("sunCenter", pointSunPositions);
+        sunCoronaShader.setFloat("time", starTime * 0.08f);
+        sunCoronaShader.setVec3("sunCenter", pointSunPositions);
         sunCoronaShader.setVec3("coronaColor", starColor);
         //sunCoronaShader.setVec3("viewPos", camera.Position);
         sunCoronaShader.setFloat("coronaIntensity", 1.8f);
@@ -362,13 +385,13 @@ int main()
         coronaModel = glm::mat4(1.0f);
         coronaModel = glm::translate(coronaModel, pointSunPositions);
         coronaModel = glm::rotate(coronaModel, starTime * 0.3f, glm::vec3(0.0f, 1.0f, 0.0f));
-        coronaModel = glm::scale(coronaModel, SunScale * 1.7f * starPulse); // 日冕层比核心大
+        coronaModel = glm::scale(coronaModel, SunScale * 1.6f * starPulse); // 日冕层比核心大
 
         CoreCoronaShader.setMat4("model", coronaModel);
         CoreCoronaShader.setMat4("view", view);
         CoreCoronaShader.setMat4("projection", projection);
         CoreCoronaShader.setFloat("time", starTime);
-		CoreCoronaShader.setVec3("sunCenter", pointSunPositions);
+        CoreCoronaShader.setVec3("sunCenter", pointSunPositions);
         CoreCoronaShader.setVec3("coronaColor", starColor);
         //CoreCoronaShader.setVec3("viewPos", camera.Position);
         CoreCoronaShader.setFloat("coronaIntensity", 1.8f);
@@ -391,7 +414,7 @@ int main()
         glm::mat4 glowModel = glm::mat4(1.0f);
         glowModel = glm::translate(glowModel, pointSunPositions);
         glowModel = glm::rotate(glowModel, starTime * 0.1f, glm::vec3(0.0f, 1.0f, 0.0f));
-        glowModel = glm::scale(glowModel, SunScale * 1.7f * starPulse);
+        glowModel = glm::scale(glowModel, SunScale * 1.6f * starPulse);
 
         sunGlowShader.setMat4("model", glowModel);
         sunGlowShader.setMat4("view", view);
@@ -405,7 +428,7 @@ int main()
         glDrawElements(GL_TRIANGLES, starIndices.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
         //—————————————————————————————————————————————————————————————————————
-        
+
         // ========================================
         // 恒星渲染部分 - 结束
         // ========================================
@@ -484,97 +507,121 @@ int main()
         // 绘制小行星
         for (unsigned int i = 0; i < rock.meshes.size(); i++)
         {
-
             glBindVertexArray(rock.meshes[i].VAO);
             glDrawElementsInstanced(GL_TRIANGLES, static_cast<unsigned int>(rock.meshes[i].indices.size()), GL_UNSIGNED_INT, 0, amount);
             glBindVertexArray(0);
         }
 
-		//==========================================
-		// 渲染到屏幕
+        //==========================================
+        // 渲染到屏幕
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
 
-		// 1. 亮度提取：从hdrColorBuffer中提取亮度信息到blurFBO1
-		glBindFramebuffer(GL_FRAMEBUFFER, blurFBO1);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		brightPassShader.use();
+        // 1. 亮度提取：从hdrColorBuffer中提取亮度信息到blurFBO1
+        glBindFramebuffer(GL_FRAMEBUFFER, blurFBO1);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        brightPassShader.use();
         glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
-		brightPassShader.setInt("hdrImage", 0);
-		brightPassShader.setFloat("threshold", 1.2f); // 设置亮度阈值
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
+        brightPassShader.setInt("hdrImage", 0);
+        brightPassShader.setFloat("threshold", 1.2f); // 设置亮度阈值 1.2f
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		// 2. 水平高斯模糊
-		glBindFramebuffer(GL_FRAMEBUFFER, blurFBO2);
+        // 2. 水平高斯模糊
+        glBindFramebuffer(GL_FRAMEBUFFER, blurFBO2);
         glClear(GL_COLOR_BUFFER_BIT);
         blurShader.use();
-		glActiveTexture(GL_TEXTURE0);
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, blurColorBuffer1);
-		blurShader.setInt("image", 0);
+        blurShader.setInt("image", 0);
         blurShader.setBool("horizontal", true); // 水平模糊
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		// 3. 垂直高斯模糊
-		glBindFramebuffer(GL_FRAMEBUFFER, blurFBO1);
+        // MSAA帧缓冲到HDR帧缓冲的blit操作
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, msFBO);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdrFBO);
+        glBlitFramebuffer(0, 0, windowwidth, windowheight,
+            0, 0, windowwidth, windowheight,
+            GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+        // 【新增】把深度从 msFBO 复制到默认帧缓冲，供后面的光晕使用
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, msFBO);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(0, 0, windowwidth, windowheight,
+            0, 0, windowwidth, windowheight,
+            GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+        // 恢复为默认帧缓冲或绑定 hdrFBO 以便后续读取 hdrColorBuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+
+        // 3. 垂直高斯模糊
+        glBindFramebuffer(GL_FRAMEBUFFER, blurFBO1);
         glClear(GL_COLOR_BUFFER_BIT);
-		blurShader.use();
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, blurColorBuffer2);
-		blurShader.setBool("horizontal", false); // 垂直模糊
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+        blurShader.use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, blurColorBuffer2);
+        blurShader.setBool("horizontal", false); // 垂直模糊
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		// ------- 合成到屏幕 -------
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);   // 回到默认帧缓冲
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // ------- 合成到屏幕 -------
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);   // 回到默认帧缓冲
+        // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // 老版本
+        // 只清理颜色缓冲，不清理深度缓冲，以此来保留深度信息，确保后续渲染的物体不会被清除
+        glClear(GL_COLOR_BUFFER_BIT);
         compositeShader.use();
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
-		compositeShader.setInt("sceneTexture", 0);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, blurColorBuffer1); // 最终模糊结果在 blurFBO1 的颜色附件
-		compositeShader.setInt("bloomTexture", 1);
-		compositeShader.setFloat("exposure", 1.0f); // 曝光值
-		compositeShader.setFloat("bloomStrength", 0.6f); // Bloom强度
-		compositeShader.setVec3("colorTint", glm::vec3(1.0f, 0.95f, 0.6f)); // Bloom颜色
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
+        compositeShader.setInt("sceneTexture", 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, blurColorBuffer1); // 最终模糊结果在 blurFBO1 的颜色附件
+        compositeShader.setInt("bloomTexture", 1);
+        compositeShader.setFloat("exposure", 1.0f); // 曝光值
+        compositeShader.setFloat("bloomStrength", 0.6f); // Bloom强度
+        compositeShader.setVec3("colorTint", glm::vec3(1.0f, 0.95f, 0.6f)); // Bloom颜色
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // 5. 渲染镜头光晕
-		glDepthMask(GL_FALSE); // 不写入深度
-		glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE); // 不写入深度
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
         glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE); // 使用加法混合,保留Alpha控制强度
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE); // 使用加法混合,保留Alpha控制强度
         lensFlareShader.use();
         glm::vec3 dirToCamera2 = camera.Position - pointSunPositions;
         glm::mat4 flareModel = glm::mat4(1.0f);
-		flareModel = glm::translate(flareModel, pointSunPositions);
+        flareModel = glm::translate(flareModel, pointSunPositions);
         // 公告板始终面向相机
-		glm::mat4 flareRotate = glm::inverse(glm::lookAt(glm::vec3(0.f), dirToCamera2, camera.WorldUp));
+        glm::mat4 flareRotate = glm::inverse(glm::lookAt(glm::vec3(0.f), dirToCamera2, camera.WorldUp));
         flareModel = flareModel * flareRotate;
         // 光晕大小，比辉光略大
         float flareSize = SunScale.x * 3.0f;
-		flareModel = glm::scale(flareModel, glm::vec3(flareSize));
-
+        flareModel = glm::scale(flareModel, glm::vec3(flareSize));
         lensFlareShader.setMat4("model", flareModel);
-		lensFlareShader.setMat4("view", view);
-		lensFlareShader.setMat4("projection", projection);
-		lensFlareShader.setVec4("flareColor", glm::vec4(1.0f, 0.8f, 0.5f, 0.6f)); // 光晕颜色和透明度
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, flareTexture);
-		lensFlareShader.setInt("flareTexture", 0);
-		glBindVertexArray(coronaQuadVAO); // 复用日冕四边形
-		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-		glBindVertexArray(0);
+        lensFlareShader.setMat4("view", view);
+        lensFlareShader.setMat4("projection", projection);
+        lensFlareShader.setVec4("flareColor", glm::vec4(1.0f, 0.8f, 0.5f, 0.6f)); // 光晕颜色和透明度
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, flareTexture);
+        lensFlareShader.setInt("flareTexture", 0);
+        glBindVertexArray(coronaQuadVAO); // 复用日冕四边形
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        //glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, flareTexture1);
+        lensFlareShader.setInt("flareTexture", 0);
+        //glBindVertexArray(coronaQuadVAO); // 复用日冕四边形
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glBindVertexArray(0);
 
-		// 恢复深度测试和混合状态
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LESS);
-		glDepthMask(GL_TRUE);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // 恢复默认混合函数
+
+        // 恢复深度测试和混合状态
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        glDepthMask(GL_TRUE);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // 恢复默认混合函数
 
 
         // 恢复原始状态
@@ -607,10 +654,10 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height); // glViewport 用于设置视口大小
 
-	windowwidth = width;
-	windowheight = height;
+    windowwidth = width;
+    windowheight = height;
 
-	rebuildFramebuffers(width, height); // 重新创建帧缓冲对象
+    rebuildFramebuffers(width, height); // 重新创建帧缓冲对象
 
     lastX = width / 2.0f;
     lastY = height / 2.0f;
@@ -632,21 +679,21 @@ void processInput(GLFWwindow* window)
         camera.ProcessKeyboard(RIGHT, deltaTime);
 
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-		camera.Sensitivity += 0.001f; // 增加鼠标灵敏度
+        camera.Sensitivity += 0.001f; // 增加鼠标灵敏度
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
         camera.Sensitivity -= 0.001f; // 减少鼠标灵敏度
     // 限制范围
     camera.Sensitivity = glm::clamp(camera.Sensitivity, 0.01f, 0.5f);
 
-    if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS && !tabKeyPressed) 
+    if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS && !tabKeyPressed)
     {
         tabKeyPressed = true;
-        if (cursorLocked) 
+        if (cursorLocked)
         {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             cursorLocked = false;
         }
-        else 
+        else
         {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             cursorLocked = true;
@@ -802,6 +849,32 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
 //unsigned int hdrDepthRBO;
 void setupFramebuffers(int width, int height)
 {
+    const int samples = 4; // 多重采样样本数,与 glfwWindowHint(GLFW_SAMPLES, 4) 保持一致
+
+    // --- 1) 创建多重采样 FBO（用于场景渲染） ---
+    glGenFramebuffers(1, &msFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, msFBO);
+
+    // 多重采样颜色 renderbuffer
+    glGenRenderbuffers(1, &msColorRBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, msColorRBO);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_RGBA16F, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msColorRBO);
+
+    // 多重采样深度 renderbuffer
+    glGenRenderbuffers(1, &msDepthRBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, msDepthRBO);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT24, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msDepthRBO);
+
+    /*GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE)*/
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "MSAA FBO incomplete!" << std::endl;
+    else
+        std::cout << "MSAA FBO created successfully." << std::endl;
+
+    // --- 2) 创建可采样的 HDR FBO（用于后处理，作为 resolve 目标） ---
     glGenFramebuffers(1, &hdrFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
     glGenTextures(1, &hdrColorBuffer);
@@ -809,8 +882,8 @@ void setupFramebuffers(int width, int height)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrColorBuffer, 0);
 
     glGenRenderbuffers(1, &hdrDepthRBO);
@@ -819,7 +892,7 @@ void setupFramebuffers(int width, int height)
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, hdrDepthRBO);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "HDR FBO incomplete!" << std::endl;
-    
+
 
     glGenFramebuffers(1, &blurFBO1);
     glBindFramebuffer(GL_FRAMEBUFFER, blurFBO1);
@@ -833,7 +906,7 @@ void setupFramebuffers(int width, int height)
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blurColorBuffer1, 0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "Blur FBO1 incomplete!" << std::endl;
-    
+
 
     glGenFramebuffers(1, &blurFBO2);
     glBindFramebuffer(GL_FRAMEBUFFER, blurFBO2);
@@ -847,7 +920,7 @@ void setupFramebuffers(int width, int height)
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blurColorBuffer2, 0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "Blur FBO2 incomplete!" << std::endl;
-    
+
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -856,8 +929,15 @@ void setupFramebuffers(int width, int height)
 void rebuildFramebuffers(int width, int height)
 {
     // 安全解绑
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     // 删除旧的帧缓冲和纹理
+
+    // 删除 MSAA 资源
+    if (msFBO) { glDeleteFramebuffers(1, &msFBO); msFBO = 0; }
+    if (msColorRBO) { glDeleteRenderbuffers(1, &msColorRBO); msColorRBO = 0; }
+    if (msDepthRBO) { glDeleteRenderbuffers(1, &msDepthRBO); msDepthRBO = 0; }
+
+    // 删除原有 HDR / blur 资源
     glDeleteFramebuffers(1, &hdrFBO);
     glDeleteTextures(1, &hdrColorBuffer);
     glDeleteRenderbuffers(1, &hdrDepthRBO);
@@ -1023,8 +1103,8 @@ void starInit(unsigned int& starVAO, unsigned int& starVBO, unsigned int& starEB
     // 纹理坐标属性
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    
-	glBindVertexArray(0);
+
+    glBindVertexArray(0);
 }
 
 // 日冕层四边形初始化
@@ -1056,7 +1136,7 @@ void coronaQuadInit(unsigned int& coronaQuadVAO, unsigned int& coronaQuadVBO)
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
-	glBindVertexArray(0);
+    glBindVertexArray(0);
 }
 
 // 帧缓冲四边形初始化
@@ -1140,7 +1220,29 @@ void SkyBoxInit(unsigned int& skyboxVAO, unsigned int& skyboxVBO)
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-	glBindVertexArray(0);
+    glBindVertexArray(0);
 }
 
-#endif
+// 阴影贴图初始化
+void ShadowMapInit(unsigned int& depthMapFBO, unsigned int& depthMap, const unsigned int SHADOW_WIDTH, const unsigned int SHADOW_HEIGHT)
+{
+    glGenFramebuffers(1, &depthMapFBO);
+    // 创建深度纹理
+    glGenTextures(1, &depthMap);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    // 将深度纹理附加到帧缓冲对象
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+    glDrawBuffer(GL_NONE); // 不需要颜色缓冲
+    glReadBuffer(GL_NONE); // 不需要颜色缓冲
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Shadow Map Framebuffer not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}

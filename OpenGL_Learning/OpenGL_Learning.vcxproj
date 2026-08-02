@@ -131,7 +131,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SHIP_5_0_MY_METHOD;</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -141,6 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Debug_Shader.cpp" />
     <ClCompile Include="src\BezierCurve.cpp" />
     <ClCompile Include="src\Camera_ver2.cpp" />
     <ClCompile Include="src\05_AdvancedLighting\Billing_Phong\AdvancedLighting.cpp" />
@@ -163,6 +164,7 @@
     <ClCompile Include="src\05_AdvancedLighting\Shadow\Shadow1.0.cpp" />
     <ClCompile Include="src\05_AdvancedLighting\Shadow\Shadow2.0.cpp" />
     <ClCompile Include="src\05_AdvancedLighting\Shadow\Shadow3.0.cpp" />
+    <ClCompile Include="src\NormalMap_Model2.0.cpp" />
     <ClCompile Include="src\Shadow4.0.cpp" />
     <ClCompile Include="src\SpaceShip5.0_my_method.cpp" />
     <ClCompile Include="src\SpaceShip5.0_ds_method.cpp" />
@@ -206,12 +208,14 @@
     <ClCompile Include="src\03_Model\model_ver2_Light_combine.cpp" />
     <ClCompile Include="src\03_Model\model_ver3_Light_combine.cpp" />
     <ClCompile Include="src\SpaceShip4.0.cpp" />
+    <ClCompile Include="src\SpaceShip6.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip3.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip2.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip.cpp" />
     <ClCompile Include="src\SpaceShip5.0.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Debug_Shader.h" />
     <ClInclude Include="src\BezierCurve.h" />
     <ClInclude Include="src\Camera_ver2.h" />
     <ClInclude Include="src\Mesh.h" />

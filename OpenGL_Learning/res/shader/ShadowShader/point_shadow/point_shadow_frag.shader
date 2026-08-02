@@ -122,7 +122,7 @@ float ShadowCalculation(vec3 fragPos)
     {
         float closestDepth = texture(depthMap, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
         closestDepth *= far_plane;   // undo mapping [0;1]
-        if(currentDepth - bias > closestDepth)
+        if(currentDepth - bias1 > closestDepth)
             shadow += 1.0;
     }
     shadow /= float(samples); 
