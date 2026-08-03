@@ -3,8 +3,7 @@
 #include <assimp/config.h>
 #include <assimp/revision.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+
 
 #include <iostream>
 #include <string>
@@ -17,6 +16,10 @@
 #include "Model.h"
 #include "Shader.h" // 包含自定义着色器类
 
+
+#ifdef FPS_Ship
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // 窗口大小回调函数
@@ -765,6 +768,6 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
 }
 
 
-
+#endif
 
 

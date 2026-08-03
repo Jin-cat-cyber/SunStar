@@ -154,6 +154,7 @@
     <ClCompile Include="src\04_AdvancedOpenGL\Instancing\Instancing2.0_stars.cpp" />
     <ClCompile Include="src\04_AdvancedOpenGL\Instancing\Instancing3.0_galaxy.cpp" />
     <ClCompile Include="src\04_AdvancedOpenGL\Instancing\Instancing4.0_SunStar.cpp" />
+    <ClCompile Include="src\FPS_Ship.cpp" />
     <ClCompile Include="src\HDR.cpp" />
     <ClCompile Include="src\Model.cpp" />
     <ClCompile Include="src\Model\model_ver3_Light_combine.cpp" />
@@ -227,6 +228,13 @@
     <None Include="res\model\backpack\backpack.mtl" />
     <None Include="res\model\planet\planet.mtl" />
     <None Include="res\model\rock\rock.mtl" />
+    <None Include="res\shader\00_SpaceShip\aster_frag3.0.shader" />
+    <None Include="res\shader\00_SpaceShip\aster_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\depth_point\depth_point_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\depth_point\depth_point_geo.shader" />
+    <None Include="res\shader\00_SpaceShip\depth_point\depth_point_ver2.0.shader" />
+    <None Include="res\shader\00_SpaceShip\instancingFRAG3.0.shader" />
+    <None Include="res\shader\00_SpaceShip\instancingVER.shader" />
     <None Include="res\shader\BloomShaders\blur_frag.shader" />
     <None Include="res\shader\BloomShaders\blur_ver.shader" />
     <None Include="res\shader\BloomShaders\bright_pass_frag.shader" />

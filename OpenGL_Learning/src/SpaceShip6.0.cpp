@@ -77,6 +77,14 @@ void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO);
 void SkyBoxInit(unsigned int& skyboxVAO, unsigned int& skyboxVBO);
 
 
+// 阴影相关
+const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+unsigned int depthCubeMap, depthCubeFBO;
+float shadow_near = 1.0f;
+float shadow_far = 2000.0f;    // 你的场景远达 -600，far_plane 要设大！
+
+void DepthCubeMapInit();
+void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTransforms, const glm::vec3& pointSunPositions);
 
 int main()
 {
@@ -124,8 +132,8 @@ int main()
     setupFramebuffers(windowwidth, windowheight); // 设置离屏渲染帧缓冲
 
     // 创建着色器对象
-    Shader planetshader("res/shader/InstancingShader/instancingVER.shader", "res/shader/InstancingShader/instancingFRAG2.0.shader");
-    Shader asteroidShader("res/shader/InstancingShader/aster_ver.shader", "res/shader/InstancingShader/aster_frag2.0.shader");
+    Shader planetshader("res/shader/00_SpaceShip/instancingVER.shader", "res/shader/00_SpaceShip/instancingFRAG3.0.shader");
+    Shader asteroidShader("res/shader/00_SpaceShip/aster_ver.shader", "res/shader/00_SpaceShip/aster_frag3.0.shader");
 
     //Shader sunCoreShader("res/shader/StarShader/StarList/star_core_ver.shader", "res/shader/StarShader/StarList/star_core_frag.shader");
     Shader sunCoreShader("res/shader/StarShader/StarList2.0/core_ver.shader", "res/shader/StarShader/StarList2.0/core_frag2.0.shader");
@@ -141,7 +149,7 @@ int main()
 
     Shader lensFlareShader("res/shader/LensFlareShader/lens_flare_ver.shader", "res/shader/LensFlareShader/lens_flare_frag.shader");
 
-	Shader simpleDepthShader("res/shader/ShadowShader/point_shadow/depth_point_ver.shader", "res/shader/ShadowShader/point_shadow/depth_point_frag.shader", "res/shader/ShadowShader/point_shadow/depth_point_geo.shader");
+	Shader simpleDepthShader("res/shader/00_SpaceShip/depth_point/depth_point_ver2.0.shader", "res/shader/00_SpaceShip/depth_point/depth_point_frag.shader", "res/shader/00_SpaceShip/depth_point/depth_point_geo.shader");
 
     Model rock("res/model/rock/rock.obj");
     Model planet("res/model/planet/planet.obj");
@@ -161,6 +169,9 @@ int main()
     //unsigned int flareTexture = loadTexture("res/texture/lens_flare/Prism.jpg");
     //unsigned int flareTexture = loadTexture("res/texture/lens_flare/lensflare1.jpg");
 
+    
+    // 阴影贴图初始化
+    DepthCubeMapInit();
 
     // 生成一个大型的半随机模型变换矩阵列表
     // ------------------------------------------------------------------
@@ -230,7 +241,7 @@ int main()
     glm::vec3 pointSunPositions = glm::vec3(-50.0f, 50.0f, -600.0f);
     glm::vec3 SunScale = glm::vec3(120.0f);
     glm::vec3 planetPosition = glm::vec3(0.0f, -3.0f, 0.0f);
-    glm::vec3 planetScale = glm::vec3(8.0f);
+    glm::vec3 planetScale = glm::vec3(50.0f);
 
     // 激活着色器纹理单元
     planetshader.use();
@@ -241,6 +252,47 @@ int main()
     // 主循环
     while (!glfwWindowShouldClose(window))
     {
+        // ====== 阴影 Pass：渲染深度 CubeMap ======
+        std::vector<glm::mat4> shadowTransforms;
+        glm::mat4 shadowProj = glm::perspective(
+            glm::radians(90.0f),
+            (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT,
+            shadow_near, shadow_far);
+
+		ShadowPassRender(shadowProj, shadowTransforms, pointSunPositions);
+
+        simpleDepthShader.use();
+        for (unsigned int i = 0; i < 6; ++i)
+            simpleDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+        simpleDepthShader.setFloat("far_plane", shadow_far);
+        simpleDepthShader.setVec3("lightPos", pointSunPositions);
+
+        // --- 星球 ---
+        glm::mat4 sdModel = glm::mat4(1.0f);
+        sdModel = glm::translate(sdModel, planetPosition);
+        sdModel = glm::scale(sdModel, planetScale);
+        simpleDepthShader.setMat4("model", sdModel);
+        planet.Draw(simpleDepthShader);
+
+        // --- 小行星带 ---
+        simpleDepthShader.setBool("instanced", true);
+        for (unsigned int i = 0; i < rock.meshes.size(); i++)
+        {
+            glBindVertexArray(rock.meshes[i].VAO);
+            glDrawElementsInstanced(GL_TRIANGLES,
+                static_cast<unsigned int>(rock.meshes[i].indices.size()),
+                GL_UNSIGNED_INT, 0, amount);
+            glBindVertexArray(0);
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glCullFace(GL_BACK);
+        // ====== 阴影 Pass 结束 ======
+        
+
+		glViewport(0, 0, windowwidth, windowheight);
+
+
         // 计算帧时间
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
@@ -289,6 +341,19 @@ int main()
         // ======= 天空盒绘制结束 ========
 
 
+
+        // 先保存当前的深度状态和混合状态，以便后续恢复
+        GLboolean depthEnabled;
+        glGetBooleanv(GL_DEPTH_TEST, &depthEnabled);
+        GLboolean blendEnabled;
+        glGetBooleanv(GL_BLEND, &blendEnabled);
+        GLint depthFunc;
+        glGetIntegerv(GL_DEPTH_FUNC, &depthFunc);
+        GLboolean depthMask;
+        glGetBooleanv(GL_DEPTH_WRITEMASK, &depthMask);
+
+
+
         // ========================================
         // 恒星渲染部分 - 开始
         // ========================================
@@ -302,16 +367,6 @@ int main()
         glm::vec3 coreColor = glm::vec3(1.0f, 0.75f, 0.4f); // 更暖的核心颜色
 
         float starIntensity = 3.0f + sin(starTime * 0.7f) * 0.3f; // 计算恒星亮度变化
-
-        // 先保存当前的深度状态和混合状态，以便后续恢复
-        GLboolean depthEnabled;
-        glGetBooleanv(GL_DEPTH_TEST, &depthEnabled);
-        GLboolean blendEnabled;
-        glGetBooleanv(GL_BLEND, &blendEnabled);
-        GLint depthFunc;
-        glGetIntegerv(GL_DEPTH_FUNC, &depthFunc);
-        GLboolean depthMask;
-        glGetBooleanv(GL_DEPTH_WRITEMASK, &depthMask);
 
         // 重置深度状态，确保每层都独立
         glEnable(GL_DEPTH_TEST);
@@ -465,6 +520,14 @@ int main()
         planetshader.setFloat("pointLights[0].linear", 0.0002f);        // 原来是0.09，减小
         planetshader.setFloat("pointLights[0].quadratic", 0.000005f);    // 原来是0.032，减小
 
+        // 阴影
+        planetshader.setInt("shadows", 1);
+        planetshader.setFloat("far_plane", shadow_far);
+        planetshader.setVec3("lightPos", pointSunPositions);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+        planetshader.setInt("depthMap", 2);
+
         planetshader.setMat4("projection", projection);
         planetshader.setMat4("view", view);
 
@@ -503,6 +566,14 @@ int main()
         asteroidShader.setFloat("pointLights[0].constant", 1.0f);
         asteroidShader.setFloat("pointLights[0].linear", 0.0002f);        // 原来是0.09，减小
         asteroidShader.setFloat("pointLights[0].quadratic", 0.000005f);    // 原来是0.032，减小
+
+        //// 阴影
+        asteroidShader.setInt("shadows", 1);
+        asteroidShader.setFloat("far_plane", shadow_far);
+        asteroidShader.setVec3("lightPos", pointSunPositions);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+        asteroidShader.setInt("depthMap", 2);
 
         // 绘制小行星
         for (unsigned int i = 0; i < rock.meshes.size(); i++)
@@ -639,8 +710,10 @@ int main()
 
     glDeleteVertexArrays(1, &starVAO);
     glDeleteBuffers(1, &starVBO);
+	glDeleteBuffers(1, &starEBO);
     glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteBuffers(1, &skyboxVBO);
+
 
     glfwTerminate(); // 清理并关闭GLFW
     return 0;
@@ -1224,25 +1297,46 @@ void SkyBoxInit(unsigned int& skyboxVAO, unsigned int& skyboxVBO)
 }
 
 // 阴影贴图初始化
-void ShadowMapInit(unsigned int& depthMapFBO, unsigned int& depthMap, const unsigned int SHADOW_WIDTH, const unsigned int SHADOW_HEIGHT)
+void DepthCubeMapInit()
 {
-    glGenFramebuffers(1, &depthMapFBO);
-    // 创建深度纹理
-    glGenTextures(1, &depthMap);
-    glBindTexture(GL_TEXTURE_2D, depthMap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-    // 将深度纹理附加到帧缓冲对象
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-    glDrawBuffer(GL_NONE); // 不需要颜色缓冲
-    glReadBuffer(GL_NONE); // 不需要颜色缓冲
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "Shadow Map Framebuffer not complete!" << std::endl;
+    glGenFramebuffers(1, &depthCubeFBO);
+    glGenTextures(1, &depthCubeMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT,
+            SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthCubeFBO);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubeMap, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+// 阴影PASS渲染
+void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTransforms, const glm::vec3& pointSunPositions)
+{
+    /*glm::mat4 shadowProj = glm::perspective(
+        glm::radians(90.0f),
+        (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT,
+        shadow_near, shadow_far);*/
+    
+    //std::vector<glm::mat4> shadowTransforms;
+    shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+
+    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthCubeFBO);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glCullFace(GL_BACK);
 }

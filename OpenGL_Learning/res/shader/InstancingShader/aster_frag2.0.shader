@@ -60,7 +60,7 @@ void main()
     // 简单 Reinhard 色调映射（防止高亮饱和）与伽马校正
     vec3 mapped = result / (result + vec3(1.0)); // Reinhard
     mapped = pow(mapped, vec3(1.0 / 2.2)); // gamma correction
-
+   
     //FragColor = vec4(mapped, 1.0);
     FragColor = vec4(result, 1.0);
 }
