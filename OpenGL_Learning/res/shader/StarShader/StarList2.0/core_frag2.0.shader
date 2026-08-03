@@ -38,16 +38,18 @@ void main()
     float distFromCenter = length(uv);  // 计算距离中心的距离
     
     // 湍流/米粒噪声
-    float turb = fractalNoise(vec4(dir * 6.0, time * 0.3), 6, 1.0, 0.5);
+    float turb = fractalNoise(vec4(dir * 6.0, time * 0.4), 6, 1.0, 0.5);
     float baseTex = turb * 0.5 + 0.5; // 将噪声值映射到 [0, 1]
     // 太阳黑子
     float s = 0.3;
     float freq = 5.0;
     vec4 pos1 = vec4(dir * freq, time * 0.5);
     vec4 pos2 = vec4(dir * freq + 5000.0, time * 0.15);
+    // vec4 pos1 = vec4(dir * freq, time * 0.15);
+    // vec4 pos2 = vec4(dir * freq + 5000.0, time * 0.05);
     float t1 = snoise(pos1) - s;
     float t2 = snoise(pos2) - s;
-    float sunspot = max(t1, 0.0) * max(t2, 0.0) * 2.0;
+    float sunspot = max(t1, 0.0) * max(t2, 0.0) * 1.1;
     baseTex = clamp(baseTex - sunspot, 0.0, 1.0);   // 混合黑子暗区
 
     // 亮度与脉冲
