@@ -403,7 +403,7 @@ int main()
         coreModel = glm::scale(coreModel, SunScale * 1.0f * starPulse2);
 
         // HDR增强核心亮度
-        float starHDRMutilplier = 10.0f;
+        float starHDRMutilplier = 12.0f;
 
         sunCoreShader.setMat4("model", coreModel);
         sunCoreShader.setMat4("view", view);

@@ -43,11 +43,13 @@ void main()
     // 太阳黑子
     float s = 0.3;
     float freq = 5.0;
-    vec4 pos1 = vec4(dir * freq, time * 0.5);
-    vec4 pos2 = vec4(dir * freq + 5000.0, time * 0.15);
+    // vec4 pos1 = vec4(dir * freq, time * 0.5);
+    // vec4 pos2 = vec4(dir * freq + 5000.0, time * 0.15);
+        vec4 pos1 = vec4(dir * freq, time * 0.3);
+    vec4 pos2 = vec4(dir * freq + 5000.0, time * 0.10);
     float t1 = snoise(pos1) - s;
     float t2 = snoise(pos2) - s;
-    float sunspot = max(t1, 0.0) * max(t2, 0.0) * 2.0;
+    float sunspot = max(t1, 0.0) * max(t2, 0.0) * 1.2;
     baseTex = clamp(baseTex - sunspot, 0.0, 1.0);   // 混合黑子暗区
 
     // 亮度与脉冲
