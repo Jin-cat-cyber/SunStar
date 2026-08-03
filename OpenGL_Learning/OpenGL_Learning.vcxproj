@@ -233,6 +233,8 @@
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_frag.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_geo.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_ver2.0.shader" />
+    <None Include="res\shader\00_SpaceShip\depth_point\depth_point_ver2.1.shader" />
+    <None Include="res\shader\00_SpaceShip\depth_point\depth_point_ver2.2.shader" />
     <None Include="res\shader\00_SpaceShip\instancingFRAG3.0.shader" />
     <None Include="res\shader\00_SpaceShip\instancingVER.shader" />
     <None Include="res\shader\BloomShaders\blur_frag.shader" />
