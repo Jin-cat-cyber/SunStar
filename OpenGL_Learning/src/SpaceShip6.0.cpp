@@ -41,17 +41,24 @@ int windowheight = SCR_HEIGHT;
 Camera_ver2 camera(glm::vec3(-40.0f, 10.0f, 200.0f));
 float lastX = SCR_WIDTH / 2.0F;
 float lastY = SCR_HEIGHT / 2.0F;
+
+
+// 按键输入检测
 bool firstMouse = true;
 bool cursorLocked = true;
 bool tabKeyPressed = false;   // 用于检测 TAB 键的上升沿
+bool f10Pressed = false;    // 用于检测 F10 键的上升沿
+bool f11Pressed = false;    // 用于检测 F11 键的上升沿
+bool isFullscreen = false; // 是否全屏
+int savedX = 0, savedY = 0;
+int savedWidth = SCR_WIDTH, savedHeight = SCR_HEIGHT;
 
 
 // 设置帧数渲染时间
 float deltaTime = 0.0f;	// 当前帧与上一帧的时间差
 float lastFrame = 0.0f; // 上一帧的时间
 
-// 设置光源位置
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
 
 // 恒星相关函数
 void coronaQuadInit(unsigned int& coronaQuadVAO, unsigned int& coronaQuadVBO);
@@ -82,7 +89,7 @@ const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 unsigned int depthCubeMap, depthCubeFBO;
 float shadow_near = 1.0f;
 float shadow_far = 2000.0f;    // 你的场景远达 -600，far_plane 要设大！
-
+// 阴影相关函数
 void DepthCubeMapInit();
 void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTransforms, const glm::vec3& pointSunPositions);
 
@@ -795,6 +802,40 @@ void processInput(GLFWwindow* window)
     {
         tabKeyPressed = false;
     }
+
+    // F10 进入全屏
+    if (glfwGetKey(window, GLFW_KEY_F10) == GLFW_PRESS && !f10Pressed)
+    {
+        f10Pressed = true;
+        if (!isFullscreen)
+        {
+            // 保存当前窗口状态
+            glfwGetWindowPos(window, &savedX, &savedY);
+            glfwGetWindowSize(window, &savedWidth, &savedHeight);
+			GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+            const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+            glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+			isFullscreen = true;
+			firstMouse = true; // 重置鼠标首次移动标志
+        }
+    }
+    if (glfwGetKey(window, GLFW_KEY_F10) == GLFW_RELEASE)
+        f10Pressed = false;
+
+
+	// F11 退出全屏
+    if (glfwGetKey(window, GLFW_KEY_F11) == GLFW_PRESS && !f11Pressed)
+    {
+        f11Pressed = true;
+        if (isFullscreen)
+        {
+            glfwSetWindowMonitor(window, nullptr, savedX, savedY, savedWidth, savedHeight, 0);
+            isFullscreen = false;
+			firstMouse = true; // 重置鼠标首次移动标志
+        }
+	}
+    if (glfwGetKey(window, GLFW_KEY_F11) == GLFW_RELEASE)
+		f11Pressed = false;
 }
 
 // 鼠标回调函数
