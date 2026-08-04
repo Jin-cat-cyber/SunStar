@@ -243,7 +243,7 @@ int main()
     glm::vec3 pointSunPositions = glm::vec3(-50.0f, 50.0f, -600.0f);
     glm::vec3 SunScale = glm::vec3(120.0f);
     glm::vec3 planetPosition = glm::vec3(0.0f, -3.0f, 0.0f);
-    glm::vec3 planetScale = glm::vec3(8.0f);
+    glm::vec3 planetScale = glm::vec3(11.0f);
 
     // 激活着色器纹理单元
     planetshader.use();

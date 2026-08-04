@@ -145,7 +145,7 @@ float ShadowCalculation(vec3 fragPos)
     );  
 
     float shadow  = 0.0;
-    float bias1   = max(0.05 * (1.0 - dot(Normal, templightDir)), 7.5);
+    float bias1   = max(0.05 * (1.0 - dot(Normal, templightDir)), 100);
     int samples = 20;
     float viewDistance = length(viewPos - FragPos);
     float diskRadius =  (1.0 + (viewDistance / far_plane)) / 25.0; // 根据视距动态调整采样半径
