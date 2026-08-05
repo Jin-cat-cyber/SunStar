@@ -141,6 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Skybox.cpp" />
     <ClCompile Include="src\Debug_Shader.cpp" />
     <ClCompile Include="src\BezierCurve.cpp" />
     <ClCompile Include="src\Camera_ver2.cpp" />
@@ -157,7 +158,6 @@
     <ClCompile Include="src\FPS_Ship.cpp" />
     <ClCompile Include="src\HDR.cpp" />
     <ClCompile Include="src\Model.cpp" />
-    <ClCompile Include="src\Model\model_ver3_Light_combine.cpp" />
     <ClCompile Include="src\05_AdvancedLighting\NormalMap\NormalMap.cpp" />
     <ClCompile Include="src\05_AdvancedLighting\NormalMap\NormalMap_Model.cpp" />
     <ClCompile Include="src\05_AdvancedLighting\ParallaxMap\ParallaxMap2.0.cpp" />
@@ -188,9 +188,7 @@
     <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\glad.c" />
-    <ClCompile Include="src\Model\model_ver2_Light_combine.cpp" />
     <ClCompile Include="src\02_BasicLight\Light_ver5--Multiple lights.cpp" />
-    <ClCompile Include="src\Model\model_ver1_Model_backpack.cpp" />
     <ClCompile Include="src\02_BasicLight\Light_ver1.cpp" />
     <ClCompile Include="src\02_BasicLight\Light_ver2--Material.cpp" />
     <ClCompile Include="src\02_BasicLight\Light_ver3--LightTexture.cpp" />
@@ -218,6 +216,7 @@
     <ClCompile Include="src\Sun.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Skybox.h" />
     <ClInclude Include="src\Debug_Shader.h" />
     <ClInclude Include="src\BezierCurve.h" />
     <ClInclude Include="src\Camera_ver2.h" />

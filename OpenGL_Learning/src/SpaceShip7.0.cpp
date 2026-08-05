@@ -17,6 +17,7 @@
 #include "Model.h"
 #include "Shader.h" // 包含自定义着色器类
 #include "Sun.h"
+#include "Skybox.h"
 
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -81,7 +82,7 @@ unsigned int msDepthRBO = 0;
 void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO);
 
 // 天空盒相关函数
-void SkyBoxInit(unsigned int& skyboxVAO, unsigned int& skyboxVBO);
+//void SkyBoxInit(unsigned int& skyboxVAO, unsigned int& skyboxVBO);
 
 
 // 阴影相关
@@ -213,6 +214,7 @@ int main()
     unsigned int coronaQuadVAO, coronaQuadVBO;
 	unsigned int lensQuadVAO, lensQuadVBO;
     //lensQuadInit(lensQuadVAO, lensQuadVBO);
+    // 创建恒星对象
     Sun Sun(starVAO, starVBO, starEBO, coronaQuadVAO, coronaQuadVBO);
     
     
@@ -224,7 +226,7 @@ int main()
     // =============================================
     // 天空盒顶点数据绑定
     unsigned int skyboxVAO, skyboxVBO;
-    SkyBoxInit(skyboxVAO, skyboxVBO);
+    //SkyBoxInit(skyboxVAO, skyboxVBO);
 
 
     // 加载天空纹理
@@ -252,6 +254,10 @@ int main()
 
 
     unsigned int cubemapTexture = loadCubemap(face);
+	// 创建天空盒对象
+	Skybox SpaceBox(skyboxVAO, skyboxVBO, cubemapTexture);
+
+
 
     // 设置恒星，星球位置和大小
     glm::vec3 pointSunPositions = glm::vec3(-50.0f, 50.0f, -600.0f);
@@ -343,23 +349,7 @@ int main()
         // =================================
         // ===== 天空盒（背景）=====
         // =================================
-        glDepthMask(GL_TRUE);    // 写入深度
-        glDepthFunc(GL_LEQUAL);
-        glDisable(GL_BLEND);
-
-        spaceboxShader.use();
-        glm::mat4 skyView = glm::mat4(glm::mat3(camera.GetViewMatrix())); // 移除平移
-        spaceboxShader.setMat4("view", skyView);
-        spaceboxShader.setMat4("projection", projection);
-
-        glBindVertexArray(skyboxVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
-
-        glDepthFunc(GL_LESS);   // 恢复默认深度比较
-        // ————————————————————————————————————————————————————————
+		SpaceBox.SkyboxRender(spaceboxShader, camera, projection);
         // ======= 天空盒绘制结束 ========
 
 
@@ -397,6 +387,7 @@ int main()
         if (blendEnabled) glEnable(GL_BLEND);
         else glDisable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // 恢复默认混合函数
+
 
 
         // ========================================
@@ -1143,63 +1134,63 @@ void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO)
 }
 
 // 天空盒初始化
-void SkyBoxInit(unsigned int& skyboxVAO, unsigned int& skyboxVBO)
-{
-    float skyboxVertices[] = {
-        // positions          
-        -1.0f,  1.0f, -1.0f,
-        -1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,
-         1.0f,  1.0f, -1.0f,
-        -1.0f,  1.0f, -1.0f,
-
-        -1.0f, -1.0f,  1.0f,
-        -1.0f, -1.0f, -1.0f,
-        -1.0f,  1.0f, -1.0f,
-        -1.0f,  1.0f, -1.0f,
-        -1.0f,  1.0f,  1.0f,
-        -1.0f, -1.0f,  1.0f,
-
-         1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,
-
-        -1.0f, -1.0f,  1.0f,
-        -1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f, -1.0f,  1.0f,
-        -1.0f, -1.0f,  1.0f,
-
-        -1.0f,  1.0f, -1.0f,
-         1.0f,  1.0f, -1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-        -1.0f,  1.0f,  1.0f,
-        -1.0f,  1.0f, -1.0f,
-
-        -1.0f, -1.0f, -1.0f,
-        -1.0f, -1.0f,  1.0f,
-         1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,
-        -1.0f, -1.0f,  1.0f,
-         1.0f, -1.0f,  1.0f
-    };
-    // spacebox VAO, VBO
-    glGenVertexArrays(1, &skyboxVAO);
-    glGenBuffers(1, &skyboxVBO);
-    glBindVertexArray(skyboxVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-    glBindVertexArray(0);
-}
+//void SkyBoxInit(unsigned int& skyboxVAO, unsigned int& skyboxVBO)
+//{
+//    float skyboxVertices[] = {
+//        // positions          
+//        -1.0f,  1.0f, -1.0f,
+//        -1.0f, -1.0f, -1.0f,
+//         1.0f, -1.0f, -1.0f,
+//         1.0f, -1.0f, -1.0f,
+//         1.0f,  1.0f, -1.0f,
+//        -1.0f,  1.0f, -1.0f,
+//
+//        -1.0f, -1.0f,  1.0f,
+//        -1.0f, -1.0f, -1.0f,
+//        -1.0f,  1.0f, -1.0f,
+//        -1.0f,  1.0f, -1.0f,
+//        -1.0f,  1.0f,  1.0f,
+//        -1.0f, -1.0f,  1.0f,
+//
+//         1.0f, -1.0f, -1.0f,
+//         1.0f, -1.0f,  1.0f,
+//         1.0f,  1.0f,  1.0f,
+//         1.0f,  1.0f,  1.0f,
+//         1.0f,  1.0f, -1.0f,
+//         1.0f, -1.0f, -1.0f,
+//
+//        -1.0f, -1.0f,  1.0f,
+//        -1.0f,  1.0f,  1.0f,
+//         1.0f,  1.0f,  1.0f,
+//         1.0f,  1.0f,  1.0f,
+//         1.0f, -1.0f,  1.0f,
+//        -1.0f, -1.0f,  1.0f,
+//
+//        -1.0f,  1.0f, -1.0f,
+//         1.0f,  1.0f, -1.0f,
+//         1.0f,  1.0f,  1.0f,
+//         1.0f,  1.0f,  1.0f,
+//        -1.0f,  1.0f,  1.0f,
+//        -1.0f,  1.0f, -1.0f,
+//
+//        -1.0f, -1.0f, -1.0f,
+//        -1.0f, -1.0f,  1.0f,
+//         1.0f, -1.0f, -1.0f,
+//         1.0f, -1.0f, -1.0f,
+//        -1.0f, -1.0f,  1.0f,
+//         1.0f, -1.0f,  1.0f
+//    };
+//    // spacebox VAO, VBO
+//    glGenVertexArrays(1, &skyboxVAO);
+//    glGenBuffers(1, &skyboxVBO);
+//    glBindVertexArray(skyboxVAO);
+//    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+//    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+//    glEnableVertexAttribArray(0);
+//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+//
+//    glBindVertexArray(0);
+//}
 
 // 阴影贴图初始化
 void DepthCubeMapInit()

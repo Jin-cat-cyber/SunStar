@@ -69,15 +69,6 @@
     <ClCompile Include="src\Mesh.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\Model\model_ver1_Model_backpack.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Model\model_ver2_Light_combine.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Model\model_ver3_Light_combine.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="src\04_AdvancedOpenGL\The four_Depth\Depth_Test1.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -240,6 +231,9 @@
     <ClCompile Include="src\SpaceShip7.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\Skybox.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -264,6 +258,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\Sun.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Skybox.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
