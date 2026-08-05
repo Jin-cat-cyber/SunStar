@@ -61,13 +61,13 @@ float lastFrame = 0.0f; // 上一帧的时间
 
 
 // 恒星相关函数
-void lensQuadInit(unsigned int& lensQuadVAO, unsigned int& lensQuadVBO);
+//void lensQuadInit(unsigned int& lensQuadVAO, unsigned int& lensQuadVBO);
 void RocksModelMatricesInit(unsigned int& amount, Model& rock);
 void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& starIndices,
     const unsigned int X_SEGMENTS, const unsigned int Y_SEGMENTS, const float PI);
 
-void starInit(unsigned int& starVAO, unsigned int& starVBO, unsigned int& starEBO,
-    std::vector<float>& starVertices, std::vector<unsigned int>& starIndices);
+//void starInit(unsigned int& starVAO, unsigned int& starVBO, unsigned int& starEBO,
+//    std::vector<float>& starVertices, std::vector<unsigned int>& starIndices);
 
 // 后处理帧缓冲变量
 unsigned int hdrFBO, blurFBO1, blurFBO2;
@@ -177,7 +177,11 @@ int main()
 
     //unsigned int flareTexture = loadTexture("res/texture/lens_flare/Prism.jpg");
     //unsigned int flareTexture = loadTexture("res/texture/lens_flare/lensflare1.jpg");
-
+    
+    std::vector<Sun::LensFlare> flareTextures = {
+        {flareTexture,  glm::vec4(1.0f, 0.8f, 0.5f, 0.6f), 3.0f},
+        {flareTexture1, glm::vec4(1.0f, 0.8f, 0.5f, 0.6f), 3.0f}
+	};
 
     // 阴影贴图初始化
     DepthCubeMapInit();
@@ -208,7 +212,7 @@ int main()
     // 日冕公告板顶点数据
     unsigned int coronaQuadVAO, coronaQuadVBO;
 	unsigned int lensQuadVAO, lensQuadVBO;
-    lensQuadInit(lensQuadVAO, lensQuadVBO);
+    //lensQuadInit(lensQuadVAO, lensQuadVBO);
     Sun Sun(starVAO, starVBO, starEBO, coronaQuadVAO, coronaQuadVBO);
     
     
@@ -553,37 +557,7 @@ int main()
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // 5. 渲染镜头光晕
-        glDepthMask(GL_FALSE); // 不写入深度
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LESS);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE); // 使用加法混合,保留Alpha控制强度
-        lensFlareShader.use();
-        glm::vec3 dirToCamera2 = camera.Position - pointSunPositions;
-        glm::mat4 flareModel = glm::mat4(1.0f);
-        flareModel = glm::translate(flareModel, pointSunPositions);
-        // 公告板始终面向相机
-        glm::mat4 flareRotate = glm::inverse(glm::lookAt(glm::vec3(0.f), dirToCamera2, camera.WorldUp));
-        flareModel = flareModel * flareRotate;
-        // 光晕大小，比辉光略大
-        float flareSize = SunScale.x * 3.0f;
-        flareModel = glm::scale(flareModel, glm::vec3(flareSize));
-        lensFlareShader.setMat4("model", flareModel);
-        lensFlareShader.setMat4("view", view);
-        lensFlareShader.setMat4("projection", projection);
-        lensFlareShader.setVec4("flareColor", glm::vec4(1.0f, 0.8f, 0.5f, 0.6f)); // 光晕颜色和透明度
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, flareTexture);
-        lensFlareShader.setInt("flareTexture", 0);
-        glBindVertexArray(lensQuadVAO); // 复用光晕四边形
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        //glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, flareTexture1);
-        lensFlareShader.setInt("flareTexture", 0);
-        //glBindVertexArray(lensQuadVAO); // 复用光晕四边形
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        glBindVertexArray(0);
-
+		Sun.LensFlareRender(lensFlareShader, camera, projection, view, flareTextures);
 
         // 恢复深度测试和混合状态
         glEnable(GL_DEPTH_TEST);
@@ -1111,37 +1085,37 @@ void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& s
 //    glBindVertexArray(0);
 //}
 //
-// 日冕层四边形初始化
-void lensQuadInit(unsigned int& lensQuadVAO, unsigned int& lensQuadVBO)
-{
-    float coronaQuadVertices[] = {
-        // positions   // texCoords
-        /*-1.0f,  1.0f, 0.0f, 1.0f,
-        -1.0f, -1.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, 1.0f, 0.0f,
-        -1.0f,  1.0f, 0.0f, 1.0f,
-         1.0f, -1.0f, 1.0f, 0.0f,
-         1.0f,  1.0f, 1.0f, 1.0f*/
-         // positions        // texcoords
-        -2.0f, -2.0f, 0.0f,  0.0f, 0.0f,
-         2.0f, -2.0f, 0.0f,  1.0f, 0.0f,
-         2.0f,  2.0f, 0.0f,  1.0f, 1.0f,
-        -2.0f,  2.0f, 0.0f,  0.0f, 1.0f
-    };
-    glGenVertexArrays(1, &lensQuadVAO);
-    glGenBuffers(1, &lensQuadVBO);
-    glBindVertexArray(lensQuadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, lensQuadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(coronaQuadVertices), coronaQuadVertices, GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-
-    glBindVertexArray(0);
-}
+//// 日冕层四边形初始化
+//void lensQuadInit(unsigned int& lensQuadVAO, unsigned int& lensQuadVBO)
+//{
+//    float coronaQuadVertices[] = {
+//        // positions   // texCoords
+//        /*-1.0f,  1.0f, 0.0f, 1.0f,
+//        -1.0f, -1.0f, 0.0f, 0.0f,
+//         1.0f, -1.0f, 1.0f, 0.0f,
+//        -1.0f,  1.0f, 0.0f, 1.0f,
+//         1.0f, -1.0f, 1.0f, 0.0f,
+//         1.0f,  1.0f, 1.0f, 1.0f*/
+//         // positions        // texcoords
+//        -2.0f, -2.0f, 0.0f,  0.0f, 0.0f,
+//         2.0f, -2.0f, 0.0f,  1.0f, 0.0f,
+//         2.0f,  2.0f, 0.0f,  1.0f, 1.0f,
+//        -2.0f,  2.0f, 0.0f,  0.0f, 1.0f
+//    };
+//    glGenVertexArrays(1, &lensQuadVAO);
+//    glGenBuffers(1, &lensQuadVBO);
+//    glBindVertexArray(lensQuadVAO);
+//    glBindBuffer(GL_ARRAY_BUFFER, lensQuadVBO);
+//    glBufferData(GL_ARRAY_BUFFER, sizeof(coronaQuadVertices), coronaQuadVertices, GL_STATIC_DRAW);
+//
+//    glEnableVertexAttribArray(0);
+//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+//
+//    glEnableVertexAttribArray(2);
+//    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+//
+//    glBindVertexArray(0);
+//}
 
 // 帧缓冲四边形初始化
 void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO)

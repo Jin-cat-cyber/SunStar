@@ -16,6 +16,7 @@ Sun::Sun(unsigned int& StarVAO, unsigned int& StarVBO, unsigned int& StarEBO,
     BallGenerate();
 	CoreInit();
     CoronaQuadInit();
+    LensQuadInit();
 }
 
 
@@ -115,6 +116,36 @@ void Sun::CoronaQuadInit()
     glBindVertexArray(0);
 }
 
+void Sun::LensQuadInit()
+{
+    float lensQuadVertices[] = {
+        // positions   // texCoords
+        /*-1.0f,  1.0f, 0.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f, 0.0f,
+         1.0f, -1.0f, 1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f, 1.0f,
+         1.0f, -1.0f, 1.0f, 0.0f,
+         1.0f,  1.0f, 1.0f, 1.0f*/
+         // positions        // texcoords
+        -2.0f, -2.0f, 0.0f,  0.0f, 0.0f,
+         2.0f, -2.0f, 0.0f,  1.0f, 0.0f,
+         2.0f,  2.0f, 0.0f,  1.0f, 1.0f,
+        -2.0f,  2.0f, 0.0f,  0.0f, 1.0f
+    };
+    glGenVertexArrays(1, &lensQuadVAO);
+    glGenBuffers(1, &lensQuadVBO);
+    glBindVertexArray(lensQuadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, lensQuadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(lensQuadVertices), lensQuadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+    glBindVertexArray(0);
+}
+
 
 void Sun::SunRender(Shader& sunCoreShader, Shader& sunCoronaShader, Shader& CoreCoronaShader, Shader& sunGlowShader, 
     const Camera_ver2& camera, const glm::mat4& projection, const glm::mat4& view)
@@ -133,13 +164,6 @@ void Sun::SunRender(Shader& sunCoreShader, Shader& sunCoronaShader, Shader& Core
         // ========================================
     float starTime = static_cast<float>(glfwGetTime()); // 恒星旋转时间
     float starPulse = 1.0f + sin(starTime * 1.5f) * 0.0003f; // 计算脉冲效果
-
-    //  设置恒星颜色和强度
-    //glm::vec3 starColor = glm::vec3(1.0f, 0.8f, 0.6f); // 太白了
-    //glm::vec3 coreColor = glm::vec3(1.0f, 0.9f, 0.7f); // 太白了
-    //glm::vec3 starColor = glm::vec3(1.0f, 0.65f, 0.3f); // 更暖的颜色
-    //glm::vec3 coreColor = glm::vec3(1.0f, 0.75f, 0.4f); // 更暖的核心颜色
-
     float starIntensity = 3.0f + sin(starTime * 0.7f) * 0.3f; // 计算恒星亮度变化
 
     // 重置深度状态，确保每层都独立
@@ -273,9 +297,49 @@ void Sun::SunRender(Shader& sunCoreShader, Shader& sunCoronaShader, Shader& Core
 
 }
 
-void Sun::lensFlareRender(Shader& lensFlareShader, const Camera_ver2& camera, const glm::mat4& projection, const glm::mat4& view)
+void Sun::LensFlareRender(Shader& lensFlareShader, 
+    const Camera_ver2& camera, const glm::mat4& projection, const glm::mat4& view, const std::vector<LensFlare>& flareTexture)
 {
+    glDepthMask(GL_FALSE); // 不写入深度
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE); // 使用加法混合,保留Alpha控制强度
+    
+    lensFlareShader.use();
+    lensFlareShader.setMat4("view", view);
+    lensFlareShader.setMat4("projection", projection);
 
+    glm::vec3 dirToCamera2 = camera.Position - pointSunPositions;
+    glm::mat4 flareRotate = glm::inverse(glm::lookAt(glm::vec3(0.f), dirToCamera2, camera.WorldUp));
+
+    for (const auto& flare : flareTexture)
+    {
+        glm::mat4 flareModel = glm::mat4(1.0f);
+        flareModel = glm::translate(flareModel, pointSunPositions);
+        // 公告板始终面向相机
+        flareModel = flareModel * flareRotate;
+        // 光晕大小，比辉光略大
+        float flareSize = SunScale.x * flare.sizeMult;
+        flareModel = glm::scale(flareModel, glm::vec3(flareSize));
+        
+        lensFlareShader.setMat4("model", flareModel); 
+        lensFlareShader.setVec4("flareColor", flare.tint); // 光晕颜色和透明度
+        
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, flare.textureID);
+        lensFlareShader.setInt("flareTexture", 0);
+        
+        glBindVertexArray(lensQuadVAO); // 复用光晕四边形
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    }
+    glBindVertexArray(0);
+
+     // 恢复深度测试和混合状态
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // 恢复默认混合函数
 }
 
 //// 核心层

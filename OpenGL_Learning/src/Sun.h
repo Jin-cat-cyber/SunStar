@@ -25,17 +25,15 @@ public:
     unsigned int starEBO;
 	unsigned int coronaQuadVAO;
 	unsigned int coronaQuadVBO;
+    unsigned int lensQuadVAO;
+    unsigned int lensQuadVBO;
 
-    //// 恒星旋转时间
-    //float starTime = static_cast<float>(glfwGetTime()); 
-    //// 计算脉冲效果
-    //float starPulse = 1.0f + sin(starTime * 1.5f) * 0.0003f; 
-    //// 计算恒星亮度变化
-    //float starIntensity = 3.0f + sin(starTime * 0.7f) * 0.3f; 
-    //// HDR增强核心亮度
-    //float starHDRMutilplier = 12.0f;
-    //// 核心脉冲幅度
-    //float starPulse2 = starPulse * 0.9f; // 核心脉冲幅度更小一些
+    struct LensFlare
+    {
+        unsigned int textureID;
+		glm::vec4    tint;  // RGBA颜色 控制光晕的颜色和透明度
+		float        sizeMult;  // 控制光晕的缩放大小
+    };
 
     // 恒星位置
     glm::vec3 pointSunPositions = glm::vec3(-50.0f, 50.0f, -600.0f);
@@ -54,15 +52,18 @@ public:
     void BallGenerate();
 	void CoreInit();
 	void CoronaQuadInit();
+    void LensQuadInit();
 
     void SunRender(Shader& sunCoreShader, Shader& sunCoronaShader, Shader& CoreCoronaShader, Shader& sunGlowShader, 
     const Camera_ver2& camera, const glm::mat4& projection, const glm::mat4& view);
 
-	void lensFlareRender(Shader& lensFlareShader, const Camera_ver2& camera, const glm::mat4& projection, const glm::mat4& view);
- //   void CoreRender(Shader& sunCoreShader);
-	//void CoronaQuadRender(Shader& sunCoronaShader);
-	//void CoronaBallRender(Shader& CoreCoronaShader);
-	//void GlowRender(Shader& sunGlowShader);
+	void LensFlareRender(Shader& lensFlareShader, 
+        const Camera_ver2& camera, const glm::mat4& projection, const glm::mat4& view, const std::vector<LensFlare>& flareTexture);
+
+    /*void CoreRender(Shader& sunCoreShader);
+	void CoronaQuadRender(Shader& sunCoronaShader);
+	void CoronaBallRender(Shader& CoreCoronaShader);
+	void GlowRender(Shader& sunGlowShader);*/
 
 
     
@@ -70,8 +71,8 @@ public:
     
 
 private:
-	//Camera_ver2 camera;
- //   glm::mat4 projection;
-	//glm::mat4 view;
+	/*Camera_ver2 camera;
+    glm::mat4 projection;
+	glm::mat4 view;*/
 };
 
