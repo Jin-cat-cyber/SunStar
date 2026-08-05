@@ -15,53 +15,53 @@
 
 #include "camera_ver2.h"
 #include "Model.h"
-#include "Shader.h" // åŒ…å«è‡ªå®šä¹‰ç€è‰²å™¨ç±»
+#include "Shader.h" // °üº¬×Ô¶¨Òå×ÅÉ«Æ÷Àà
+#include "Sun.h"
 
 
-#ifdef SPACESHIP_6_0
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // çª—å£å¤§å°å›è°ƒå‡½æ•°
-void processInput(GLFWwindow* window);  // è¾“å…¥æ£€æŸ¥å‡½æ•°
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);  // é¼ æ ‡ ç§»åŠ¨ å›è°ƒå‡½æ•°
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);   // é¼ æ ‡ æ»šè½® å›è°ƒå‡½æ•°
-unsigned int loadTexture(char const* path);     // çº¹ç†åŠ è½½å‡½æ•°
-unsigned int loadCubemap(std::vector<std::string> faces);   // ç«‹æ–¹ä½“è´´å›¾åŠ è½½å‡½æ•°
-void setupFramebuffers(int eidth, int height);  //  ç¦»å±æ¸²æŸ“å¸§ç¼“å†²
-void rebuildFramebuffers(int width, int height);  //  é‡å»ºç¦»å±æ¸²æŸ“å¸§ç¼“å†²
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // ´°¿Ú´óĞ¡»Øµ÷º¯Êı
+void processInput(GLFWwindow* window);  // ÊäÈë¼ì²éº¯Êı
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);  // Êó±ê ÒÆ¶¯ »Øµ÷º¯Êı
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);   // Êó±ê ¹öÂÖ »Øµ÷º¯Êı
+unsigned int loadTexture(char const* path);     // ÎÆÀí¼ÓÔØº¯Êı
+unsigned int loadCubemap(std::vector<std::string> faces);   // Á¢·½ÌåÌùÍ¼¼ÓÔØº¯Êı
+void setupFramebuffers(int eidth, int height);  //  ÀëÆÁäÖÈ¾Ö¡»º³å
+void rebuildFramebuffers(int width, int height);  //  ÖØ½¨ÀëÆÁäÖÈ¾Ö¡»º³å
 
-const unsigned int SCR_WIDTH = 960; // çª—å£å®½åº¦
-const unsigned int SCR_HEIGHT = 600; // çª—å£é«˜åº¦
+const unsigned int SCR_WIDTH = 960; // ´°¿Ú¿í¶È
+const unsigned int SCR_HEIGHT = 600; // ´°¿Ú¸ß¶È
 int windowwidth = SCR_WIDTH;
 int windowheight = SCR_HEIGHT;
 
-// æ‘„åƒæœºç›¸å…³
+// ÉãÏñ»úÏà¹Ø
 Camera_ver2 camera(glm::vec3(-40.0f, 10.0f, 200.0f));
 float lastX = SCR_WIDTH / 2.0F;
 float lastY = SCR_HEIGHT / 2.0F;
 
 
-// æŒ‰é”®è¾“å…¥æ£€æµ‹
+// °´¼üÊäÈë¼ì²â
 bool firstMouse = true;
 bool cursorLocked = true;
-bool tabKeyPressed = false;   // ç”¨äºæ£€æµ‹ TAB é”®çš„ä¸Šå‡æ²¿
-bool f10Pressed = false;    // ç”¨äºæ£€æµ‹ F10 é”®çš„ä¸Šå‡æ²¿
-bool f11Pressed = false;    // ç”¨äºæ£€æµ‹ F11 é”®çš„ä¸Šå‡æ²¿
-bool isFullscreen = false; // æ˜¯å¦å…¨å±
+bool tabKeyPressed = false;   // ÓÃÓÚ¼ì²â TAB ¼üµÄÉÏÉıÑØ
+bool f10Pressed = false;    // ÓÃÓÚ¼ì²â F10 ¼üµÄÉÏÉıÑØ
+bool f11Pressed = false;    // ÓÃÓÚ¼ì²â F11 ¼üµÄÉÏÉıÑØ
+bool isFullscreen = false; // ÊÇ·ñÈ«ÆÁ
 int savedX = 0, savedY = 0;
 int savedWidth = SCR_WIDTH, savedHeight = SCR_HEIGHT;
 
 
-// è®¾ç½®å¸§æ•°æ¸²æŸ“æ—¶é—´
-float deltaTime = 0.0f;	// å½“å‰å¸§ä¸ä¸Šä¸€å¸§çš„æ—¶é—´å·®
-float lastFrame = 0.0f; // ä¸Šä¸€å¸§çš„æ—¶é—´
+// ÉèÖÃÖ¡ÊıäÖÈ¾Ê±¼ä
+float deltaTime = 0.0f;	// µ±Ç°Ö¡ÓëÉÏÒ»Ö¡µÄÊ±¼ä²î
+float lastFrame = 0.0f; // ÉÏÒ»Ö¡µÄÊ±¼ä
 
 
 
-// æ’æ˜Ÿç›¸å…³å‡½æ•°
-void coronaQuadInit(unsigned int& coronaQuadVAO, unsigned int& coronaQuadVBO);
+// ºãĞÇÏà¹Øº¯Êı
+void lensQuadInit(unsigned int& lensQuadVAO, unsigned int& lensQuadVBO);
 void RocksModelMatricesInit(unsigned int& amount, Model& rock);
 void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& starIndices,
     const unsigned int X_SEGMENTS, const unsigned int Y_SEGMENTS, const float PI);
@@ -69,76 +69,76 @@ void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& s
 void starInit(unsigned int& starVAO, unsigned int& starVBO, unsigned int& starEBO,
     std::vector<float>& starVertices, std::vector<unsigned int>& starIndices);
 
-// åå¤„ç†å¸§ç¼“å†²å˜é‡
+// ºó´¦ÀíÖ¡»º³å±äÁ¿
 unsigned int hdrFBO, blurFBO1, blurFBO2;
 unsigned int hdrColorBuffer, blurColorBuffer1, blurColorBuffer2;
 unsigned int hdrDepthRBO;
-// æ–°å¢å¤šé‡é‡‡æ · FBO å¥æŸ„
+// ĞÂÔö¶àÖØ²ÉÑù FBO ¾ä±ú
 unsigned int msFBO = 0;
 unsigned int msColorRBO = 0;
 unsigned int msDepthRBO = 0;
-// åå¤„ç†å››è¾¹å½¢é¡¶ç‚¹æ•°ç»„å¯¹è±¡å’Œé¡¶ç‚¹ç¼“å†²å¯¹è±¡
+// ºó´¦ÀíËÄ±ßĞÎ¶¥µãÊı×é¶ÔÏóºÍ¶¥µã»º³å¶ÔÏó
 void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO);
 
-// å¤©ç©ºç›’ç›¸å…³å‡½æ•°
+// Ìì¿ÕºĞÏà¹Øº¯Êı
 void SkyBoxInit(unsigned int& skyboxVAO, unsigned int& skyboxVBO);
 
 
-// é˜´å½±ç›¸å…³
+// ÒõÓ°Ïà¹Ø
 const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 unsigned int depthCubeMap, depthCubeFBO;
 float shadow_near = 1.0f;
-float shadow_far = 2000.0f;    // ä½ çš„åœºæ™¯è¿œè¾¾ -600ï¼Œfar_plane è¦è®¾å¤§ï¼
-// é˜´å½±ç›¸å…³å‡½æ•°
+float shadow_far = 2000.0f;    // ÄãµÄ³¡¾°Ô¶´ï -600£¬far_plane ÒªÉè´ó£¡
+// ÒõÓ°Ïà¹Øº¯Êı
 void DepthCubeMapInit();
 void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTransforms, const glm::vec3& pointSunPositions);
 
 int main()
 {
-    glfwInit(); // åˆå§‹åŒ–GLFWåº“
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);  // è®¾ç½®OpenGLç‰ˆæœ¬ï¼šä¸»ç‰ˆæœ¬å·
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);  // è®¾ç½®OpenGLç‰ˆæœ¬ï¼šæ¬¡ç‰ˆæœ¬å·
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // ä½¿ç”¨æ ¸å¿ƒæ¨¡å¼
+    glfwInit(); // ³õÊ¼»¯GLFW¿â
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);  // ÉèÖÃOpenGL°æ±¾£ºÖ÷°æ±¾ºÅ
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);  // ÉèÖÃOpenGL°æ±¾£º´Î°æ±¾ºÅ
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // Ê¹ÓÃºËĞÄÄ£Ê½
     glfwWindowHint(GLFW_SAMPLES, 4);
 
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    // åˆ›å»ºçª—å£å¯¹è±¡
+    // ´´½¨´°¿Ú¶ÔÏó
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Hello OpenGL", NULL, NULL);
 
-    // è·å–å®é™…çª—å£å¤§å°ï¼ˆå› ä¸ºåœ¨æŸäº›å¹³å°ä¸Šï¼Œçª—å£çš„å®é™…å¤§å°å¯èƒ½ä¸è¯·æ±‚çš„å¤§å°ä¸åŒï¼‰
+    // »ñÈ¡Êµ¼Ê´°¿Ú´óĞ¡£¨ÒòÎªÔÚÄ³Ğ©Æ½Ì¨ÉÏ£¬´°¿ÚµÄÊµ¼Ê´óĞ¡¿ÉÄÜÓëÇëÇóµÄ´óĞ¡²»Í¬£©
     glfwGetFramebufferSize(window, &windowwidth, &windowheight);
 
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate(); // æ¸…ç†çª—å£èµ„æº
+        glfwTerminate(); // ÇåÀí´°¿Ú×ÊÔ´
         return -1;
     }
-    glfwMakeContextCurrent(window); // è®¾ç½®å½“å‰çª—å£ä¸ºä¸Šä¸‹æ–‡
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); // è®¾ç½®çª—å£å¤§å°å›è°ƒå‡½æ•°
-    glfwSetCursorPosCallback(window, mouse_callback); // è®¾ç½®é¼ æ ‡ç§»åŠ¨å›è°ƒå‡½æ•°
-    glfwSetScrollCallback(window, scroll_callback); // è®¾ç½®é¼ æ ‡æ»šè½®å›è°ƒå‡½æ•°
+    glfwMakeContextCurrent(window); // ÉèÖÃµ±Ç°´°¿ÚÎªÉÏÏÂÎÄ
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); // ÉèÖÃ´°¿Ú´óĞ¡»Øµ÷º¯Êı
+    glfwSetCursorPosCallback(window, mouse_callback); // ÉèÖÃÊó±êÒÆ¶¯»Øµ÷º¯Êı
+    glfwSetScrollCallback(window, scroll_callback); // ÉèÖÃÊó±ê¹öÂÖ»Øµ÷º¯Êı
 
-    // æ•è·é¼ æ ‡ï¼ˆéšè—é¼ æ ‡å…‰æ ‡ï¼Œå¹¶æä¾›æ— é™çš„é¼ æ ‡ç§»åŠ¨ï¼‰
+    // ²¶»ñÊó±ê£¨Òş²ØÊó±ê¹â±ê£¬²¢Ìá¹©ÎŞÏŞµÄÊó±êÒÆ¶¯£©
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    // åˆå§‹åŒ–GLADï¼Œç®¡ç†OpenGLå‡½æ•°æŒ‡é’ˆï¼ŒåŠ è½½æ‰€æœ‰OpenGLå‡½æ•°æŒ‡é’ˆ
+    // ³õÊ¼»¯GLAD£¬¹ÜÀíOpenGLº¯ÊıÖ¸Õë£¬¼ÓÔØËùÓĞOpenGLº¯ÊıÖ¸Õë
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
 
-    // çº¹ç†yè½´ç¿»è½¬(å› ä¸ºOpenGLçš„yè½´åæ ‡æ˜¯ä»ä¸‹å¾€ä¸Šï¼Œè€Œå›¾ç‰‡çš„yè½´åæ ‡æ˜¯ä»ä¸Šå¾€ä¸‹)
+    // ÎÆÀíyÖá·­×ª(ÒòÎªOpenGLµÄyÖá×ø±êÊÇ´ÓÏÂÍùÉÏ£¬¶øÍ¼Æ¬µÄyÖá×ø±êÊÇ´ÓÉÏÍùÏÂ)
     stbi_set_flip_vertically_on_load(true);
 
-    //åŠ è½½æ·±åº¦ç¼“å†²
+    //¼ÓÔØÉî¶È»º³å
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_MULTISAMPLE); // å¯ç”¨å¤šé‡é‡‡æ ·æŠ—é”¯é½¿
-    setupFramebuffers(windowwidth, windowheight); // è®¾ç½®ç¦»å±æ¸²æŸ“å¸§ç¼“å†²
+    glEnable(GL_MULTISAMPLE); // ÆôÓÃ¶àÖØ²ÉÑù¿¹¾â³İ
+    setupFramebuffers(windowwidth, windowheight); // ÉèÖÃÀëÆÁäÖÈ¾Ö¡»º³å
 
-    // åˆ›å»ºç€è‰²å™¨å¯¹è±¡
+    // ´´½¨×ÅÉ«Æ÷¶ÔÏó
     Shader planetshader("res/shader/00_SpaceShip/instancingVER.shader", "res/shader/00_SpaceShip/instancingFRAG3.0.shader");
     Shader asteroidShader("res/shader/00_SpaceShip/aster_ver.shader", "res/shader/00_SpaceShip/aster_frag3.0.shader");
 
@@ -156,14 +156,14 @@ int main()
 
     Shader lensFlareShader("res/shader/LensFlareShader/lens_flare_ver.shader", "res/shader/LensFlareShader/lens_flare_frag.shader");
 
-	//Shader planetDepthShader("res/shader/00_SpaceShip/depth_point/depth_point_ver2.0.shader", "res/shader/00_SpaceShip/depth_point/depth_point_frag.shader", "res/shader/00_SpaceShip/depth_point/depth_point_geo.shader");
-	//Shader asteroidDepthShader("res/shader/00_SpaceShip/depth_point/depth_point_ver2.1.shader", "res/shader/00_SpaceShip/depth_point/depth_point_frag.shader", "res/shader/00_SpaceShip/depth_point/depth_point_geo.shader");    
-	Shader simpleDepthShader("res/shader/00_SpaceShip/depth_point/depth_point_ver2.2.shader", "res/shader/00_SpaceShip/depth_point/depth_point_frag.shader", "res/shader/00_SpaceShip/depth_point/depth_point_geo.shader");
+    //Shader planetDepthShader("res/shader/00_SpaceShip/depth_point/depth_point_ver2.0.shader", "res/shader/00_SpaceShip/depth_point/depth_point_frag.shader", "res/shader/00_SpaceShip/depth_point/depth_point_geo.shader");
+    //Shader asteroidDepthShader("res/shader/00_SpaceShip/depth_point/depth_point_ver2.1.shader", "res/shader/00_SpaceShip/depth_point/depth_point_frag.shader", "res/shader/00_SpaceShip/depth_point/depth_point_geo.shader");    
+    Shader simpleDepthShader("res/shader/00_SpaceShip/depth_point/depth_point_ver2.2.shader", "res/shader/00_SpaceShip/depth_point/depth_point_frag.shader", "res/shader/00_SpaceShip/depth_point/depth_point_geo.shader");
 
     Model rock("res/model/rock/rock.obj");
     Model planet("res/model/planet/planet.obj");
 
-    // åŠ è½½å…‰æ™•è´´å›¾
+    // ¼ÓÔØ¹âÔÎÌùÍ¼
     unsigned int flareTexture = loadTexture("res/texture/lens_flare/lens_white.jpg");
     //unsigned int flareTexture = loadTexture("res/texture/lens_flare/lens flare TRY.png");
     unsigned int flareTexture1 = loadTexture("res/texture/lens_flare/glow light lens flare(1).png");
@@ -178,49 +178,52 @@ int main()
     //unsigned int flareTexture = loadTexture("res/texture/lens_flare/Prism.jpg");
     //unsigned int flareTexture = loadTexture("res/texture/lens_flare/lensflare1.jpg");
 
-    
-    // é˜´å½±è´´å›¾åˆå§‹åŒ–
+
+    // ÒõÓ°ÌùÍ¼³õÊ¼»¯
     DepthCubeMapInit();
 
-    // ç”Ÿæˆä¸€ä¸ªå¤§å‹çš„åŠéšæœºæ¨¡å‹å˜æ¢çŸ©é˜µåˆ—è¡¨
+    // Éú³ÉÒ»¸ö´óĞÍµÄ°ëËæ»úÄ£ĞÍ±ä»»¾ØÕóÁĞ±í
     // ------------------------------------------------------------------
     unsigned int amount = 50000;
     RocksModelMatricesInit(amount, rock);
 
 
     // =======================================================
-    // ç¨‹åºåŒ–ç”Ÿæˆæ’æ˜Ÿé¡¶ç‚¹æ•°æ®
-    // çƒä½“é¡¶ç‚¹æ•°æ®
+    // ³ÌĞò»¯Éú³ÉºãĞÇ¶¥µãÊı¾İ
+    // ÇòÌå¶¥µãÊı¾İ
     std::vector<float> starVertices;
     std::vector<unsigned int> starIndices;
-    // ç”Ÿæˆçƒä½“é¡¶ç‚¹æ•°æ®ï¼ˆå¯ä»¥ä½¿ç”¨UVçƒä½“æˆ–å…¶ä»–æ–¹æ³•ï¼‰
+    // Éú³ÉÇòÌå¶¥µãÊı¾İ£¨¿ÉÒÔÊ¹ÓÃUVÇòÌå»òÆäËû·½·¨£©
     const unsigned int X_SEGMENTS = 64;
     const unsigned int Y_SEGMENTS = 64;
     const float PI = 3.14159265359f;
     BallGenerate(starVertices, starIndices, X_SEGMENTS, Y_SEGMENTS, PI);
 
 
-    // æ’æ˜Ÿ VAO, VBO, EBO
+    // ºãĞÇ VAO, VBO, EBO
     unsigned int starVAO, starVBO, starEBO;
-    starInit(starVAO, starVBO, starEBO, starVertices, starIndices);
+    //starInit(starVAO, starVBO, starEBO, starVertices, starIndices);
 
 
-    // æ—¥å†•å…¬å‘Šæ¿é¡¶ç‚¹æ•°æ®
+    // ÈÕÃá¹«¸æ°å¶¥µãÊı¾İ
     unsigned int coronaQuadVAO, coronaQuadVBO;
-    coronaQuadInit(coronaQuadVAO, coronaQuadVBO);
-
+	unsigned int lensQuadVAO, lensQuadVBO;
+    lensQuadInit(lensQuadVAO, lensQuadVBO);
+    Sun Sun(starVAO, starVBO, starEBO, coronaQuadVAO, coronaQuadVBO);
+    
+    
     // =============================================
-    // å¸§ç¼“å†²å››è¾¹å½¢
+    // Ö¡»º³åËÄ±ßĞÎ
     unsigned int quadVAO, quadVBO;
     FrameQuadInit(quadVAO, quadVBO);
 
     // =============================================
-    // å¤©ç©ºç›’é¡¶ç‚¹æ•°æ®ç»‘å®š
+    // Ìì¿ÕºĞ¶¥µãÊı¾İ°ó¶¨
     unsigned int skyboxVAO, skyboxVBO;
     SkyBoxInit(skyboxVAO, skyboxVBO);
 
 
-    // åŠ è½½å¤©ç©ºçº¹ç†
+    // ¼ÓÔØÌì¿ÕÎÆÀí
     // NightSky
     //std::vector<std::string> face
     //{
@@ -246,43 +249,38 @@ int main()
 
     unsigned int cubemapTexture = loadCubemap(face);
 
-    // è®¾ç½®æ’æ˜Ÿï¼Œæ˜Ÿçƒä½ç½®å’Œå¤§å°
+    // ÉèÖÃºãĞÇ£¬ĞÇÇòÎ»ÖÃºÍ´óĞ¡
     glm::vec3 pointSunPositions = glm::vec3(-50.0f, 50.0f, -600.0f);
     glm::vec3 SunScale = glm::vec3(120.0f);
     glm::vec3 planetPosition = glm::vec3(0.0f, -3.0f, 0.0f);
     glm::vec3 planetScale = glm::vec3(11.0f);
 
-    // æ¿€æ´»ç€è‰²å™¨çº¹ç†å•å…ƒ
+    // ¼¤»î×ÅÉ«Æ÷ÎÆÀíµ¥Ôª
     planetshader.use();
-    planetshader.setInt("material.diffuse", 0); // å‘Šè¯‰ç€è‰²å™¨æ¯ä¸ªé‡‡æ ·å™¨å±äºå“ªä¸ªçº¹ç†å•å…ƒ(åªéœ€è¦è®¾ç½®ä¸€æ¬¡)
+    planetshader.setInt("material.diffuse", 0); // ¸æËß×ÅÉ«Æ÷Ã¿¸ö²ÉÑùÆ÷ÊôÓÚÄÄ¸öÎÆÀíµ¥Ôª(Ö»ĞèÒªÉèÖÃÒ»´Î)
     planetshader.setInt("material.specular", 1);
 
 
-    // ä¸»å¾ªç¯
+    // Ö÷Ñ­»·
     while (!glfwWindowShouldClose(window))
     {
-        // ====== é˜´å½± Passï¼šæ¸²æŸ“æ·±åº¦ CubeMap ======
+        // ====== ÒõÓ° Pass£ºäÖÈ¾Éî¶È CubeMap ======
         std::vector<glm::mat4> shadowTransforms;
         glm::mat4 shadowProj = glm::perspective(
             glm::radians(90.0f),
             (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT,
             shadow_near, shadow_far);
 
-		ShadowPassRender(shadowProj, shadowTransforms, pointSunPositions);
+        ShadowPassRender(shadowProj, shadowTransforms, pointSunPositions);
 
-        //asteroidDepthShader.use();
-        //for (unsigned int i = 0; i < 6; ++i)
-        //    asteroidDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
-        //asteroidDepthShader.setFloat("far_plane", shadow_far);
-        //asteroidDepthShader.setVec3("lightPos", pointSunPositions);
 
         simpleDepthShader.use();
         for (unsigned int i = 0; i < 6; ++i)
             simpleDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
         simpleDepthShader.setFloat("far_plane", shadow_far);
         simpleDepthShader.setVec3("lightPos", pointSunPositions);
-        
-        // --- å°è¡Œæ˜Ÿå¸¦ ---
+
+        // --- Ğ¡ĞĞĞÇ´ø ---
         simpleDepthShader.setBool("instanced", true);
         for (unsigned int i = 0; i < rock.meshes.size(); i++)
         {
@@ -293,49 +291,44 @@ int main()
             glBindVertexArray(0);
         }
 
-        //planetDepthShader.use();
-        //for (unsigned int i = 0; i < 6; ++i)
-        //    planetDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
-        //planetDepthShader.setFloat("far_plane", shadow_far);
-        //planetDepthShader.setVec3("lightPos", pointSunPositions);
 
-        // --- æ˜Ÿçƒ ---
-		simpleDepthShader.setBool("instanced", false);
+        // --- ĞÇÇò ---
+        simpleDepthShader.setBool("instanced", false);
         glm::mat4 sdModel = glm::mat4(1.0f);
         sdModel = glm::translate(sdModel, planetPosition);
-        sdModel = glm::scale(sdModel, planetScale); 
+        sdModel = glm::scale(sdModel, planetScale);
         simpleDepthShader.setMat4("model", sdModel);
         planet.Draw(simpleDepthShader);
 
 
-        
+
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glCullFace(GL_BACK);
-        // ====== é˜´å½± Pass ç»“æŸ ======
-        
-
-		glViewport(0, 0, windowwidth, windowheight);
+        // ====== ÒõÓ° Pass ½áÊø ======
 
 
-        // è®¡ç®—å¸§æ—¶é—´
+        glViewport(0, 0, windowwidth, windowheight);
+
+
+        // ¼ÆËãÖ¡Ê±¼ä
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // è¾“å…¥ç®¡ç†
+        // ÊäÈë¹ÜÀí
         processInput(window);
-        // æ¸²æŸ“
+        // äÖÈ¾
         // ------
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, msFBO);  // ç»‘å®šåˆ°HDRå¸§ç¼“å†²
+        glBindFramebuffer(GL_FRAMEBUFFER, msFBO);  // °ó¶¨µ½HDRÖ¡»º³å
         glViewport(0, 0, windowwidth, windowheight);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
 
-        // é…ç½®å˜æ¢çŸ©é˜µ
+        // ÅäÖÃ±ä»»¾ØÕó
         int winWidth, winHeight;
         glfwGetFramebufferSize(window, &winWidth, &winHeight);
         float aspect = winWidth / (float)winHeight;
@@ -344,14 +337,14 @@ int main()
         glm::mat4 view = camera.GetViewMatrix();
 
         // =================================
-        // ===== å¤©ç©ºç›’ï¼ˆèƒŒæ™¯ï¼‰=====
+        // ===== Ìì¿ÕºĞ£¨±³¾°£©=====
         // =================================
-        glDepthMask(GL_TRUE);    // å†™å…¥æ·±åº¦
+        glDepthMask(GL_TRUE);    // Ğ´ÈëÉî¶È
         glDepthFunc(GL_LEQUAL);
         glDisable(GL_BLEND);
 
         spaceboxShader.use();
-        glm::mat4 skyView = glm::mat4(glm::mat3(camera.GetViewMatrix())); // ç§»é™¤å¹³ç§»
+        glm::mat4 skyView = glm::mat4(glm::mat3(camera.GetViewMatrix())); // ÒÆ³ıÆ½ÒÆ
         spaceboxShader.setMat4("view", skyView);
         spaceboxShader.setMat4("projection", projection);
 
@@ -361,13 +354,13 @@ int main()
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
-        glDepthFunc(GL_LESS);   // æ¢å¤é»˜è®¤æ·±åº¦æ¯”è¾ƒ
-        // â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
-        // ======= å¤©ç©ºç›’ç»˜åˆ¶ç»“æŸ ========
+        glDepthFunc(GL_LESS);   // »Ö¸´Ä¬ÈÏÉî¶È±È½Ï
+        // ¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª
+        // ======= Ìì¿ÕºĞ»æÖÆ½áÊø ========
 
 
 
-        // å…ˆä¿å­˜å½“å‰çš„æ·±åº¦çŠ¶æ€å’Œæ··åˆçŠ¶æ€ï¼Œä»¥ä¾¿åç»­æ¢å¤
+        // ÏÈ±£´æµ±Ç°µÄÉî¶È×´Ì¬ºÍ»ìºÏ×´Ì¬£¬ÒÔ±ãºóĞø»Ö¸´
         GLboolean depthEnabled;
         glGetBooleanv(GL_DEPTH_TEST, &depthEnabled);
         GLboolean blendEnabled;
@@ -380,172 +373,51 @@ int main()
 
 
         // ========================================
-        // æ’æ˜Ÿæ¸²æŸ“éƒ¨åˆ† - å¼€å§‹
+        // ºãĞÇäÖÈ¾²¿·Ö - ¿ªÊ¼
         // ========================================
-        float starTime = static_cast<float>(glfwGetTime()); // æ’æ˜Ÿæ—‹è½¬æ—¶é—´
-        float starPulse = 1.0f + sin(starTime * 1.5f) * 0.0003f; // è®¡ç®—è„‰å†²æ•ˆæœ
+        float starTime = static_cast<float>(glfwGetTime()); // ºãĞÇĞı×ªÊ±¼ä
+        float starPulse = 1.0f + sin(starTime * 1.5f) * 0.0003f; // ¼ÆËãÂö³åĞ§¹û
 
-        //  è®¾ç½®æ’æ˜Ÿé¢œè‰²å’Œå¼ºåº¦
-        //glm::vec3 starColor = glm::vec3(1.0f, 0.8f, 0.6f); // å¤ªç™½äº†
-        //glm::vec3 coreColor = glm::vec3(1.0f, 0.9f, 0.7f); // å¤ªç™½äº†
-        glm::vec3 starColor = glm::vec3(1.0f, 0.65f, 0.3f); // æ›´æš–çš„é¢œè‰²
-        glm::vec3 coreColor = glm::vec3(1.0f, 0.75f, 0.4f); // æ›´æš–çš„æ ¸å¿ƒé¢œè‰²
-
-        float starIntensity = 3.0f + sin(starTime * 0.7f) * 0.3f; // è®¡ç®—æ’æ˜Ÿäº®åº¦å˜åŒ–
-
-        // é‡ç½®æ·±åº¦çŠ¶æ€ï¼Œç¡®ä¿æ¯å±‚éƒ½ç‹¬ç«‹
-        glEnable(GL_DEPTH_TEST);
-
-        // 1. å…ˆç»˜åˆ¶æ ¸å¿ƒå±‚ï¼ˆæœ€å°ï¼Œæœ€äº®ï¼‰
-        glDepthMask(GL_TRUE); // æ ¸å¿ƒå±‚æ·±åº¦å†™å…¥
-        glDisable(GL_BLEND); // æ ¸å¿ƒä¸é€æ˜ï¼Œä¸éœ€è¦æ··åˆ
-        glDepthFunc(GL_LESS); // é»˜è®¤æ·±åº¦å‡½æ•°
-        glDisable(GL_BLEND); // æ ¸å¿ƒä¸é€æ˜ï¼Œä¸éœ€è¦æ··åˆ
-
-        float starPulse2 = starPulse * 0.9f; // æ ¸å¿ƒè„‰å†²å¹…åº¦æ›´å°ä¸€äº›
-        sunCoreShader.use();
-        glm::mat4 coreModel = glm::mat4(1.0f);
-        coreModel = glm::translate(coreModel, pointSunPositions);
-        coreModel = glm::rotate(coreModel, starTime * 0.5f, glm::vec3(0.0f, 1.0f, 0.0f));
-        coreModel = glm::scale(coreModel, SunScale * 1.0f * starPulse2);
-
-        // HDRå¢å¼ºæ ¸å¿ƒäº®åº¦
-        float starHDRMutilplier = 12.0f;
-
-        sunCoreShader.setMat4("model", coreModel);
-        sunCoreShader.setMat4("view", view);
-        sunCoreShader.setMat4("projection", projection);
-        sunCoreShader.setFloat("time", starTime);
-        sunCoreShader.setVec3("starColor", starColor);
-        //sunCoreShader.setVec3("coreColor", glm::vec3(1.0f, 0.9f, 0.7f));
-        sunCoreShader.setVec3("coreColor", coreColor);
-        sunCoreShader.setVec3("viewPos", camera.Position);
-        sunCoreShader.setFloat("intensity", starIntensity * starHDRMutilplier);
-
-        glBindVertexArray(starVAO);
-        glDrawElements(GL_TRIANGLES, starIndices.size(), GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
-        //â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
-
-
-        //â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
-        // 2. ç»˜åˆ¶æ—¥å†•å±‚ï¼ˆä¸­ç­‰å¤§å°ï¼‰
-        //  å…³é”®ï¼šé‡ç½®æ·±åº¦çŠ¶æ€ï¼Œä½¿ç”¨ä¸åŒçš„æ·±åº¦å‡½æ•°
-        glDepthMask(GL_FALSE); //  æ—¥å†•å±‚ä¸å†™å…¥æ·±åº¦
-        glDepthFunc(GL_LEQUAL); //  å…è®¸æ·±åº¦å€¼ç›¸ç­‰æˆ–æ›´å¤§çš„ç‰‡æ®µé€šè¿‡
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE); // ä½¿ç”¨åŠ æ³•æ··åˆè®©æ—¥å†•æ›´äº®
-
-        // å–·æ¶Œæ—¥å†•
-        sunCoronaShader.use();
-        glm::vec3 dirToCamera = camera.Position - pointSunPositions;
-        glm::mat4 coronaModel = glm::mat4(1.0f);
-        coronaModel = glm::translate(coronaModel, pointSunPositions);
-        glm::mat4 rotate = glm::inverse(glm::lookAt(glm::vec3(0.f), dirToCamera, camera.WorldUp));
-        coronaModel = coronaModel * rotate;
-
-        coronaModel = glm::scale(coronaModel, SunScale * 2.0f * starPulse); // æ—¥å†•å±‚æ¯”æ ¸å¿ƒå¤§
-
-        sunCoronaShader.setMat4("model", coronaModel);
-        sunCoronaShader.setMat4("view", view);
-        sunCoronaShader.setMat4("projection", projection);
-        sunCoronaShader.setFloat("time", starTime * 0.08f);
-        sunCoronaShader.setVec3("sunCenter", pointSunPositions);
-        sunCoronaShader.setVec3("coronaColor", starColor);
-        //sunCoronaShader.setVec3("viewPos", camera.Position);
-        sunCoronaShader.setFloat("coronaIntensity", 1.8f);
-        sunCoronaShader.setFloat("scale", SunScale.x * 1.7f); // 204.0f
-
-        glBindVertexArray(coronaQuadVAO);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);   // ç”¨4ä¸ªé¡¶ç‚¹ç»˜åˆ¶å››è¾¹å½¢
-        glBindVertexArray(0);
-
-        // ç¯ç»•æ—¥å†•
-        CoreCoronaShader.use();
-        coronaModel = glm::mat4(1.0f);
-        coronaModel = glm::translate(coronaModel, pointSunPositions);
-        coronaModel = glm::rotate(coronaModel, starTime * 0.3f, glm::vec3(0.0f, 1.0f, 0.0f));
-        coronaModel = glm::scale(coronaModel, SunScale * 1.6f * starPulse); // æ—¥å†•å±‚æ¯”æ ¸å¿ƒå¤§
-
-        CoreCoronaShader.setMat4("model", coronaModel);
-        CoreCoronaShader.setMat4("view", view);
-        CoreCoronaShader.setMat4("projection", projection);
-        CoreCoronaShader.setFloat("time", starTime);
-        CoreCoronaShader.setVec3("sunCenter", pointSunPositions);
-        CoreCoronaShader.setVec3("coronaColor", starColor);
-        //CoreCoronaShader.setVec3("viewPos", camera.Position);
-        CoreCoronaShader.setFloat("coronaIntensity", 1.8f);
-        CoreCoronaShader.setFloat("coronaRadius", SunScale.x * 1.7f); // 204.0f
-
-        glBindVertexArray(starVAO);
-        glDrawElements(GL_TRIANGLES, starIndices.size(), GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
-
-
-        //â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
-        // 3. æœ€åç»˜åˆ¶è¾‰å…‰å±‚ï¼ˆæœ€å¤§ï¼Œæœ€é€æ˜ï¼‰
-        // ä¿®æ”¹æ·±åº¦çŠ¶æ€ï¼Œæ··åˆçŠ¶æ€
-        glDepthMask(GL_FALSE); // ä¸å†™å…¥æ·±åº¦
-        glDepthFunc(GL_LEQUAL); // ç­‰äºæˆ–æ›´å¤§æ·±åº¦é€šè¿‡
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE); // ä½¿ç”¨åŠ æ³•æ··åˆï¼
-
-        sunGlowShader.use();
-        glm::mat4 glowModel = glm::mat4(1.0f);
-        glowModel = glm::translate(glowModel, pointSunPositions);
-        glowModel = glm::rotate(glowModel, starTime * 0.1f, glm::vec3(0.0f, 1.0f, 0.0f));
-        glowModel = glm::scale(glowModel, SunScale * 1.6f * starPulse);
-
-        sunGlowShader.setMat4("model", glowModel);
-        sunGlowShader.setMat4("view", view);
-        sunGlowShader.setMat4("projection", projection);
-        sunGlowShader.setFloat("time", starTime);
-        sunGlowShader.setVec3("starColor", starColor);
-        sunGlowShader.setVec3("viewPos", camera.Position);
-        sunGlowShader.setFloat("glowIntensity", 0.8f);
-
-        glBindVertexArray(starVAO);
-        glDrawElements(GL_TRIANGLES, starIndices.size(), GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
-        //â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
-
+        Sun.SunRender(sunCoreShader, sunCoronaShader, CoreCoronaShader, sunGlowShader, camera, projection, view);
+    
         // ========================================
-        // æ’æ˜Ÿæ¸²æŸ“éƒ¨åˆ† - ç»“æŸ
+        // ºãĞÇäÖÈ¾²¿·Ö - ½áÊø
         // ========================================
 
-        // æ¢å¤åŸå§‹çŠ¶æ€
+
+        // »Ö¸´Ô­Ê¼×´Ì¬
         if (!depthEnabled) glDisable(GL_DEPTH_TEST);
         else glEnable(GL_DEPTH_TEST);
         glDepthMask(depthMask ? GL_TRUE : GL_FALSE);
         glDepthFunc(depthFunc);
         if (blendEnabled) glEnable(GL_BLEND);
         else glDisable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // æ¢å¤é»˜è®¤æ··åˆå‡½æ•°
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // »Ö¸´Ä¬ÈÏ»ìºÏº¯Êı
 
 
         // ========================================
-        // è¡Œæ˜Ÿæ¸²æŸ“
+        // ĞĞĞÇäÖÈ¾
         // ========================================
-        //â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
-        // è¡Œæ˜Ÿç€è‰²å™¨
+        //¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª¡ª
+        // ĞĞĞÇ×ÅÉ«Æ÷
         planetshader.use();
         planetshader.setVec3("viewPos", camera.Position);
         planetshader.setFloat("material.shininess", 32.0f);
-        // å®šå‘å…‰
+        // ¶¨Ïò¹â
         planetshader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
         planetshader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
         planetshader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
         planetshader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-        // ç‚¹å…‰æº 1
+        // µã¹âÔ´ 1
         planetshader.setVec3("pointLights[0].position", pointSunPositions);
         planetshader.setVec3("pointLights[0].ambient", 1.0f, 1.0f, 0.8f);
-        planetshader.setVec3("pointLights[0].diffuse", 200.0f, 200.0f, 160.0f);   // å¢å¤§
-        planetshader.setVec3("pointLights[0].specular", 120.0f, 120.0f, 100.0f);  // å¢å¤§
+        planetshader.setVec3("pointLights[0].diffuse", 200.0f, 200.0f, 160.0f);   // Ôö´ó
+        planetshader.setVec3("pointLights[0].specular", 120.0f, 120.0f, 100.0f);  // Ôö´ó
         planetshader.setFloat("pointLights[0].constant", 1.0f);
-        planetshader.setFloat("pointLights[0].linear", 0.0002f);        // åŸæ¥æ˜¯0.09ï¼Œå‡å°
-        planetshader.setFloat("pointLights[0].quadratic", 0.000005f);    // åŸæ¥æ˜¯0.032ï¼Œå‡å°
+        planetshader.setFloat("pointLights[0].linear", 0.0002f);        // Ô­À´ÊÇ0.09£¬¼õĞ¡
+        planetshader.setFloat("pointLights[0].quadratic", 0.000005f);    // Ô­À´ÊÇ0.032£¬¼õĞ¡
 
-        // é˜´å½±
+        // ÒõÓ°
         planetshader.setInt("shadows", 1);
         planetshader.setFloat("far_plane", shadow_far);
         planetshader.setVec3("lightPos", pointSunPositions);
@@ -556,7 +428,7 @@ int main()
         planetshader.setMat4("projection", projection);
         planetshader.setMat4("view", view);
 
-        // ç»˜åˆ¶è¡Œæ˜Ÿ
+        // »æÖÆĞĞĞÇ
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, planetPosition);
         model = glm::scale(model, planetScale);
@@ -564,7 +436,7 @@ int main()
         planet.Draw(planetshader);
 
 
-        // è®¾ç½®å°è¡Œæ˜Ÿç€è‰²å™¨å¹¶ç»˜åˆ¶
+        // ÉèÖÃĞ¡ĞĞĞÇ×ÅÉ«Æ÷²¢»æÖÆ
         asteroidShader.use();
         asteroidShader.setMat4("projection", projection);
         asteroidShader.setMat4("view", view);
@@ -574,25 +446,25 @@ int main()
         asteroidShader.setInt("material.specular", 1);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id);
-        // è®¾ç½®å°è¡Œæ˜Ÿç€è‰²å™¨å¹¶ç»˜åˆ¶
+        // ÉèÖÃĞ¡ĞĞĞÇ×ÅÉ«Æ÷²¢»æÖÆ
         asteroidShader.use();
         asteroidShader.setVec3("viewPos", camera.Position);
         asteroidShader.setFloat("material.shininess", 32.0f);
-        // å®šå‘å…‰
+        // ¶¨Ïò¹â
         asteroidShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
         asteroidShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
         asteroidShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
         asteroidShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-        // ç‚¹å…‰æº 1
+        // µã¹âÔ´ 1
         asteroidShader.setVec3("pointLights[0].position", pointSunPositions);
         asteroidShader.setVec3("pointLights[0].ambient", 1.0f, 1.0f, 0.8f);
-        asteroidShader.setVec3("pointLights[0].diffuse", 200.0f, 200.0f, 160.0f);   // å¢å¤§
-        asteroidShader.setVec3("pointLights[0].specular", 120.0f, 120.0f, 100.0f);  // å¢å¤§
+        asteroidShader.setVec3("pointLights[0].diffuse", 200.0f, 200.0f, 160.0f);   // Ôö´ó
+        asteroidShader.setVec3("pointLights[0].specular", 120.0f, 120.0f, 100.0f);  // Ôö´ó
         asteroidShader.setFloat("pointLights[0].constant", 1.0f);
-        asteroidShader.setFloat("pointLights[0].linear", 0.0002f);        // åŸæ¥æ˜¯0.09ï¼Œå‡å°
-        asteroidShader.setFloat("pointLights[0].quadratic", 0.000005f);    // åŸæ¥æ˜¯0.032ï¼Œå‡å°
+        asteroidShader.setFloat("pointLights[0].linear", 0.0002f);        // Ô­À´ÊÇ0.09£¬¼õĞ¡
+        asteroidShader.setFloat("pointLights[0].quadratic", 0.000005f);    // Ô­À´ÊÇ0.032£¬¼õĞ¡
 
-        //// é˜´å½±
+        //// ÒõÓ°
         asteroidShader.setInt("shadows", 1);
         asteroidShader.setFloat("far_plane", shadow_far);
         asteroidShader.setVec3("lightPos", pointSunPositions);
@@ -600,7 +472,7 @@ int main()
         glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
         asteroidShader.setInt("depthMap", 2);
 
-        // ç»˜åˆ¶å°è¡Œæ˜Ÿ
+        // »æÖÆĞ¡ĞĞĞÇ
         for (unsigned int i = 0; i < rock.meshes.size(); i++)
         {
             glBindVertexArray(rock.meshes[i].VAO);
@@ -609,125 +481,125 @@ int main()
         }
 
         //==========================================
-        // æ¸²æŸ“åˆ°å±å¹•
+        // äÖÈ¾µ½ÆÁÄ»
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
 
-        // 1. äº®åº¦æå–ï¼šä»hdrColorBufferä¸­æå–äº®åº¦ä¿¡æ¯åˆ°blurFBO1
+        // 1. ÁÁ¶ÈÌáÈ¡£º´ÓhdrColorBufferÖĞÌáÈ¡ÁÁ¶ÈĞÅÏ¢µ½blurFBO1
         glBindFramebuffer(GL_FRAMEBUFFER, blurFBO1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         brightPassShader.use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
         brightPassShader.setInt("hdrImage", 0);
-        brightPassShader.setFloat("threshold", 1.2f); // è®¾ç½®äº®åº¦é˜ˆå€¼ 1.2f
+        brightPassShader.setFloat("threshold", 1.2f); // ÉèÖÃÁÁ¶ÈãĞÖµ 1.2f
         glBindVertexArray(quadVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        // 2. æ°´å¹³é«˜æ–¯æ¨¡ç³Š
+        // 2. Ë®Æ½¸ßË¹Ä£ºı
         glBindFramebuffer(GL_FRAMEBUFFER, blurFBO2);
         glClear(GL_COLOR_BUFFER_BIT);
         blurShader.use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, blurColorBuffer1);
         blurShader.setInt("image", 0);
-        blurShader.setBool("horizontal", true); // æ°´å¹³æ¨¡ç³Š
+        blurShader.setBool("horizontal", true); // Ë®Æ½Ä£ºı
         glBindVertexArray(quadVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        // MSAAå¸§ç¼“å†²åˆ°HDRå¸§ç¼“å†²çš„blitæ“ä½œ
+        // MSAAÖ¡»º³åµ½HDRÖ¡»º³åµÄblit²Ù×÷
         glBindFramebuffer(GL_READ_FRAMEBUFFER, msFBO);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdrFBO);
         glBlitFramebuffer(0, 0, windowwidth, windowheight,
             0, 0, windowwidth, windowheight,
             GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-        // ã€æ–°å¢ã€‘æŠŠæ·±åº¦ä» msFBO å¤åˆ¶åˆ°é»˜è®¤å¸§ç¼“å†²ï¼Œä¾›åé¢çš„å…‰æ™•ä½¿ç”¨
+        // ¡¾ĞÂÔö¡¿°ÑÉî¶È´Ó msFBO ¸´ÖÆµ½Ä¬ÈÏÖ¡»º³å£¬¹©ºóÃæµÄ¹âÔÎÊ¹ÓÃ
         glBindFramebuffer(GL_READ_FRAMEBUFFER, msFBO);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         glBlitFramebuffer(0, 0, windowwidth, windowheight,
             0, 0, windowwidth, windowheight,
             GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
-        // æ¢å¤ä¸ºé»˜è®¤å¸§ç¼“å†²æˆ–ç»‘å®š hdrFBO ä»¥ä¾¿åç»­è¯»å– hdrColorBuffer
+        // »Ö¸´ÎªÄ¬ÈÏÖ¡»º³å»ò°ó¶¨ hdrFBO ÒÔ±ãºóĞø¶ÁÈ¡ hdrColorBuffer
         glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 
-        // 3. å‚ç›´é«˜æ–¯æ¨¡ç³Š
+        // 3. ´¹Ö±¸ßË¹Ä£ºı
         glBindFramebuffer(GL_FRAMEBUFFER, blurFBO1);
         glClear(GL_COLOR_BUFFER_BIT);
         blurShader.use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, blurColorBuffer2);
-        blurShader.setBool("horizontal", false); // å‚ç›´æ¨¡ç³Š
+        blurShader.setBool("horizontal", false); // ´¹Ö±Ä£ºı
         glBindVertexArray(quadVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        // ------- åˆæˆåˆ°å±å¹• -------
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);   // å›åˆ°é»˜è®¤å¸§ç¼“å†²
-        // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // è€ç‰ˆæœ¬
-        // åªæ¸…ç†é¢œè‰²ç¼“å†²ï¼Œä¸æ¸…ç†æ·±åº¦ç¼“å†²ï¼Œä»¥æ­¤æ¥ä¿ç•™æ·±åº¦ä¿¡æ¯ï¼Œç¡®ä¿åç»­æ¸²æŸ“çš„ç‰©ä½“ä¸ä¼šè¢«æ¸…é™¤
+        // ------- ºÏ³Éµ½ÆÁÄ» -------
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);   // »Øµ½Ä¬ÈÏÖ¡»º³å
+        // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // ÀÏ°æ±¾
+        // Ö»ÇåÀíÑÕÉ«»º³å£¬²»ÇåÀíÉî¶È»º³å£¬ÒÔ´ËÀ´±£ÁôÉî¶ÈĞÅÏ¢£¬È·±£ºóĞøäÖÈ¾µÄÎïÌå²»»á±»Çå³ı
         glClear(GL_COLOR_BUFFER_BIT);
         compositeShader.use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
         compositeShader.setInt("sceneTexture", 0);
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, blurColorBuffer1); // æœ€ç»ˆæ¨¡ç³Šç»“æœåœ¨ blurFBO1 çš„é¢œè‰²é™„ä»¶
+        glBindTexture(GL_TEXTURE_2D, blurColorBuffer1); // ×îÖÕÄ£ºı½á¹ûÔÚ blurFBO1 µÄÑÕÉ«¸½¼ş
         compositeShader.setInt("bloomTexture", 1);
-        compositeShader.setFloat("exposure", 1.0f); // æ›å…‰å€¼
-        compositeShader.setFloat("bloomStrength", 0.6f); // Bloomå¼ºåº¦
-        compositeShader.setVec3("colorTint", glm::vec3(1.0f, 0.95f, 0.6f)); // Bloomé¢œè‰²
+        compositeShader.setFloat("exposure", 1.0f); // ÆØ¹âÖµ
+        compositeShader.setFloat("bloomStrength", 0.6f); // BloomÇ¿¶È
+        compositeShader.setVec3("colorTint", glm::vec3(1.0f, 0.95f, 0.6f)); // BloomÑÕÉ«
         glBindVertexArray(quadVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        // 5. æ¸²æŸ“é•œå¤´å…‰æ™•
-        glDepthMask(GL_FALSE); // ä¸å†™å…¥æ·±åº¦
+        // 5. äÖÈ¾¾µÍ·¹âÔÎ
+        glDepthMask(GL_FALSE); // ²»Ğ´ÈëÉî¶È
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
         glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE); // ä½¿ç”¨åŠ æ³•æ··åˆ,ä¿ç•™Alphaæ§åˆ¶å¼ºåº¦
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Ê¹ÓÃ¼Ó·¨»ìºÏ,±£ÁôAlpha¿ØÖÆÇ¿¶È
         lensFlareShader.use();
         glm::vec3 dirToCamera2 = camera.Position - pointSunPositions;
         glm::mat4 flareModel = glm::mat4(1.0f);
         flareModel = glm::translate(flareModel, pointSunPositions);
-        // å…¬å‘Šæ¿å§‹ç»ˆé¢å‘ç›¸æœº
+        // ¹«¸æ°åÊ¼ÖÕÃæÏòÏà»ú
         glm::mat4 flareRotate = glm::inverse(glm::lookAt(glm::vec3(0.f), dirToCamera2, camera.WorldUp));
         flareModel = flareModel * flareRotate;
-        // å…‰æ™•å¤§å°ï¼Œæ¯”è¾‰å…‰ç•¥å¤§
+        // ¹âÔÎ´óĞ¡£¬±È»Ô¹âÂÔ´ó
         float flareSize = SunScale.x * 3.0f;
         flareModel = glm::scale(flareModel, glm::vec3(flareSize));
         lensFlareShader.setMat4("model", flareModel);
         lensFlareShader.setMat4("view", view);
         lensFlareShader.setMat4("projection", projection);
-        lensFlareShader.setVec4("flareColor", glm::vec4(1.0f, 0.8f, 0.5f, 0.6f)); // å…‰æ™•é¢œè‰²å’Œé€æ˜åº¦
+        lensFlareShader.setVec4("flareColor", glm::vec4(1.0f, 0.8f, 0.5f, 0.6f)); // ¹âÔÎÑÕÉ«ºÍÍ¸Ã÷¶È
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, flareTexture);
         lensFlareShader.setInt("flareTexture", 0);
-        glBindVertexArray(coronaQuadVAO); // å¤ç”¨æ—¥å†•å››è¾¹å½¢
+        glBindVertexArray(lensQuadVAO); // ¸´ÓÃ¹âÔÎËÄ±ßĞÎ
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         //glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, flareTexture1);
         lensFlareShader.setInt("flareTexture", 0);
-        //glBindVertexArray(coronaQuadVAO); // å¤ç”¨æ—¥å†•å››è¾¹å½¢
+        //glBindVertexArray(lensQuadVAO); // ¸´ÓÃ¹âÔÎËÄ±ßĞÎ
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         glBindVertexArray(0);
 
 
-        // æ¢å¤æ·±åº¦æµ‹è¯•å’Œæ··åˆçŠ¶æ€
+        // »Ö¸´Éî¶È²âÊÔºÍ»ìºÏ×´Ì¬
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
         glDepthMask(GL_TRUE);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // æ¢å¤é»˜è®¤æ··åˆå‡½æ•°
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // »Ö¸´Ä¬ÈÏ»ìºÏº¯Êı
 
 
-        // æ¢å¤åŸå§‹çŠ¶æ€
+        // »Ö¸´Ô­Ê¼×´Ì¬
         if (!depthEnabled) glDisable(GL_DEPTH_TEST);
         else glEnable(GL_DEPTH_TEST);
         glDepthMask(depthMask ? GL_TRUE : GL_FALSE);
         glDepthFunc(depthFunc);
         if (blendEnabled) glEnable(GL_BLEND);
         else glDisable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // æ¢å¤é»˜è®¤æ··åˆå‡½æ•°
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // »Ö¸´Ä¬ÈÏ»ìºÏº¯Êı
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -735,33 +607,33 @@ int main()
 
     glDeleteVertexArrays(1, &starVAO);
     glDeleteBuffers(1, &starVBO);
-	glDeleteBuffers(1, &starEBO);
+    glDeleteBuffers(1, &starEBO);
     glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteBuffers(1, &skyboxVBO);
 
 
-    glfwTerminate(); // æ¸…ç†å¹¶å…³é—­GLFW
+    glfwTerminate(); // ÇåÀí²¢¹Ø±ÕGLFW
     return 0;
 }
 
 
 
 
-// çª—å£å›è°ƒå‡½æ•°
+// ´°¿Ú»Øµ÷º¯Êı
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    glViewport(0, 0, width, height); // glViewport ç”¨äºè®¾ç½®è§†å£å¤§å°
+    glViewport(0, 0, width, height); // glViewport ÓÃÓÚÉèÖÃÊÓ¿Ú´óĞ¡
 
     windowwidth = width;
     windowheight = height;
 
-    rebuildFramebuffers(width, height); // é‡æ–°åˆ›å»ºå¸§ç¼“å†²å¯¹è±¡
+    rebuildFramebuffers(width, height); // ÖØĞÂ´´½¨Ö¡»º³å¶ÔÏó
 
     lastX = width / 2.0f;
     lastY = height / 2.0f;
 }
 
-// è¾“å…¥æ£€æŸ¥å‡½æ•°
+// ÊäÈë¼ì²éº¯Êı
 void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -777,10 +649,10 @@ void processInput(GLFWwindow* window)
         camera.ProcessKeyboard(RIGHT, deltaTime);
 
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        camera.Sensitivity += 0.001f; // å¢åŠ é¼ æ ‡çµæ•åº¦
+        camera.Sensitivity += 0.001f; // Ôö¼ÓÊó±êÁéÃô¶È
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        camera.Sensitivity -= 0.001f; // å‡å°‘é¼ æ ‡çµæ•åº¦
-    // é™åˆ¶èŒƒå›´
+        camera.Sensitivity -= 0.001f; // ¼õÉÙÊó±êÁéÃô¶È
+    // ÏŞÖÆ·¶Î§
     camera.Sensitivity = glm::clamp(camera.Sensitivity, 0.01f, 0.5f);
 
     if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS && !tabKeyPressed)
@@ -803,27 +675,27 @@ void processInput(GLFWwindow* window)
         tabKeyPressed = false;
     }
 
-    // F10 è¿›å…¥å…¨å±
+    // F10 ½øÈëÈ«ÆÁ
     if (glfwGetKey(window, GLFW_KEY_F10) == GLFW_PRESS && !f10Pressed)
     {
         f10Pressed = true;
         if (!isFullscreen)
         {
-            // ä¿å­˜å½“å‰çª—å£çŠ¶æ€
+            // ±£´æµ±Ç°´°¿Ú×´Ì¬
             glfwGetWindowPos(window, &savedX, &savedY);
             glfwGetWindowSize(window, &savedWidth, &savedHeight);
-			GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+            GLFWmonitor* monitor = glfwGetPrimaryMonitor();
             const GLFWvidmode* mode = glfwGetVideoMode(monitor);
             glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
-			isFullscreen = true;
-			firstMouse = true; // é‡ç½®é¼ æ ‡é¦–æ¬¡ç§»åŠ¨æ ‡å¿—
+            isFullscreen = true;
+            firstMouse = true; // ÖØÖÃÊó±êÊ×´ÎÒÆ¶¯±êÖ¾
         }
     }
     if (glfwGetKey(window, GLFW_KEY_F10) == GLFW_RELEASE)
         f10Pressed = false;
 
 
-	// F11 é€€å‡ºå…¨å±
+    // F11 ÍË³öÈ«ÆÁ
     if (glfwGetKey(window, GLFW_KEY_F11) == GLFW_PRESS && !f11Pressed)
     {
         f11Pressed = true;
@@ -831,14 +703,14 @@ void processInput(GLFWwindow* window)
         {
             glfwSetWindowMonitor(window, nullptr, savedX, savedY, savedWidth, savedHeight, 0);
             isFullscreen = false;
-			firstMouse = true; // é‡ç½®é¼ æ ‡é¦–æ¬¡ç§»åŠ¨æ ‡å¿—
+            firstMouse = true; // ÖØÖÃÊó±êÊ×´ÎÒÆ¶¯±êÖ¾
         }
-	}
+    }
     if (glfwGetKey(window, GLFW_KEY_F11) == GLFW_RELEASE)
-		f11Pressed = false;
+        f11Pressed = false;
 }
 
-// é¼ æ ‡å›è°ƒå‡½æ•°
+// Êó±ê»Øµ÷º¯Êı
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
     float xpos = static_cast<float>(xposIn);
@@ -860,13 +732,13 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-// æ»šè½®å›è°ƒå‡½æ•°
+// ¹öÂÖ»Øµ÷º¯Êı
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
 
-// åŠ è½½çº¹ç†å‡½æ•°
+// ¼ÓÔØÎÆÀíº¯Êı
 unsigned int loadTexture(char const* path)
 {
     unsigned int textureID;
@@ -905,7 +777,7 @@ unsigned int loadTexture(char const* path)
     return textureID;
 }
 
-// åŠ è½½ç«‹æ–¹ä½“è´´å›¾
+// ¼ÓÔØÁ¢·½ÌåÌùÍ¼
 unsigned int loadCubemap(std::vector<std::string> faces)
 {
     unsigned int textureID;
@@ -939,7 +811,7 @@ unsigned int loadCubemap(std::vector<std::string> faces)
     return textureID;
 }
 
-// ä»æ–‡ä»¶åŠ è½½çº¹ç†
+// ´ÓÎÄ¼ş¼ÓÔØÎÆÀí
 unsigned int TextureFromFile(const char* path, const string& directory, bool gamma)
 {
     string filename = string(path);
@@ -975,25 +847,25 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
     return textureID;
 }
 
-// å¸§ç¼“å†²å¯¹è±¡å’Œçº¹ç†
+// Ö¡»º³å¶ÔÏóºÍÎÆÀí
 //unsigned int hdrFBO, blurFBO1, blurFBO2;
 //unsigned int hdrColorBuffer, blurColorBuffer1, blurColorBuffer2;
 //unsigned int hdrDepthRBO;
 void setupFramebuffers(int width, int height)
 {
-    const int samples = 4; // å¤šé‡é‡‡æ ·æ ·æœ¬æ•°,ä¸ glfwWindowHint(GLFW_SAMPLES, 4) ä¿æŒä¸€è‡´
+    const int samples = 4; // ¶àÖØ²ÉÑùÑù±¾Êı,Óë glfwWindowHint(GLFW_SAMPLES, 4) ±£³ÖÒ»ÖÂ
 
-    // --- 1) åˆ›å»ºå¤šé‡é‡‡æ · FBOï¼ˆç”¨äºåœºæ™¯æ¸²æŸ“ï¼‰ ---
+    // --- 1) ´´½¨¶àÖØ²ÉÑù FBO£¨ÓÃÓÚ³¡¾°äÖÈ¾£© ---
     glGenFramebuffers(1, &msFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, msFBO);
 
-    // å¤šé‡é‡‡æ ·é¢œè‰² renderbuffer
+    // ¶àÖØ²ÉÑùÑÕÉ« renderbuffer
     glGenRenderbuffers(1, &msColorRBO);
     glBindRenderbuffer(GL_RENDERBUFFER, msColorRBO);
     glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_RGBA16F, width, height);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msColorRBO);
 
-    // å¤šé‡é‡‡æ ·æ·±åº¦ renderbuffer
+    // ¶àÖØ²ÉÑùÉî¶È renderbuffer
     glGenRenderbuffers(1, &msDepthRBO);
     glBindRenderbuffer(GL_RENDERBUFFER, msDepthRBO);
     glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT24, width, height);
@@ -1006,7 +878,7 @@ void setupFramebuffers(int width, int height)
     else
         std::cout << "MSAA FBO created successfully." << std::endl;
 
-    // --- 2) åˆ›å»ºå¯é‡‡æ ·çš„ HDR FBOï¼ˆç”¨äºåå¤„ç†ï¼Œä½œä¸º resolve ç›®æ ‡ï¼‰ ---
+    // --- 2) ´´½¨¿É²ÉÑùµÄ HDR FBO£¨ÓÃÓÚºó´¦Àí£¬×÷Îª resolve Ä¿±ê£© ---
     glGenFramebuffers(1, &hdrFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
     glGenTextures(1, &hdrColorBuffer);
@@ -1057,19 +929,19 @@ void setupFramebuffers(int width, int height)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-// é‡æ–°åˆ›å»ºå¸§ç¼“å†²å¯¹è±¡
+// ÖØĞÂ´´½¨Ö¡»º³å¶ÔÏó
 void rebuildFramebuffers(int width, int height)
 {
-    // å®‰å…¨è§£ç»‘
+    // °²È«½â°ó
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    // åˆ é™¤æ—§çš„å¸§ç¼“å†²å’Œçº¹ç†
+    // É¾³ı¾ÉµÄÖ¡»º³åºÍÎÆÀí
 
-    // åˆ é™¤ MSAA èµ„æº
+    // É¾³ı MSAA ×ÊÔ´
     if (msFBO) { glDeleteFramebuffers(1, &msFBO); msFBO = 0; }
     if (msColorRBO) { glDeleteRenderbuffers(1, &msColorRBO); msColorRBO = 0; }
     if (msDepthRBO) { glDeleteRenderbuffers(1, &msDepthRBO); msDepthRBO = 0; }
 
-    // åˆ é™¤åŸæœ‰ HDR / blur èµ„æº
+    // É¾³ıÔ­ÓĞ HDR / blur ×ÊÔ´
     glDeleteFramebuffers(1, &hdrFBO);
     glDeleteTextures(1, &hdrColorBuffer);
     glDeleteRenderbuffers(1, &hdrDepthRBO);
@@ -1079,80 +951,80 @@ void rebuildFramebuffers(int width, int height)
 
     glDeleteFramebuffers(1, &blurFBO2);
     glDeleteTextures(1, &blurColorBuffer2);
-    // é‡æ–°åˆ›å»ºå¸§ç¼“å†²
+    // ÖØĞÂ´´½¨Ö¡»º³å
     setupFramebuffers(width, height);
 }
 
-// å°è¡Œæ˜Ÿå¸¦åˆå§‹åŒ–
+// Ğ¡ĞĞĞÇ´ø³õÊ¼»¯
 void RocksModelMatricesInit(unsigned int& amount, Model& rock)
 {
     glm::mat4* modelMatrices;
     modelMatrices = new glm::mat4[amount];
-    srand(static_cast<unsigned int>(glfwGetTime())); // ç”Ÿæˆéšæœºç§å­
+    srand(static_cast<unsigned int>(glfwGetTime())); // Éú³ÉËæ»úÖÖ×Ó
     float radius = 200.0;
     float offset = 20.0f;
     for (unsigned int i = 0; i < amount; i++)
     {
         glm::mat4 model = glm::mat4(1.0f);
-        // 1.  å¹³ç§»  ï¼šæ²¿åœ†å‘¨ä½ç§»ï¼Œ'åŠå¾„'åœ¨èŒƒå›´å†… [-offset, offset]
+        // 1.  Æ½ÒÆ  £ºÑØÔ²ÖÜÎ»ÒÆ£¬'°ë¾¶'ÔÚ·¶Î§ÄÚ [-offset, offset]
         float angle = (float)i / (float)amount * 360.0f;
         float displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
         float x = sin(angle) * radius + displacement;
 
         displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
-        float y = displacement * 0.1f; // ä¿æŒåœºåœ°çš„é«˜åº¦å°äºxè½´å’Œzè½´çš„å®½åº¦ã€‚
+        float y = displacement * 0.1f; // ±£³Ö³¡µØµÄ¸ß¶ÈĞ¡ÓÚxÖáºÍzÖáµÄ¿í¶È¡£
 
         displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
         float z = cos(angle) * radius + displacement;
 
         model = glm::translate(model, glm::vec3(x, y, z));
 
-        // 2.  ç¼©æ”¾  ï¼šåœ¨ 0.05 å’Œ 0.25f ä¹‹é—´è¿›è¡Œç¼©æ”¾ 
-        float scale = static_cast<float>((rand() % 30) / 100.0 + 0.01); // åœ¨ 0.05 å’Œ 0.17f ä¹‹é—´ç¼©æ”¾ï¼Œä½¿å¾—å°è¡Œæ˜Ÿæ›´å°ä¸€äº›
-        // æ·»åŠ å°ºå¯¸å˜åŒ–ä»¥æ¨¡æ‹Ÿæ›´çœŸå®çš„å°è¡Œæ˜Ÿå¸¦
+        // 2.  Ëõ·Å  £ºÔÚ 0.05 ºÍ 0.25f Ö®¼ä½øĞĞËõ·Å 
+        float scale = static_cast<float>((rand() % 30) / 100.0 + 0.01); // ÔÚ 0.05 ºÍ 0.17f Ö®¼äËõ·Å£¬Ê¹µÃĞ¡ĞĞĞÇ¸üĞ¡Ò»Ğ©
+        // Ìí¼Ó³ß´ç±ä»¯ÒÔÄ£Äâ¸üÕæÊµµÄĞ¡ĞĞĞÇ´ø
         if (i % 200 == 0)
         {
-            scale *= 6.0f; // æ¯200ä¸ªå°è¡Œæ˜Ÿä¸­æœ‰ä¸€ä¸ªæ›´å¤§ä¸€äº›
+            scale *= 6.0f; // Ã¿200¸öĞ¡ĞĞĞÇÖĞÓĞÒ»¸ö¸ü´óÒ»Ğ©
         }
         else if (i % 20 == 0)
         {
-            scale *= 3.0f; // æ¯20ä¸ªå°è¡Œæ˜Ÿä¸­æœ‰ä¸€ä¸ªä¸­ç­‰å¤§å°
+            scale *= 3.0f; // Ã¿20¸öĞ¡ĞĞĞÇÖĞÓĞÒ»¸öÖĞµÈ´óĞ¡
         }
         else if (i % 5 == 0)
         {
-            scale *= 1.5f; // æ¯5ä¸ªå°è¡Œæ˜Ÿä¸­æœ‰ä¸€ä¸ªç¨å¾®å¤§ä¸€äº›
+            scale *= 1.5f; // Ã¿5¸öĞ¡ĞĞĞÇÖĞÓĞÒ»¸öÉÔÎ¢´óÒ»Ğ©
         }
         model = glm::scale(model, glm::vec3(scale));
 
-        // 3.  æ—‹è½¬  ï¼šå›´ç»•ä¸€ä¸ªï¼ˆåŠï¼‰éšæœºé€‰å–çš„æ—‹è½¬è½´å‘é‡è¿›è¡Œéšæœºæ—‹è½¬ã€‚
+        // 3.  Ğı×ª  £ºÎ§ÈÆÒ»¸ö£¨°ë£©Ëæ»úÑ¡È¡µÄĞı×ªÖáÏòÁ¿½øĞĞËæ»úĞı×ª¡£
         float rotAngle = static_cast<float>((rand() % 360));
         //model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
-            // æ›´å¤æ‚çš„æ—‹è½¬ - å¤šä¸ªæ—‹è½¬è½´ç»„åˆ
+            // ¸ü¸´ÔÓµÄĞı×ª - ¶à¸öĞı×ªÖá×éºÏ
         glm::mat4 rotation = glm::mat4(1.0f);
         rotation = glm::rotate(rotation, rotAngle * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
         rotation = glm::rotate(rotation, rotAngle * 0.3f, glm::vec3(0.0f, 1.0f, 0.0f));
         rotation = glm::rotate(rotation, rotAngle * 0.2f, glm::vec3(0.0f, 0.0f, 1.0f));
         model = model * rotation;
 
-        // 4. ç°åœ¨æ·»åŠ åˆ°çŸ©é˜µåˆ—è¡¨ä¸­
+        // 4. ÏÖÔÚÌí¼Óµ½¾ØÕóÁĞ±íÖĞ
         modelMatrices[i] = model;
     }
 
-    // è®¾ç½®å®ä¾‹åŒ–é¡¶ç‚¹å±æ€§
+    // ÉèÖÃÊµÀı»¯¶¥µãÊôĞÔ
     unsigned int buffer;
     glGenBuffers(1, &buffer);
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
     glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
 
-    // å°†å˜æ¢çŸ©é˜µè®¾ç½®ä¸ºå®ä¾‹é¡¶ç‚¹å±æ€§ï¼ˆä½¿ç”¨é™¤æ•°1ï¼‰
-    // æ³¨æ„ï¼šæˆ‘ä»¬è¿™é‡Œæœ‰ç‚¹å–å·§ï¼Œç›´æ¥è·å–æ¨¡å‹ç½‘æ ¼ï¼ˆå¤šä¸ªç½‘æ ¼æ—¶ï¼‰ç°åœ¨å…¬å¼€å£°æ˜çš„VAOï¼Œå¹¶æ·»åŠ æ–°çš„vertexAttribPointers
-    // æ­£å¸¸æƒ…å†µä¸‹ï¼Œä½ ä¼šå¸Œæœ›ä»¥æ›´æœ‰æ¡ç†çš„æ–¹å¼æ¥åšè¿™ä»¶äº‹ï¼Œä½†å‡ºäºå­¦ä¹ ç›®çš„ï¼Œè¿™æ ·åšå°±å¯ä»¥äº†ã€‚
+    // ½«±ä»»¾ØÕóÉèÖÃÎªÊµÀı¶¥µãÊôĞÔ£¨Ê¹ÓÃ³ıÊı1£©
+    // ×¢Òâ£ºÎÒÃÇÕâÀïÓĞµãÈ¡ÇÉ£¬Ö±½Ó»ñÈ¡Ä£ĞÍÍø¸ñ£¨¶à¸öÍø¸ñÊ±£©ÏÖÔÚ¹«¿ªÉùÃ÷µÄVAO£¬²¢Ìí¼ÓĞÂµÄvertexAttribPointers
+    // Õı³£Çé¿öÏÂ£¬Äã»áÏ£ÍûÒÔ¸üÓĞÌõÀíµÄ·½Ê½À´×öÕâ¼şÊÂ£¬µ«³öÓÚÑ§Ï°Ä¿µÄ£¬ÕâÑù×ö¾Í¿ÉÒÔÁË¡£
     // 
     for (unsigned int i = 0; i < rock.meshes.size(); i++)
     {
         unsigned int VAO = rock.meshes[i].VAO;
         glBindVertexArray(VAO);
-        // è®¾ç½®é¡¶ç‚¹å±æ€§æŒ‡é’ˆ
+        // ÉèÖÃ¶¥µãÊôĞÔÖ¸Õë
         glEnableVertexAttribArray(3);
         glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
         glEnableVertexAttribArray(4);
@@ -1171,11 +1043,11 @@ void RocksModelMatricesInit(unsigned int& amount, Model& rock)
     }
 }
 
-// çƒä½“ç”Ÿæˆç¨‹åº
+// ÇòÌåÉú³É³ÌĞò
 void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& starIndices,
     const unsigned int X_SEGMENTS, const unsigned int Y_SEGMENTS, const float PI)
 {
-    // ç”Ÿæˆçƒä½“é¡¶ç‚¹æ•°æ®
+    // Éú³ÉÇòÌå¶¥µãÊı¾İ
     for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
     {
         for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
@@ -1185,21 +1057,21 @@ void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& s
             float xPos = cos(xSegment * 2.0f * PI) * sin(ySegment * PI);
             float yPos = cos(ySegment * PI);
             float zPos = sin(xSegment * 2.0f * PI) * sin(ySegment * PI);
-            // ä½ç½®
+            // Î»ÖÃ
             starVertices.push_back(xPos);
             starVertices.push_back(yPos);
             starVertices.push_back(zPos);
-            // æ³•çº¿
+            // ·¨Ïß
             starVertices.push_back(xPos);
             starVertices.push_back(yPos);
             starVertices.push_back(zPos);
-            // çº¹ç†åæ ‡
+            // ÎÆÀí×ø±ê
             starVertices.push_back(xSegment);
             starVertices.push_back(ySegment);
         }
     }
 
-    // ç´¢å¼•ç”Ÿæˆ
+    // Ë÷ÒıÉú³É
     for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
     {
         for (unsigned int x = 0; x < X_SEGMENTS; ++x)
@@ -1214,33 +1086,33 @@ void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& s
     }
 }
 
-// æ’æ˜Ÿåˆå§‹åŒ–
-void starInit(unsigned int& starVAO, unsigned int& starVBO, unsigned int& starEBO,
-    std::vector<float>& starVertices, std::vector<unsigned int>& starIndices)
-{
-    glGenVertexArrays(1, &starVAO);
-    glGenBuffers(1, &starVBO);
-    glGenBuffers(1, &starEBO);
-    glBindVertexArray(starVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, starVBO);
-    glBufferData(GL_ARRAY_BUFFER, starVertices.size() * sizeof(float), &starVertices[0], GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, starEBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, starIndices.size() * sizeof(unsigned int), &starIndices[0], GL_STATIC_DRAW);
-    // ä½ç½®å±æ€§
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    // æ³•çº¿å±æ€§
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    // çº¹ç†åæ ‡å±æ€§
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-
-    glBindVertexArray(0);
-}
-
-// æ—¥å†•å±‚å››è¾¹å½¢åˆå§‹åŒ–
-void coronaQuadInit(unsigned int& coronaQuadVAO, unsigned int& coronaQuadVBO)
+//// ºãĞÇ³õÊ¼»¯
+//void starInit(unsigned int& starVAO, unsigned int& starVBO, unsigned int& starEBO,
+//    std::vector<float>& starVertices, std::vector<unsigned int>& starIndices)
+//{
+//    glGenVertexArrays(1, &starVAO);
+//    glGenBuffers(1, &starVBO);
+//    glGenBuffers(1, &starEBO);
+//    glBindVertexArray(starVAO);
+//    glBindBuffer(GL_ARRAY_BUFFER, starVBO);
+//    glBufferData(GL_ARRAY_BUFFER, starVertices.size() * sizeof(float), &starVertices[0], GL_STATIC_DRAW);
+//    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, starEBO);
+//    glBufferData(GL_ELEMENT_ARRAY_BUFFER, starIndices.size() * sizeof(unsigned int), &starIndices[0], GL_STATIC_DRAW);
+//    // Î»ÖÃÊôĞÔ
+//    glEnableVertexAttribArray(0);
+//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+//    // ·¨ÏßÊôĞÔ
+//    glEnableVertexAttribArray(1);
+//    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+//    // ÎÆÀí×ø±êÊôĞÔ
+//    glEnableVertexAttribArray(2);
+//    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+//
+//    glBindVertexArray(0);
+//}
+//
+// ÈÕÃá²ãËÄ±ßĞÎ³õÊ¼»¯
+void lensQuadInit(unsigned int& lensQuadVAO, unsigned int& lensQuadVBO)
 {
     float coronaQuadVertices[] = {
         // positions   // texCoords
@@ -1256,10 +1128,10 @@ void coronaQuadInit(unsigned int& coronaQuadVAO, unsigned int& coronaQuadVBO)
          2.0f,  2.0f, 0.0f,  1.0f, 1.0f,
         -2.0f,  2.0f, 0.0f,  0.0f, 1.0f
     };
-    glGenVertexArrays(1, &coronaQuadVAO);
-    glGenBuffers(1, &coronaQuadVBO);
-    glBindVertexArray(coronaQuadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, coronaQuadVBO);
+    glGenVertexArrays(1, &lensQuadVAO);
+    glGenBuffers(1, &lensQuadVBO);
+    glBindVertexArray(lensQuadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, lensQuadVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(coronaQuadVertices), coronaQuadVertices, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
@@ -1271,11 +1143,11 @@ void coronaQuadInit(unsigned int& coronaQuadVAO, unsigned int& coronaQuadVBO)
     glBindVertexArray(0);
 }
 
-// å¸§ç¼“å†²å››è¾¹å½¢åˆå§‹åŒ–
+// Ö¡»º³åËÄ±ßĞÎ³õÊ¼»¯
 void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO)
 {
     float quadVertices[] = {
-        // ä½ç½®(x,y)      çº¹ç†åæ ‡(u,v)
+        // Î»ÖÃ(x,y)      ÎÆÀí×ø±ê(u,v)
         -1.0f,  1.0f,     0.0f, 1.0f,
         -1.0f, -1.0f,     0.0f, 0.0f,
          1.0f, -1.0f,     1.0f, 0.0f,
@@ -1296,7 +1168,7 @@ void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO)
     glBindVertexArray(0);
 }
 
-// å¤©ç©ºç›’åˆå§‹åŒ–
+// Ìì¿ÕºĞ³õÊ¼»¯
 void SkyBoxInit(unsigned int& skyboxVAO, unsigned int& skyboxVBO)
 {
     float skyboxVertices[] = {
@@ -1355,7 +1227,7 @@ void SkyBoxInit(unsigned int& skyboxVAO, unsigned int& skyboxVBO)
     glBindVertexArray(0);
 }
 
-// é˜´å½±è´´å›¾åˆå§‹åŒ–
+// ÒõÓ°ÌùÍ¼³õÊ¼»¯
 void DepthCubeMapInit()
 {
     glGenFramebuffers(1, &depthCubeFBO);
@@ -1367,7 +1239,7 @@ void DepthCubeMapInit()
             SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     }
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -1378,15 +1250,15 @@ void DepthCubeMapInit()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-// é˜´å½±PASSæ¸²æŸ“
+// ÒõÓ°PASSäÖÈ¾
 void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTransforms, const glm::vec3& pointSunPositions)
 {
     /*glm::mat4 shadowProj = glm::perspective(
         glm::radians(90.0f),
         (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT,
         shadow_near, shadow_far);*/
-    
-    //std::vector<glm::mat4> shadowTransforms;
+
+        //std::vector<glm::mat4> shadowTransforms;
     shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
     shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
     shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
@@ -1399,5 +1271,3 @@ void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTrans
     glClear(GL_DEPTH_BUFFER_BIT);
     glCullFace(GL_BACK);
 }
-
-#endif

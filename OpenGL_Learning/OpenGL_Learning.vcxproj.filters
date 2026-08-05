@@ -234,6 +234,12 @@
     <ClCompile Include="src\FPS_Ship.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\Sun.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip7.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -255,6 +261,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\Debug_Shader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Sun.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

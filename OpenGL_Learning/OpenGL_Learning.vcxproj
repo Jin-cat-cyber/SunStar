@@ -210,10 +210,12 @@
     <ClCompile Include="src\03_Model\model_ver3_Light_combine.cpp" />
     <ClCompile Include="src\SpaceShip4.0.cpp" />
     <ClCompile Include="src\SpaceShip6.0.cpp" />
+    <ClCompile Include="src\SpaceShip7.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip3.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip2.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip.cpp" />
     <ClCompile Include="src\SpaceShip5.0.cpp" />
+    <ClCompile Include="src\Sun.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Debug_Shader.h" />
@@ -223,6 +225,7 @@
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\Model.h" />
     <ClInclude Include="src\Shader.h" />
+    <ClInclude Include="src\Sun.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="res\model\backpack\backpack.mtl" />
