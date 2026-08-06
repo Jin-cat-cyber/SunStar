@@ -141,6 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Bloom.cpp" />
     <ClCompile Include="src\Skybox.cpp" />
     <ClCompile Include="src\Debug_Shader.cpp" />
     <ClCompile Include="src\BezierCurve.cpp" />
@@ -209,6 +210,7 @@
     <ClCompile Include="src\SpaceShip4.0.cpp" />
     <ClCompile Include="src\SpaceShip6.0.cpp" />
     <ClCompile Include="src\SpaceShip7.0.cpp" />
+    <ClCompile Include="src\SpaceShip8.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip3.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip2.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip.cpp" />
@@ -264,6 +266,13 @@
     <None Include="res\shader\BloomShaders\composite_frag.shader" />
     <None Include="res\shader\BloomShaders\composite_frag2.0.shader" />
     <None Include="res\shader\BloomShaders\composite_ver.shader" />
+    <None Include="res\shader\Bloom\bloom_final_frag.shader" />
+    <None Include="res\shader\Bloom\bloom_final_ver.shader" />
+    <None Include="res\shader\Bloom\bloom_frag.shader" />
+    <None Include="res\shader\Bloom\bloom_ver.shader" />
+    <None Include="res\shader\Bloom\blur_frag.shader" />
+    <None Include="res\shader\Bloom\blur_ver.shader" />
+    <None Include="res\shader\Bloom\light_box_frag.shader" />
     <None Include="res\shader\CubeMapsShader\cubeMap_frag.shader" />
     <None Include="res\shader\CubeMapsShader\cubeMap_ver.shader" />
     <None Include="res\shader\DeeptestShader\deeptest_frag1.0.shader" />

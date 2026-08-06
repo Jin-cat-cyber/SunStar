@@ -234,6 +234,12 @@
     <ClCompile Include="src\Skybox.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\Bloom.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip8.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -387,6 +393,13 @@
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_ver2.0.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_ver2.1.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_ver2.2.shader" />
+    <None Include="res\shader\Bloom\bloom_ver.shader" />
+    <None Include="res\shader\Bloom\bloom_frag.shader" />
+    <None Include="res\shader\Bloom\light_box_frag.shader" />
+    <None Include="res\shader\Bloom\blur_ver.shader" />
+    <None Include="res\shader\Bloom\blur_frag.shader" />
+    <None Include="res\shader\Bloom\bloom_final_ver.shader" />
+    <None Include="res\shader\Bloom\bloom_final_frag.shader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\texture\container.jpg">
