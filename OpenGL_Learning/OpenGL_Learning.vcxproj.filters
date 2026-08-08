@@ -240,6 +240,9 @@
     <ClCompile Include="src\SpaceShip8.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\DeferredShading.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -400,6 +403,12 @@
     <None Include="res\shader\Bloom\blur_frag.shader" />
     <None Include="res\shader\Bloom\bloom_final_ver.shader" />
     <None Include="res\shader\Bloom\bloom_final_frag.shader" />
+    <None Include="res\shader\#Deferred\G-Buffer_ver.shader" />
+    <None Include="res\shader\#Deferred\G-Buffer_frag.shader" />
+    <None Include="res\shader\#Deferred\Deferred_shading_ver.shader" />
+    <None Include="res\shader\#Deferred\Deferred_shading_frag.shader" />
+    <None Include="res\shader\#Deferred\Deferred_light_box_ver.shader" />
+    <None Include="res\shader\#Deferred\Deferred_light_box_frag.shader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\texture\container.jpg">

@@ -142,6 +142,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Bloom.cpp" />
+    <ClCompile Include="src\DeferredShading.cpp" />
     <ClCompile Include="src\Skybox.cpp" />
     <ClCompile Include="src\Debug_Shader.cpp" />
     <ClCompile Include="src\BezierCurve.cpp" />
@@ -232,6 +233,12 @@
     <None Include="res\model\backpack\backpack.mtl" />
     <None Include="res\model\planet\planet.mtl" />
     <None Include="res\model\rock\rock.mtl" />
+    <None Include="res\shader\#Deferred\Deferred_light_box_frag.shader" />
+    <None Include="res\shader\#Deferred\Deferred_light_box_ver.shader" />
+    <None Include="res\shader\#Deferred\Deferred_shading_frag.shader" />
+    <None Include="res\shader\#Deferred\Deferred_shading_ver.shader" />
+    <None Include="res\shader\#Deferred\G-Buffer_frag.shader" />
+    <None Include="res\shader\#Deferred\G-Buffer_ver.shader" />
     <None Include="res\shader\00_SpaceShip\aster_frag3.0.shader" />
     <None Include="res\shader\00_SpaceShip\aster_ver.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_frag.shader" />

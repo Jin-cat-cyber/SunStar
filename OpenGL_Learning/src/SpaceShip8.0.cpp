@@ -20,7 +20,7 @@
 #include "Skybox.h"
 
 
-
+#ifdef SHIP_8_0
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -85,10 +85,10 @@ unsigned int msDepthRBO = 0;
 void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO);
 
 // 阴影相关
-const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
 unsigned int depthCubeMap, depthCubeFBO;
 float shadow_near = 1.0f;
-float shadow_far = 2000.0f;    // 你的场景远达 -600，far_plane 要设大！
+float shadow_far = 800.0f;    // 你的场景远达 -600，far_plane 要设大！
 // 阴影相关函数
 void DepthCubeMapInit();
 void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTransforms, const glm::vec3& pointSunPositions);
@@ -1097,3 +1097,5 @@ void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTrans
     glClear(GL_DEPTH_BUFFER_BIT);
     glCullFace(GL_BACK);
 }
+
+#endif
