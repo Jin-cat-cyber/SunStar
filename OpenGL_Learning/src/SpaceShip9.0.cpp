@@ -1,0 +1,1234 @@
+#include <glad/glad.h>
+#include <glfw3.h>
+#include <assimp/config.h>
+#include <assimp/revision.h>
+
+
+
+
+#include <iostream>
+#include <string>
+#include <vector>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include "camera_ver2.h"
+#include "Model.h"
+#include "Shader.h" // 包含自定义着色器类
+#include "Sun.h"
+#include "Skybox.h"
+
+
+#ifdef SHIP_9_0
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // 窗口大小回调函数
+void processInput(GLFWwindow* window);  // 输入检查函数
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);  // 鼠标 移动 回调函数
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);   // 鼠标 滚轮 回调函数
+unsigned int loadTexture(char const* path);     // 纹理加载函数
+unsigned int loadCubemap(std::vector<std::string> faces);   // 立方体贴图加载函数
+void setupFramebuffers(int eidth, int height);  //  离屏渲染帧缓冲
+void rebuildFramebuffers(int width, int height);  //  重建离屏渲染帧缓冲
+
+const unsigned int SCR_WIDTH = 960; // 窗口宽度
+const unsigned int SCR_HEIGHT = 600; // 窗口高度
+int windowwidth = SCR_WIDTH;
+int windowheight = SCR_HEIGHT;
+
+// 摄像机相关
+Camera_ver2 camera(glm::vec3(-40.0f, 10.0f, 200.0f));
+float lastX = SCR_WIDTH / 2.0F;
+float lastY = SCR_HEIGHT / 2.0F;
+
+
+// 按键输入检测
+bool firstMouse = true;
+bool cursorLocked = true;
+bool tabKeyPressed = false;   // 用于检测 TAB 键的上升沿
+bool f10Pressed = false;    // 用于检测 F10 键的上升沿
+bool f11Pressed = false;    // 用于检测 F11 键的上升沿
+bool isFullscreen = false; // 是否全屏
+int savedX = 0, savedY = 0;
+int savedWidth = SCR_WIDTH, savedHeight = SCR_HEIGHT;
+
+
+// 设置帧数渲染时间
+float deltaTime = 0.0f;	// 当前帧与上一帧的时间差
+float lastFrame = 0.0f; // 上一帧的时间
+
+
+
+// 星球相关函数
+void RocksModelMatricesInit(unsigned int& amount, Model& rock);
+void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& starIndices,
+    const unsigned int X_SEGMENTS, const unsigned int Y_SEGMENTS, const float PI);
+
+
+// 后处理帧缓冲变量
+unsigned int hdrFBO;
+unsigned int hdrColorBuffer;
+unsigned int pingpongFBO[2];
+unsigned int pingpongColorbuffers[2];
+
+unsigned int hdrDepthRBO;
+// 新增多重采样 FBO 句柄
+unsigned int msFBO = 0;
+unsigned int msColorRBO = 0;
+unsigned int msDepthRBO = 0;
+
+// 新增 G-buffer
+unsigned int gBuffer;
+unsigned int gPosition, gNormal, gAlbedoSpec;
+unsigned int gDepthRBO;
+
+// 后处理四边形顶点数组对象和顶点缓冲对象
+void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO);
+
+// 阴影相关
+const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
+unsigned int depthCubeMap, depthCubeFBO;
+float shadow_near = 1.0f;
+float shadow_far = 800.0f;    // 你的场景远达 -600，far_plane 要设大！
+// 阴影相关函数
+void DepthCubeMapInit();
+void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTransforms, const glm::vec3& pointSunPositions);
+
+int main()
+{
+    glfwInit(); // 初始化GLFW库
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);  // 设置OpenGL版本：主版本号
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);  // 设置OpenGL版本：次版本号
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // 使用核心模式
+    glfwWindowHint(GLFW_SAMPLES, 4);
+
+    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+
+    // 创建窗口对象
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Hello OpenGL", NULL, NULL);
+
+    // 获取实际窗口大小（因为在某些平台上，窗口的实际大小可能与请求的大小不同）
+    glfwGetFramebufferSize(window, &windowwidth, &windowheight);
+
+    if (window == NULL)
+    {
+        std::cout << "Failed to create GLFW window" << std::endl;
+        glfwTerminate(); // 清理窗口资源
+        return -1;
+    }
+    glfwMakeContextCurrent(window); // 设置当前窗口为上下文
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); // 设置窗口大小回调函数
+    glfwSetCursorPosCallback(window, mouse_callback); // 设置鼠标移动回调函数
+    glfwSetScrollCallback(window, scroll_callback); // 设置鼠标滚轮回调函数
+
+    // 捕获鼠标（隐藏鼠标光标，并提供无限的鼠标移动）
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    // 初始化GLAD，管理OpenGL函数指针，加载所有OpenGL函数指针
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+        std::cout << "Failed to initialize GLAD" << std::endl;
+        return -1;
+    }
+
+    // 纹理y轴翻转(因为OpenGL的y轴坐标是从下往上，而图片的y轴坐标是从上往下)
+    stbi_set_flip_vertically_on_load(true);
+
+    //加载深度缓冲
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE); // 启用多重采样抗锯齿
+    setupFramebuffers(windowwidth, windowheight); // 设置离屏渲染帧缓冲
+
+    // 创建着色器对象
+   /* Shader planetshader("res/shader/00_SpaceShip/instancingVER.shader", 
+        "res/shader/00_SpaceShip/instancingFRAG3.0.shader");
+    Shader asteroidShader("res/shader/00_SpaceShip/aster_ver.shader", 
+        "res/shader/00_SpaceShip/aster_frag3.0.shader");*/
+
+    // 几何Pass
+    Shader gBufferPlanetShader("res/shader/00_SpaceShip/Deferred_Shading/gBuffer_planet_ver.shader", 
+        "res/shader/00_SpaceShip/Deferred_Shading/gBuffer_planet_frag.shader");
+    Shader gBufferAsteroidShader("res/shader/00_SpaceShip/Deferred_Shading/gBuffer_asteroid_ver.shader",
+        "res/shader/00_SpaceShip/Deferred_Shading/gBuffer_asteroid_frag.shader");
+    
+    // 延迟光照
+    Shader deferredLightingShader("res/shader/00_SpaceShip/Deferred_Shading/deferred_lighting_ver.shader",
+        "res/shader/00_SpaceShip/Deferred_Shading/deferred_lighting_frag.shader");
+
+    Shader sunCoreShader("res/shader/StarShader/StarList2.0/core_ver.shader", 
+        "res/shader/StarShader/StarList2.0/core_frag2.0.shader");
+    Shader CoreCoronaShader("res/shader/StarShader/StarList2.0/corona_ver.shader", 
+        "res/shader/StarShader/StarList2.0/corona_frag2.0.shader");
+    Shader sunCoronaShader("res/shader/StarShader/StarList2.0/corona_quad_ver.shader", 
+        "res/shader/StarShader/StarList2.0/corona_quad_frag2.0.shader");
+    Shader sunGlowShader("res/shader/StarShader/StarList/star_glow_ver.shader", 
+        "res/shader/StarShader/StarList/star_glow_frag.shader");
+
+    Shader spaceboxShader("res/shader/SkyBoxShader/SkyBox_ver.shader", 
+        "res/shader/SkyBoxShader/SkyBox_frag.shader");
+
+    Shader brightPassShader("res/shader/BloomShaders/bright_pass_ver.shader", 
+        "res/shader/BloomShaders/bright_pass_frag.shader");
+    Shader blurShader("res/shader/BloomShaders/blur_ver.shader", 
+        "res/shader/BloomShaders/blur_frag.shader");
+    Shader compositeShader("res/shader/BloomShaders/composite_ver.shader", 
+        "res/shader/BloomShaders/composite_frag2.0.shader");
+
+    Shader lensFlareShader("res/shader/LensFlareShader/lens_flare_ver.shader", 
+        "res/shader/LensFlareShader/lens_flare_frag.shader");
+
+    Shader simpleDepthShader("res/shader/00_SpaceShip/depth_point/depth_point_ver2.2.shader", 
+        "res/shader/00_SpaceShip/depth_point/depth_point_frag.shader", 
+        "res/shader/00_SpaceShip/depth_point/depth_point_geo.shader");
+
+    Model rock("res/model/rock/rock.obj");
+    Model planet("res/model/planet/planet.obj");
+
+    // 着色器初始化（个人风格问题，我更喜欢在循环体中去写
+    //brightPassShader.use();
+    //brightPassShader.setInt("hdrImage", 0);
+    //blurShader.use();
+    //blurShader.setInt("image", 0);
+
+
+    // 加载光晕贴图
+    unsigned int flareTexture = loadTexture("res/texture/lens_flare/lens_white.jpg");
+    unsigned int flareTexture1 = loadTexture("res/texture/lens_flare/glow light lens flare(1).png");
+
+
+    std::vector<Sun::LensFlare> flareTextures = {
+        {flareTexture,  glm::vec4(1.0f, 0.8f, 0.5f, 0.6f), 3.0f},
+        {flareTexture1, glm::vec4(1.0f, 0.8f, 0.5f, 0.6f), 3.0f}
+    };
+
+    // 阴影贴图初始化
+    DepthCubeMapInit();
+
+    // 生成一个大型的半随机模型变换矩阵列表
+    // ------------------------------------------------------------------
+    unsigned int amount = 50000;
+    RocksModelMatricesInit(amount, rock);
+
+
+    // =======================================================
+    // 程序化生成恒星顶点数据
+    // 球体顶点数据
+    std::vector<float> starVertices;
+    std::vector<unsigned int> starIndices;
+    // 生成球体顶点数据（可以使用UV球体或其他方法）
+    const unsigned int X_SEGMENTS = 64;
+    const unsigned int Y_SEGMENTS = 64;
+    const float PI = 3.14159265359f;
+    BallGenerate(starVertices, starIndices, X_SEGMENTS, Y_SEGMENTS, PI);
+
+
+    // 恒星 VAO, VBO, EBO
+    unsigned int starVAO, starVBO, starEBO;
+
+    // 日冕公告板顶点数据
+    unsigned int coronaQuadVAO, coronaQuadVBO;
+    /*unsigned int lensQuadVAO, lensQuadVBO*/;
+
+    // 创建恒星对象
+    Sun Sun(starVAO, starVBO, starEBO, coronaQuadVAO, coronaQuadVBO);
+
+
+    // =============================================
+    // 帧缓冲四边形
+    unsigned int quadVAO, quadVBO;
+    FrameQuadInit(quadVAO, quadVBO);
+
+    // =============================================
+    // 天空盒顶点数据绑定
+    unsigned int skyboxVAO, skyboxVBO;
+
+
+    // 加载天空纹理
+    // NightSky
+    //std::vector<std::string> face
+    //{
+    //    ("res/texture/NightSky1024/px.png"),
+    //    ("res/texture/NightSky1024/nx.png"),
+    //    ("res/texture/NightSky1024/py.png"),
+    //    ("res/texture/NightSky1024/ny.png"),
+    //    ("res/texture/NightSky1024/pz.png"),
+    //    ("res/texture/NightSky1024/nz.png")
+    //};
+
+    // SpaceFox
+    std::vector<std::string> face
+    {
+        ("res/texture/SpaceFox1024/px.png"),
+        ("res/texture/SpaceFox1024/nx.png"),
+        ("res/texture/SpaceFox1024/py.png"),
+        ("res/texture/SpaceFox1024/ny.png"),
+        ("res/texture/SpaceFox1024/pz.png"),
+        ("res/texture/SpaceFox1024/nz.png")
+    };
+
+
+    unsigned int cubemapTexture = loadCubemap(face);
+    // 创建天空盒对象
+    Skybox SpaceBox(skyboxVAO, skyboxVBO, cubemapTexture);
+
+
+
+    // 设置恒星，星球位置和大小
+    glm::vec3 pointSunPositions = glm::vec3(-50.0f, 50.0f, -600.0f);
+    //glm::vec3 SunScale = glm::vec3(120.0f);
+    glm::vec3 planetPosition = glm::vec3(0.0f, -3.0f, 0.0f);
+    glm::vec3 planetScale = glm::vec3(11.0f);
+
+    // 激活着色器纹理单元
+    //planetshader.use();
+    //planetshader.setInt("material.diffuse", 0); // 告诉着色器每个采样器属于哪个纹理单元(只需要设置一次)
+    //planetshader.setInt("material.specular", 1);
+
+
+    // 主循环
+    while (!glfwWindowShouldClose(window))
+    {
+        // ====== 阴影 Pass：渲染深度 CubeMap ======
+        std::vector<glm::mat4> shadowTransforms;
+        glm::mat4 shadowProj = glm::perspective(
+            glm::radians(90.0f),
+            (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT,
+            shadow_near, shadow_far);
+
+        ShadowPassRender(shadowProj, shadowTransforms, pointSunPositions);
+
+
+        simpleDepthShader.use();
+        for (unsigned int i = 0; i < 6; ++i)
+            simpleDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+        simpleDepthShader.setFloat("far_plane", shadow_far);
+        simpleDepthShader.setVec3("lightPos", pointSunPositions);
+
+        // --- 小行星带 ---
+        simpleDepthShader.setBool("instanced", true);
+        for (unsigned int i = 0; i < rock.meshes.size(); i++)
+        {
+            glBindVertexArray(rock.meshes[i].VAO);
+            glDrawElementsInstanced(GL_TRIANGLES,
+                static_cast<unsigned int>(rock.meshes[i].indices.size()),
+                GL_UNSIGNED_INT, 0, amount);
+            glBindVertexArray(0);
+        }
+
+
+        // --- 星球 ---
+        simpleDepthShader.setBool("instanced", false);
+        glm::mat4 sdModel = glm::mat4(1.0f);
+        sdModel = glm::translate(sdModel, planetPosition);
+        sdModel = glm::scale(sdModel, planetScale);
+        simpleDepthShader.setMat4("model", sdModel);
+        planet.Draw(simpleDepthShader);
+
+
+
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glCullFace(GL_BACK);
+        // ====== 阴影 Pass 结束 ======
+
+
+        glViewport(0, 0, windowwidth, windowheight);
+
+
+        // 计算帧时间
+        float currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        // 输入管理
+        processInput(window);
+        // 渲染
+        // ------
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);  // 绑定到HDR帧缓冲
+        glViewport(0, 0, windowwidth, windowheight);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // 配置变换矩阵
+        int winWidth, winHeight;
+        glfwGetFramebufferSize(window, &winWidth, &winHeight);
+        float aspect = winWidth / (float)winHeight;
+        //glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 2000.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), aspect, 0.1f, 2000.0f);
+        glm::mat4 view = camera.GetViewMatrix();
+
+        // === 几何 Pass: Planet ===
+        gBufferPlanetShader.use();
+        gBufferPlanetShader.setMat4("projection", projection);
+        gBufferPlanetShader.setMat4("view", view);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, planetPosition);
+        model = glm::scale(model, planetScale);
+        gBufferPlanetShader.setMat4("model", model);
+        planet.Draw(gBufferPlanetShader);
+
+        // === 几何 Pass: Asteroids ===
+        gBufferAsteroidShader.use();
+        gBufferAsteroidShader.setMat4("projection", projection);
+        gBufferAsteroidShader.setMat4("view", view);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id);
+        gBufferAsteroidShader.setInt("material_diffuse", 0);
+        for (unsigned int i = 0; i < rock.meshes.size(); i++)
+        {
+            glBindVertexArray(rock.meshes[i].VAO);
+            glDrawElementsInstanced(GL_TRIANGLES,
+                static_cast<unsigned int>(rock.meshes[i].indices.size()),
+                GL_UNSIGNED_INT, 0, amount);
+            glBindVertexArray(0);
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        // === 将 G-Buffer 深度传到 hdrFBO ===
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdrFBO);
+        glBlitFramebuffer(0, 0, windowwidth, windowheight,
+            0, 0, windowwidth, windowheight,
+            GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+        // === 光照 Pass ===
+        glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+        glClear(GL_COLOR_BUFFER_BIT);
+        deferredLightingShader.use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, gPosition);
+        deferredLightingShader.setInt("gPosition", 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, gNormal);
+        deferredLightingShader.setInt("gNormal", 1);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
+        deferredLightingShader.setInt("gAlbedoSpec", 2);
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+
+        deferredLightingShader.setInt("depthMap", 3);
+        deferredLightingShader.setVec3("lightPos", pointSunPositions);
+        deferredLightingShader.setVec3("viewPos", camera.Position);
+        deferredLightingShader.setFloat("far_plane", shadow_far);
+        deferredLightingShader.setInt("shadows", 1);
+
+        // DirLight
+        deferredLightingShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+        deferredLightingShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+        deferredLightingShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+        deferredLightingShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+
+        // PointLight[0]
+        deferredLightingShader.setVec3("pointLights[0].position", pointSunPositions);
+        //deferredLightingShader.setVec3("pointLights[0].ambient", 1.0f, 1.0f, 0.8f);
+        deferredLightingShader.setVec3("pointLights[0].ambient", 0.8f, 0.8f, 0.64f);
+        deferredLightingShader.setVec3("pointLights[0].ambient", 0.7f, 0.7f, 0.56f);
+        deferredLightingShader.setVec3("pointLights[0].diffuse", 200.0f, 200.0f, 160.0f);
+        deferredLightingShader.setVec3("pointLights[0].specular", 120.0f, 120.0f, 100.0f);
+        deferredLightingShader.setFloat("pointLights[0].constant", 1.0f);
+        deferredLightingShader.setFloat("pointLights[0].linear", 0.0002f);
+        deferredLightingShader.setFloat("pointLights[0].quadratic", 0.000005f);
+
+        deferredLightingShader.setFloat("shininess", 32.0f);
+
+        glDepthMask(GL_FALSE);
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDepthMask(GL_TRUE);
+
+
+        // =================================
+        // ===== 天空盒（背景）=====
+        // =================================
+        SpaceBox.SkyboxRender(spaceboxShader, camera, projection);
+        // ======= 天空盒绘制结束 ========
+
+
+        // 先保存当前的深度状态和混合状态，以便后续恢复
+        GLboolean depthEnabled;
+        glGetBooleanv(GL_DEPTH_TEST, &depthEnabled);
+        GLboolean blendEnabled;
+        glGetBooleanv(GL_BLEND, &blendEnabled);
+        GLint depthFunc;
+        glGetIntegerv(GL_DEPTH_FUNC, &depthFunc);
+        GLboolean depthMask;
+        glGetBooleanv(GL_DEPTH_WRITEMASK, &depthMask);
+
+
+
+        // ========================================
+        // 恒星渲染部分 - 开始
+        // ========================================
+        //float starTime = static_cast<float>(glfwGetTime()); // 恒星旋转时间
+        //float starPulse = 1.0f + sin(starTime * 1.5f) * 0.0003f; // 计算脉冲效果
+
+        Sun.SunRender(sunCoreShader, sunCoronaShader, CoreCoronaShader, sunGlowShader, camera, projection, view);
+
+        // ========================================
+        // 恒星渲染部分 - 结束
+        // ========================================
+
+
+        // 恢复原始状态
+        if (!depthEnabled) glDisable(GL_DEPTH_TEST);
+        else glEnable(GL_DEPTH_TEST);
+        glDepthMask(depthMask ? GL_TRUE : GL_FALSE);
+        glDepthFunc(depthFunc);
+        if (blendEnabled) glEnable(GL_BLEND);
+        else glDisable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // 恢复默认混合函数
+
+
+
+        //// ========================================
+        //// 行星渲染
+        //// ========================================
+        ////—————————————————————————————————————————————————————————————————————
+        //// 行星着色器
+        //planetshader.use();
+        //planetshader.setVec3("viewPos", camera.Position);
+        //planetshader.setFloat("material.shininess", 32.0f);
+        //// 定向光
+        //planetshader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+        //planetshader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+        //planetshader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+        //planetshader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+        //// 点光源 1
+        //planetshader.setVec3("pointLights[0].position", pointSunPositions);
+        //planetshader.setVec3("pointLights[0].ambient", 1.0f, 1.0f, 0.8f);
+        //planetshader.setVec3("pointLights[0].diffuse", 200.0f, 200.0f, 160.0f);   // 增大
+        //planetshader.setVec3("pointLights[0].specular", 120.0f, 120.0f, 100.0f);  // 增大
+        //planetshader.setFloat("pointLights[0].constant", 1.0f);
+        //planetshader.setFloat("pointLights[0].linear", 0.0002f);        // 原来是0.09，减小
+        //planetshader.setFloat("pointLights[0].quadratic", 0.000005f);    // 原来是0.032，减小
+
+        //// 阴影
+        //planetshader.setInt("shadows", 1);
+        //planetshader.setFloat("far_plane", shadow_far);
+        //planetshader.setVec3("lightPos", pointSunPositions);
+        //glActiveTexture(GL_TEXTURE2);
+        //glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+        //planetshader.setInt("depthMap", 2);
+
+        //planetshader.setMat4("projection", projection);
+        //planetshader.setMat4("view", view);
+
+        //// 绘制行星
+        //glm::mat4 model = glm::mat4(1.0f);
+        //model = glm::translate(model, planetPosition);
+        //model = glm::scale(model, planetScale);
+        //planetshader.setMat4("model", model);
+        //planet.Draw(planetshader);
+
+
+        //// 设置小行星着色器并绘制
+        //asteroidShader.use();
+        //asteroidShader.setMat4("projection", projection);
+        //asteroidShader.setMat4("view", view);
+
+        //asteroidShader.use();
+        //asteroidShader.setInt("material.diffuse", 0);
+        //asteroidShader.setInt("material.specular", 1);
+        //glActiveTexture(GL_TEXTURE0);
+        //glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id);
+        //// 设置小行星着色器并绘制
+        //asteroidShader.use();
+        //asteroidShader.setVec3("viewPos", camera.Position);
+        //asteroidShader.setFloat("material.shininess", 32.0f);
+        //// 定向光
+        //asteroidShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+        //asteroidShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+        //asteroidShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+        //asteroidShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+        //// 点光源 1
+        //asteroidShader.setVec3("pointLights[0].position", pointSunPositions);
+        //asteroidShader.setVec3("pointLights[0].ambient", 1.0f, 1.0f, 0.8f);
+        //asteroidShader.setVec3("pointLights[0].diffuse", 200.0f, 200.0f, 160.0f);   // 增大
+        //asteroidShader.setVec3("pointLights[0].specular", 120.0f, 120.0f, 100.0f);  // 增大
+        //asteroidShader.setFloat("pointLights[0].constant", 1.0f);
+        //asteroidShader.setFloat("pointLights[0].linear", 0.0002f);        // 原来是0.09，减小
+        //asteroidShader.setFloat("pointLights[0].quadratic", 0.000005f);    // 原来是0.032，减小
+
+        ////// 阴影
+        //asteroidShader.setInt("shadows", 1);
+        //asteroidShader.setFloat("far_plane", shadow_far);
+        //asteroidShader.setVec3("lightPos", pointSunPositions);
+        //glActiveTexture(GL_TEXTURE2);
+        //glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+        //asteroidShader.setInt("depthMap", 2);
+
+        //// 绘制小行星
+        //for (unsigned int i = 0; i < rock.meshes.size(); i++)
+        //{
+        //    glBindVertexArray(rock.meshes[i].VAO);
+        //    glDrawElementsInstanced(GL_TRIANGLES, static_cast<unsigned int>(rock.meshes[i].indices.size()), GL_UNSIGNED_INT, 0, amount);
+        //    glBindVertexArray(0);
+        //}
+
+        //==========================================
+        // 渲染到屏幕
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+
+        // 1. 亮度提取：从hdrColorBuffer中提取亮度信息到blurFBO1
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[0]);
+        glClear(GL_COLOR_BUFFER_BIT); // 这个为什么只清理颜色缓冲?
+        brightPassShader.use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
+        brightPassShader.setInt("hdrImage", 0);
+        brightPassShader.setFloat("threshold", 1.2f); // 设置亮度阈值 1.2f
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // 2. 乒乓高斯模糊
+        int blurPasses = 10;         // 6~10 越大越柔和
+        bool horizontal = true;
+        blurShader.use();
+        for (int i = 0; i < blurPasses; i++)
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+            blurShader.setBool("horizontal", horizontal);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
+            blurShader.setInt("image", 0);
+            glBindVertexArray(quadVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            horizontal = !horizontal;
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        //// MSAA帧缓冲到HDR帧缓冲的blit操作
+        //glBindFramebuffer(GL_READ_FRAMEBUFFER, msFBO);
+        //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdrFBO);
+        //glBlitFramebuffer(0, 0, windowwidth, windowheight,
+        //    0, 0, windowwidth, windowheight,
+        //    GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+        //// 【新增】把深度从 msFBO 复制到默认帧缓冲，供后面的光晕使用
+        //glBindFramebuffer(GL_READ_FRAMEBUFFER, msFBO);
+        //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        //glBlitFramebuffer(0, 0, windowwidth, windowheight,
+        //    0, 0, windowwidth, windowheight,
+        //    GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+        //// 恢复为默认帧缓冲或绑定 hdrFBO 以便后续读取 hdrColorBuffer
+        //glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+
+        // ------- 合成到屏幕 -------
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);   // 回到默认帧缓冲
+        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // 老版本
+        // 只清理颜色缓冲，不清理深度缓冲，以此来保留深度信息，确保后续渲染的物体不会被清除
+        glClear(GL_COLOR_BUFFER_BIT);
+        compositeShader.use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
+        compositeShader.setInt("sceneTexture", 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]); // 最终模糊结果在 blurFBO1 的颜色附件
+        compositeShader.setInt("bloomTexture", 1);
+        compositeShader.setFloat("exposure", 1.0f); // 曝光值
+        compositeShader.setFloat("bloomStrength", 0.6f); // Bloom强度
+        compositeShader.setVec3("colorTint", glm::vec3(1.0f, 0.95f, 0.6f)); // Bloom颜色
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // blit hdrFBO depth to default FB for lens flare
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, hdrFBO);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(0, 0, windowwidth, windowheight,
+            0, 0, windowwidth, windowheight,
+            GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        // 5. 渲染镜头光晕
+        Sun.LensFlareRender(lensFlareShader, camera, projection, view, flareTextures);
+
+        // 恢复深度测试和混合状态
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        glDepthMask(GL_TRUE);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // 恢复默认混合函数
+
+
+        // 恢复原始状态
+        if (!depthEnabled) glDisable(GL_DEPTH_TEST);
+        else glEnable(GL_DEPTH_TEST);
+        glDepthMask(depthMask ? GL_TRUE : GL_FALSE);
+        glDepthFunc(depthFunc);
+        if (blendEnabled) glEnable(GL_BLEND);
+        else glDisable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // 恢复默认混合函数
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    glDeleteVertexArrays(1, &starVAO);
+    glDeleteBuffers(1, &starVBO);
+    glDeleteBuffers(1, &starEBO);
+    glDeleteVertexArrays(1, &skyboxVAO);
+    glDeleteBuffers(1, &skyboxVBO);
+
+
+    glfwTerminate(); // 清理并关闭GLFW
+    return 0;
+}
+
+
+
+
+// 窗口回调函数
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height); // glViewport 用于设置视口大小
+
+    windowwidth = width;
+    windowheight = height;
+
+    rebuildFramebuffers(width, height); // 重新创建帧缓冲对象
+
+    lastX = width / 2.0f;
+    lastY = height / 2.0f;
+}
+
+// 输入检查函数
+void processInput(GLFWwindow* window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera.ProcessKeyboard(FORWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera.ProcessKeyboard(BACKWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camera.ProcessKeyboard(LEFT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camera.ProcessKeyboard(RIGHT, deltaTime);
+
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        camera.Sensitivity += 0.001f; // 增加鼠标灵敏度
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        camera.Sensitivity -= 0.001f; // 减少鼠标灵敏度
+    // 限制范围
+    camera.Sensitivity = glm::clamp(camera.Sensitivity, 0.01f, 0.5f);
+
+    if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS && !tabKeyPressed)
+    {
+        tabKeyPressed = true;
+        if (cursorLocked)
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            cursorLocked = false;
+        }
+        else
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            cursorLocked = true;
+            firstMouse = true;
+        }
+    }
+    if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_RELEASE)
+    {
+        tabKeyPressed = false;
+    }
+
+    // F10 进入全屏
+    if (glfwGetKey(window, GLFW_KEY_F10) == GLFW_PRESS && !f10Pressed)
+    {
+        f10Pressed = true;
+        if (!isFullscreen)
+        {
+            // 保存当前窗口状态
+            glfwGetWindowPos(window, &savedX, &savedY);
+            glfwGetWindowSize(window, &savedWidth, &savedHeight);
+            GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+            const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+            glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+            isFullscreen = true;
+            firstMouse = true; // 重置鼠标首次移动标志
+        }
+    }
+    if (glfwGetKey(window, GLFW_KEY_F10) == GLFW_RELEASE)
+        f10Pressed = false;
+
+
+    // F11 退出全屏
+    if (glfwGetKey(window, GLFW_KEY_F11) == GLFW_PRESS && !f11Pressed)
+    {
+        f11Pressed = true;
+        if (isFullscreen)
+        {
+            glfwSetWindowMonitor(window, nullptr, savedX, savedY, savedWidth, savedHeight, 0);
+            isFullscreen = false;
+            firstMouse = true; // 重置鼠标首次移动标志
+        }
+    }
+    if (glfwGetKey(window, GLFW_KEY_F11) == GLFW_RELEASE)
+        f11Pressed = false;
+}
+
+// 鼠标回调函数
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
+{
+    float xpos = static_cast<float>(xposIn);
+    float ypos = static_cast<float>(yposIn);
+
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+
+    lastX = xpos;
+    lastY = ypos;
+
+    camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+// 滚轮回调函数
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    camera.ProcessMouseScroll(static_cast<float>(yoffset));
+}
+
+// 加载纹理函数
+unsigned int loadTexture(char const* path)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        //glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, width, height, GL_TRUE);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
+}
+
+// 加载立方体贴图
+unsigned int loadCubemap(std::vector<std::string> faces)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    // Ensure cubemap faces are not flipped vertically
+    stbi_set_flip_vertically_on_load(false);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    }
+
+    return textureID;
+}
+
+// 从文件加载纹理
+unsigned int TextureFromFile(const char* path, const string& directory, bool gamma)
+{
+    string filename = string(path);
+    filename = directory + '/' + filename;
+
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+
+    return textureID;
+}
+
+// 帧缓冲对象和纹理
+//unsigned int hdrFBO, blurFBO1, blurFBO2;
+//unsigned int hdrColorBuffer, blurColorBuffer1, blurColorBuffer2;
+//unsigned int hdrDepthRBO;
+void setupFramebuffers(int width, int height)
+{
+    const int samples = 4; // 多重采样样本数,与 glfwWindowHint(GLFW_SAMPLES, 4) 保持一致
+
+    // --- 1) 创建 G-Buffer 并进行初始化---
+    glGenFramebuffers(1, &gBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+
+    // position
+    glGenTextures(1, &gPosition);
+    glBindTexture(GL_TEXTURE_2D, gPosition);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
+
+    // normal
+    glGenTextures(1, &gNormal);
+    glBindTexture(GL_TEXTURE_2D, gNormal);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
+
+    // albedo+spec
+    glGenTextures(1, &gAlbedoSpec);
+    glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gAlbedoSpec, 0);
+
+    unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+    glDrawBuffers(3, attachments);
+
+    // depth RBO
+    glGenRenderbuffers(1, &gDepthRBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, gDepthRBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, gDepthRBO);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "G-Buffer incomplete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+    // --- 2) 创建可采样的 HDR FBO（用于后处理，作为 resolve 目标） ---
+    glGenFramebuffers(1, &hdrFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+    glGenTextures(1, &hdrColorBuffer);
+    glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrColorBuffer, 0);
+
+    glGenRenderbuffers(1, &hdrDepthRBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, hdrDepthRBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, hdrDepthRBO);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "HDR FBO incomplete!" << std::endl;
+
+
+    glGenFramebuffers(2, pingpongFBO);
+    glGenTextures(2, pingpongColorbuffers);
+    for (int i = 0; i < 2; i++)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
+        glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongColorbuffers[i], 0);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            std::cout << "Pingpong FBO incomplete!" << i << "incomplete" << std::endl;
+    }
+
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+// 重新创建帧缓冲对象
+void rebuildFramebuffers(int width, int height)
+{
+    // 安全解绑
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // 删除旧的帧缓冲和纹理
+
+    // 删除 MSAA 资源
+    if (msFBO) { glDeleteFramebuffers(1, &msFBO); msFBO = 0; }
+    if (msColorRBO) { glDeleteRenderbuffers(1, &msColorRBO); msColorRBO = 0; }
+    if (msDepthRBO) { glDeleteRenderbuffers(1, &msDepthRBO); msDepthRBO = 0; }
+
+    // 删除原有 HDR / blur 资源
+    glDeleteFramebuffers(1, &hdrFBO);
+    glDeleteTextures(1, &hdrColorBuffer);
+    glDeleteRenderbuffers(1, &hdrDepthRBO);
+
+    // 删除 ping-pong 资源
+    if (pingpongFBO[0]) { glDeleteFramebuffers(1, &pingpongFBO[0]);     pingpongFBO[0] = 0; }
+    if (pingpongFBO[1]) { glDeleteFramebuffers(1, &pingpongFBO[1]);     pingpongFBO[1] = 0; }
+    if (pingpongColorbuffers[0]) { glDeleteTextures(1, &pingpongColorbuffers[0]); pingpongColorbuffers[0] = 0; }
+    if (pingpongColorbuffers[1]) { glDeleteTextures(1, &pingpongColorbuffers[1]); pingpongColorbuffers[1] = 0; }
+
+    if (gBuffer) { glDeleteFramebuffers(1, &gBuffer);     gBuffer = 0; }
+    if (gPosition) { glDeleteTextures(1, &gPosition);       gPosition = 0; }
+    if (gNormal) { glDeleteTextures(1, &gNormal);         gNormal = 0; }
+    if (gAlbedoSpec) { glDeleteTextures(1, &gAlbedoSpec);     gAlbedoSpec = 0; }
+    if (gDepthRBO) { glDeleteRenderbuffers(1, &gDepthRBO);  gDepthRBO = 0; }
+    // 重新创建帧缓冲
+    setupFramebuffers(width, height);
+}
+
+// 小行星带初始化
+void RocksModelMatricesInit(unsigned int& amount, Model& rock)
+{
+    glm::mat4* modelMatrices;
+    modelMatrices = new glm::mat4[amount];
+    srand(static_cast<unsigned int>(glfwGetTime())); // 生成随机种子
+    float radius = 200.0;
+    float offset = 20.0f;
+    for (unsigned int i = 0; i < amount; i++)
+    {
+        glm::mat4 model = glm::mat4(1.0f);
+        // 1.  平移  ：沿圆周位移，'半径'在范围内 [-offset, offset]
+        float angle = (float)i / (float)amount * 360.0f;
+        float displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
+        float x = sin(angle) * radius + displacement;
+
+        displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
+        float y = displacement * 0.1f; // 保持场地的高度小于x轴和z轴的宽度。
+
+        displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
+        float z = cos(angle) * radius + displacement;
+
+        model = glm::translate(model, glm::vec3(x, y, z));
+
+        // 2.  缩放  ：在 0.05 和 0.25f 之间进行缩放 
+        float scale = static_cast<float>((rand() % 30) / 100.0 + 0.01); // 在 0.05 和 0.17f 之间缩放，使得小行星更小一些
+        // 添加尺寸变化以模拟更真实的小行星带
+        if (i % 200 == 0)
+        {
+            scale *= 6.0f; // 每200个小行星中有一个更大一些
+        }
+        else if (i % 20 == 0)
+        {
+            scale *= 3.0f; // 每20个小行星中有一个中等大小
+        }
+        else if (i % 5 == 0)
+        {
+            scale *= 1.5f; // 每5个小行星中有一个稍微大一些
+        }
+        model = glm::scale(model, glm::vec3(scale));
+
+        // 3.  旋转  ：围绕一个（半）随机选取的旋转轴向量进行随机旋转。
+        float rotAngle = static_cast<float>((rand() % 360));
+        //model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
+            // 更复杂的旋转 - 多个旋转轴组合
+        glm::mat4 rotation = glm::mat4(1.0f);
+        rotation = glm::rotate(rotation, rotAngle * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
+        rotation = glm::rotate(rotation, rotAngle * 0.3f, glm::vec3(0.0f, 1.0f, 0.0f));
+        rotation = glm::rotate(rotation, rotAngle * 0.2f, glm::vec3(0.0f, 0.0f, 1.0f));
+        model = model * rotation;
+
+        // 4. 现在添加到矩阵列表中
+        modelMatrices[i] = model;
+    }
+
+    // 设置实例化顶点属性
+    unsigned int buffer;
+    glGenBuffers(1, &buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+
+    // 将变换矩阵设置为实例顶点属性（使用除数1）
+    // 注意：我们这里有点取巧，直接获取模型网格（多个网格时）现在公开声明的VAO，并添加新的vertexAttribPointers
+    // 正常情况下，你会希望以更有条理的方式来做这件事，但出于学习目的，这样做就可以了。
+    // 
+    for (unsigned int i = 0; i < rock.meshes.size(); i++)
+    {
+        unsigned int VAO = rock.meshes[i].VAO;
+        glBindVertexArray(VAO);
+        // 设置顶点属性指针
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+        glEnableVertexAttribArray(5);
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+        glEnableVertexAttribArray(6);
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+
+        glVertexAttribDivisor(3, 1);
+        glVertexAttribDivisor(4, 1);
+        glVertexAttribDivisor(5, 1);
+        glVertexAttribDivisor(6, 1);
+
+        glBindVertexArray(0);
+    }
+}
+
+// 球体生成程序
+void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& starIndices,
+    const unsigned int X_SEGMENTS, const unsigned int Y_SEGMENTS, const float PI)
+{
+    // 生成球体顶点数据
+    for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
+    {
+        for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+        {
+            float xSegment = (float)x / (float)X_SEGMENTS;
+            float ySegment = (float)y / (float)Y_SEGMENTS;
+            float xPos = cos(xSegment * 2.0f * PI) * sin(ySegment * PI);
+            float yPos = cos(ySegment * PI);
+            float zPos = sin(xSegment * 2.0f * PI) * sin(ySegment * PI);
+            // 位置
+            starVertices.push_back(xPos);
+            starVertices.push_back(yPos);
+            starVertices.push_back(zPos);
+            // 法线
+            starVertices.push_back(xPos);
+            starVertices.push_back(yPos);
+            starVertices.push_back(zPos);
+            // 纹理坐标
+            starVertices.push_back(xSegment);
+            starVertices.push_back(ySegment);
+        }
+    }
+
+    // 索引生成
+    for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
+    {
+        for (unsigned int x = 0; x < X_SEGMENTS; ++x)
+        {
+            starIndices.push_back(y * (X_SEGMENTS + 1) + x);
+            starIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+            starIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x + 1);
+            starIndices.push_back(y * (X_SEGMENTS + 1) + x);
+            starIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x + 1);
+            starIndices.push_back(y * (X_SEGMENTS + 1) + x + 1);
+        }
+    }
+}
+
+// 帧缓冲四边形初始化
+void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO)
+{
+    float quadVertices[] = {
+        // 位置(x,y)      纹理坐标(u,v)
+        -1.0f,  1.0f,     0.0f, 1.0f,
+        -1.0f, -1.0f,     0.0f, 0.0f,
+         1.0f, -1.0f,     1.0f, 0.0f,
+        -1.0f,  1.0f,     0.0f, 1.0f,
+         1.0f, -1.0f,     1.0f, 0.0f,
+         1.0f,  1.0f,     1.0f, 1.0f
+    };
+
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindVertexArray(quadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glBindVertexArray(0);
+}
+
+// 阴影贴图初始化
+void DepthCubeMapInit()
+{
+    glGenFramebuffers(1, &depthCubeFBO);
+    glGenTextures(1, &depthCubeMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT,
+            SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthCubeFBO);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubeMap, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+// 阴影PASS渲染
+void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTransforms, const glm::vec3& pointSunPositions)
+{
+    /*glm::mat4 shadowProj = glm::perspective(
+        glm::radians(90.0f),
+        (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT,
+        shadow_near, shadow_far);*/
+
+        //std::vector<glm::mat4> shadowTransforms;
+    shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(pointSunPositions, pointSunPositions + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+
+    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthCubeFBO);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glCullFace(GL_BACK);
+}
+
+#endif

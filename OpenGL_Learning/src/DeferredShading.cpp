@@ -15,7 +15,7 @@
 #include "Model.h"
 
 
-
+#ifdef DEFERRED
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -642,3 +642,5 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
 
     return textureID;
 }
+
+#endif

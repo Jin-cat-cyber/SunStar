@@ -238,7 +238,7 @@ void Sun::SunRender(Shader& sunCoreShader, Shader& sunCoronaShader, Shader& Core
     coronaModel = glm::mat4(1.0f);
     coronaModel = glm::translate(coronaModel, pointSunPositions);
     coronaModel = glm::rotate(coronaModel, starTime * 0.3f, glm::vec3(0.0f, 1.0f, 0.0f));
-    coronaModel = glm::scale(coronaModel, SunScale * 1.6f * starPulse); // 日冕层比核心大
+    coronaModel = glm::scale(coronaModel, SunScale * 1.5f * starPulse); // 日冕层比核心大
 
     CoreCoronaShader.setMat4("model", coronaModel);
     CoreCoronaShader.setMat4("view", view);
@@ -267,7 +267,7 @@ void Sun::SunRender(Shader& sunCoreShader, Shader& sunCoronaShader, Shader& Core
     glm::mat4 glowModel = glm::mat4(1.0f);
     glowModel = glm::translate(glowModel, pointSunPositions);
     glowModel = glm::rotate(glowModel, starTime * 0.1f, glm::vec3(0.0f, 1.0f, 0.0f));
-    glowModel = glm::scale(glowModel, SunScale * 1.6f * starPulse);
+    glowModel = glm::scale(glowModel, SunScale * 1.5f * starPulse);
 
     sunGlowShader.setMat4("model", glowModel);
     sunGlowShader.setMat4("view", view);

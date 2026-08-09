@@ -131,7 +131,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SHADOW_4_0;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -212,6 +212,8 @@
     <ClCompile Include="src\SpaceShip6.0.cpp" />
     <ClCompile Include="src\SpaceShip7.0.cpp" />
     <ClCompile Include="src\SpaceShip8.0.cpp" />
+    <ClCompile Include="src\SpaceShip9.0.cpp" />
+    <ClCompile Include="src\SpaceShip9.A.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip3.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip2.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip.cpp" />
@@ -241,11 +243,16 @@
     <None Include="res\shader\#Deferred\G-Buffer_ver.shader" />
     <None Include="res\shader\00_SpaceShip\aster_frag3.0.shader" />
     <None Include="res\shader\00_SpaceShip\aster_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading\deferred_lighting_frag.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_frag.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_geo.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_ver2.0.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_ver2.1.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_ver2.2.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_asteroid_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_asteroid_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_planet_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_planet_ver.shader" />
     <None Include="res\shader\00_SpaceShip\instancingFRAG3.0.shader" />
     <None Include="res\shader\00_SpaceShip\instancingVER.shader" />
     <None Include="res\shader\BloomShaders\blur_frag.shader" />
@@ -284,6 +291,7 @@
     <None Include="res\shader\CubeMapsShader\cubeMap_ver.shader" />
     <None Include="res\shader\DeeptestShader\deeptest_frag1.0.shader" />
     <None Include="res\shader\DeeptestShader\deeptest_ver1.0.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading\deferred_lighting_ver.shader" />
     <None Include="res\shader\FrameBuffersShader\framebuffers_screen_frag.shader" />
     <None Include="res\shader\FrameBuffersShader\framebuffers_screen_ver.shader" />
     <None Include="res\shader\Advanced_GLSL\bluefrag.shader" />

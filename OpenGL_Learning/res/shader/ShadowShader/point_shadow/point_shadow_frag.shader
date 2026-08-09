@@ -132,6 +132,83 @@ float ShadowCalculation(vec3 fragPos)
     return shadow;
 }
 
+// PCSS
+// --- PCSS “ı”∞ --- 
+float ShadowCalculationPCSS(vec3 fragPos)
+{
+    vec3 fragToLight = fragPos - lightPos;
+    float receiverDepth = length(fragToLight);
+    vec3 lightDir = normalize(lightPos - fragPos);
+
+    vec3 sampleDirs[20] = vec3[]
+    (
+        vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1),
+        vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+        vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+        vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+        vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+    );
+
+    // === Stage 1: Blocker Search ===
+    float blockerSum = 0.0;
+    int blockerCount = 0;
+    float searchAngle = 0.05;
+
+    for (int i = 0; i < 16; ++i)
+    {
+        vec3 probeDir = normalize(fragToLight + sampleDirs[i] * searchAngle);
+        float probeDepth = texture(depthMap, probeDir).r * far_plane;
+
+        float cosAngle = dot(normalize(fragToLight), probeDir);
+        float zOffset = receiverDepth * (1.0 / max(cosAngle, 0.85) - 1.0);
+
+        if (probeDepth < receiverDepth - zOffset - 0.02)
+        {
+            blockerSum += probeDepth;
+            blockerCount++;
+        }
+    }
+
+    // === Fallback: original PCF if not enough blockers ===
+    if (blockerCount < 4)
+    {
+        float shadow = 0.0;
+        float bias = max(0.05 * (1.0 - dot(fs_in.Normal, lightDir)), 0.15);
+        float viewDistance = length(viewPos - fragPos);
+        float diskRadius = (1.0 + (viewDistance / far_plane)) / 25.0;
+
+        for (int i = 0; i < 20; ++i)
+        {
+            float d = texture(depthMap, fragToLight + sampleDirs[i] * diskRadius).r * far_plane;
+            if (receiverDepth - bias > d) shadow += 1.0;
+        }
+        shadow /= 20.0;
+        return shadow;
+    }
+
+    float avgBlockerDepth = blockerSum / float(blockerCount);
+
+    // === Stage 2: Penumbra ===
+    // lightRadius: effective radius of the light source in world units
+    float lightRadius = 0.5;
+    float blockerDist = min(abs(avgBlockerDepth - receiverDepth) * 0.9, 10.0);
+    float penumbraAngle = atan(lightRadius * blockerDist / (avgBlockerDepth * receiverDepth));
+    penumbraAngle = clamp(penumbraAngle, 0.002, 0.2);
+
+    // === Stage 3: PCF adaptive ===
+    float shadow = 0.0;
+    float bias = max(0.05 * (1.0 - dot(fs_in.Normal, lightDir)), 0.15);
+
+    for (int i = 0; i < 20; ++i)
+    {
+        float d = texture(depthMap, fragToLight + sampleDirs[i] * penumbraAngle).r * far_plane;
+        if (receiverDepth - bias > d) shadow += 1.0;
+    }
+    shadow /= 20.0;
+
+    return shadow;
+}
+
 void main()
 {           
     vec3 color = texture(diffuseTexture, fs_in.TexCoords).rgb;
