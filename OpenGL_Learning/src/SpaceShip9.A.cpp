@@ -19,7 +19,7 @@
 #include "Sun.h"
 #include "Skybox.h"
 
-
+// VSM  ß∞‹ µ—È
 #ifdef SHIP_9_A
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
