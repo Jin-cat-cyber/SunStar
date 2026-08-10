@@ -52,6 +52,12 @@ bool tabKeyPressed = false;   // 用于检测 TAB 键的上升沿
 bool f10Pressed = false;    // 用于检测 F10 键的上升沿
 bool f11Pressed = false;    // 用于检测 F11 键的上升沿
 bool isFullscreen = false; // 是否全屏
+bool shadows = true;
+bool PCSS = false;
+
+bool shadowKeyPressed = false;
+bool PCSSKeyPressed = false;
+
 int savedX = 0, savedY = 0;
 int savedWidth = SCR_WIDTH, savedHeight = SCR_HEIGHT;
 
@@ -415,7 +421,8 @@ int main()
         deferredLightingShader.setVec3("lightPos", pointSunPositions);
         deferredLightingShader.setVec3("viewPos", camera.Position);
         deferredLightingShader.setFloat("far_plane", shadow_far);
-        deferredLightingShader.setInt("shadows", 1);
+        deferredLightingShader.setBool("shadows", shadows);
+        deferredLightingShader.setBool("PCSS", PCSS);
 
         // DirLight
         deferredLightingShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
@@ -485,90 +492,6 @@ int main()
 
 
 
-        //// ========================================
-        //// 行星渲染
-        //// ========================================
-        ////—————————————————————————————————————————————————————————————————————
-        //// 行星着色器
-        //planetshader.use();
-        //planetshader.setVec3("viewPos", camera.Position);
-        //planetshader.setFloat("material.shininess", 32.0f);
-        //// 定向光
-        //planetshader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-        //planetshader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-        //planetshader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-        //planetshader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-        //// 点光源 1
-        //planetshader.setVec3("pointLights[0].position", pointSunPositions);
-        //planetshader.setVec3("pointLights[0].ambient", 1.0f, 1.0f, 0.8f);
-        //planetshader.setVec3("pointLights[0].diffuse", 200.0f, 200.0f, 160.0f);   // 增大
-        //planetshader.setVec3("pointLights[0].specular", 120.0f, 120.0f, 100.0f);  // 增大
-        //planetshader.setFloat("pointLights[0].constant", 1.0f);
-        //planetshader.setFloat("pointLights[0].linear", 0.0002f);        // 原来是0.09，减小
-        //planetshader.setFloat("pointLights[0].quadratic", 0.000005f);    // 原来是0.032，减小
-
-        //// 阴影
-        //planetshader.setInt("shadows", 1);
-        //planetshader.setFloat("far_plane", shadow_far);
-        //planetshader.setVec3("lightPos", pointSunPositions);
-        //glActiveTexture(GL_TEXTURE2);
-        //glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
-        //planetshader.setInt("depthMap", 2);
-
-        //planetshader.setMat4("projection", projection);
-        //planetshader.setMat4("view", view);
-
-        //// 绘制行星
-        //glm::mat4 model = glm::mat4(1.0f);
-        //model = glm::translate(model, planetPosition);
-        //model = glm::scale(model, planetScale);
-        //planetshader.setMat4("model", model);
-        //planet.Draw(planetshader);
-
-
-        //// 设置小行星着色器并绘制
-        //asteroidShader.use();
-        //asteroidShader.setMat4("projection", projection);
-        //asteroidShader.setMat4("view", view);
-
-        //asteroidShader.use();
-        //asteroidShader.setInt("material.diffuse", 0);
-        //asteroidShader.setInt("material.specular", 1);
-        //glActiveTexture(GL_TEXTURE0);
-        //glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id);
-        //// 设置小行星着色器并绘制
-        //asteroidShader.use();
-        //asteroidShader.setVec3("viewPos", camera.Position);
-        //asteroidShader.setFloat("material.shininess", 32.0f);
-        //// 定向光
-        //asteroidShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-        //asteroidShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-        //asteroidShader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-        //asteroidShader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-        //// 点光源 1
-        //asteroidShader.setVec3("pointLights[0].position", pointSunPositions);
-        //asteroidShader.setVec3("pointLights[0].ambient", 1.0f, 1.0f, 0.8f);
-        //asteroidShader.setVec3("pointLights[0].diffuse", 200.0f, 200.0f, 160.0f);   // 增大
-        //asteroidShader.setVec3("pointLights[0].specular", 120.0f, 120.0f, 100.0f);  // 增大
-        //asteroidShader.setFloat("pointLights[0].constant", 1.0f);
-        //asteroidShader.setFloat("pointLights[0].linear", 0.0002f);        // 原来是0.09，减小
-        //asteroidShader.setFloat("pointLights[0].quadratic", 0.000005f);    // 原来是0.032，减小
-
-        ////// 阴影
-        //asteroidShader.setInt("shadows", 1);
-        //asteroidShader.setFloat("far_plane", shadow_far);
-        //asteroidShader.setVec3("lightPos", pointSunPositions);
-        //glActiveTexture(GL_TEXTURE2);
-        //glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
-        //asteroidShader.setInt("depthMap", 2);
-
-        //// 绘制小行星
-        //for (unsigned int i = 0; i < rock.meshes.size(); i++)
-        //{
-        //    glBindVertexArray(rock.meshes[i].VAO);
-        //    glDrawElementsInstanced(GL_TRIANGLES, static_cast<unsigned int>(rock.meshes[i].indices.size()), GL_UNSIGNED_INT, 0, amount);
-        //    glBindVertexArray(0);
-        //}
 
         //==========================================
         // 渲染到屏幕
@@ -770,6 +693,30 @@ void processInput(GLFWwindow* window)
     }
     if (glfwGetKey(window, GLFW_KEY_F11) == GLFW_RELEASE)
         f11Pressed = false;
+
+
+    //bool shadowKeyPressed = false;
+    //bool PCSSKeyPressed = false;
+    if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS && !shadowKeyPressed)
+    {
+        shadows = !shadows;
+        shadowKeyPressed = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_RELEASE)
+    {
+        shadowKeyPressed = false;
+    }
+
+
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && !PCSSKeyPressed)
+    {
+        PCSS = !PCSS;
+        PCSSKeyPressed = true;
+    }        
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_RELEASE)
+    {
+        PCSSKeyPressed = false;
+    }
 }
 
 // 鼠标回调函数

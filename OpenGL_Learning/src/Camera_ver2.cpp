@@ -50,10 +50,14 @@ void Camera_ver2::ProcessMouseMovement(float xoffset, float yoffset)
 	float PitchAngle = glm::radians(yoffset);
 
 	// 增量四元数：绕相机的局部Up轴旋转yaw
-	glm::quat deltaYaw = glm::angleAxis(YawAngle, Up);
-	glm::quat deltaPitch = glm::angleAxis(PitchAngle, Right); // 绕相机的局部Right轴旋转pitch
+	//glm::quat deltaYaw = glm::angleAxis(YawAngle, Up);
+	//glm::quat deltaPitch = glm::angleAxis(PitchAngle, Right); // 绕相机的局部Right轴旋转pitch
 
-	Orient = deltaYaw * Orient * deltaPitch; // 注意乘法顺序，先应用pitch再应用yaw
+	// 增量四元数：绕相机本地轴旋转（右乘 = 本地空间），先pitch后yaw，
+	// pitch绕本地X(右轴)、yaw绕本地Y(上轴)，全部右乘确保始终相对相机自身旋转
+	glm::quat deltaYaw = glm::angleAxis(YawAngle, glm::vec3(0.0f, 1.0f, 0.0f)); // 本地Y轴
+	glm::quat deltaPitch = glm::angleAxis(PitchAngle, glm::vec3(1.0f, 0.0f, 0.0f)); // 本地X轴
+	Orient = Orient * deltaPitch * deltaYaw; // 注意乘法顺序，先应用pitch再应用yaw
 	Orient = glm::normalize(Orient); // 归一化四元数，避免数值误差导致旋转失真
 
 	// 重新计算方向向量

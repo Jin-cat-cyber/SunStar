@@ -38,6 +38,7 @@ uniform samplerCube depthMap;
 uniform vec3 lightPos;
 uniform float far_plane;
 uniform bool shadows;
+uniform bool PCSS;
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 albedo, float spec);
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 albedo, float spec, float shadow);
@@ -55,7 +56,8 @@ void main()
     vec3 viewDir = normalize(viewPos - FragPos);
 
     //float shadow = shadows ? ShadowCalculation(FragPos, norm) : 0.0;
-    float shadow = shadows ? ShadowCalculationPCSS(FragPos, norm) : 0.0;
+    float shadow = shadows ? PCSS ? ShadowCalculationPCSS(FragPos, norm) : ShadowCalculation(FragPos, norm) : 0.0;
+    
 
     vec3 result = CalcDirLight(dirLight, norm, viewDir, Albedo, Specular);
     result += CalcPointLight(pointLights[0], norm, FragPos, viewDir, Albedo, Specular, shadow);
