@@ -131,7 +131,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SHIP_9_0;</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SSAO;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -141,7 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\Bloom.cpp" />
+    <ClCompile Include="src\05_AdvancedLighting\Bloom.cpp" />
     <ClCompile Include="src\DeferredShading.cpp" />
     <ClCompile Include="src\Skybox.cpp" />
     <ClCompile Include="src\Debug_Shader.cpp" />
@@ -158,7 +158,7 @@
     <ClCompile Include="src\04_AdvancedOpenGL\Instancing\Instancing3.0_galaxy.cpp" />
     <ClCompile Include="src\04_AdvancedOpenGL\Instancing\Instancing4.0_SunStar.cpp" />
     <ClCompile Include="src\FPS_Ship.cpp" />
-    <ClCompile Include="src\HDR.cpp" />
+    <ClCompile Include="src\05_AdvancedLighting\HDR.cpp" />
     <ClCompile Include="src\Model.cpp" />
     <ClCompile Include="src\05_AdvancedLighting\NormalMap\NormalMap.cpp" />
     <ClCompile Include="src\05_AdvancedLighting\NormalMap\NormalMap_Model.cpp" />
@@ -167,10 +167,11 @@
     <ClCompile Include="src\05_AdvancedLighting\Shadow\Shadow1.0.cpp" />
     <ClCompile Include="src\05_AdvancedLighting\Shadow\Shadow2.0.cpp" />
     <ClCompile Include="src\05_AdvancedLighting\Shadow\Shadow3.0.cpp" />
-    <ClCompile Include="src\NormalMap_Model2.0.cpp" />
+    <ClCompile Include="src\05_AdvancedLighting\NormalMap\NormalMap_Model2.0.cpp" />
     <ClCompile Include="src\Shadow4.0.cpp" />
-    <ClCompile Include="src\SpaceShip5.0_my_method.cpp" />
-    <ClCompile Include="src\SpaceShip5.0_ds_method.cpp" />
+    <ClCompile Include="src\SpaceShip10.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip5.0_my_method.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip5.0_ds_method.cpp" />
     <ClCompile Include="src\SkyBox\cubeMap_SkyBox.cpp" />
     <ClCompile Include="src\SkyBox\cubeMap_SkyBox_Model.cpp" />
     <ClCompile Include="src\SkyBox\fail_cubeMap_SkyBox_move.cpp" />
@@ -208,16 +209,17 @@
     <ClCompile Include="src\03_Model\model_ver1_Model_backpack.cpp" />
     <ClCompile Include="src\03_Model\model_ver2_Light_combine.cpp" />
     <ClCompile Include="src\03_Model\model_ver3_Light_combine.cpp" />
-    <ClCompile Include="src\SpaceShip4.0.cpp" />
-    <ClCompile Include="src\SpaceShip6.0.cpp" />
-    <ClCompile Include="src\SpaceShip7.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip4.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip6.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip7.0.cpp" />
     <ClCompile Include="src\SpaceShip8.0.cpp" />
     <ClCompile Include="src\SpaceShip9.0.cpp" />
     <ClCompile Include="src\SpaceShip9.A.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip3.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip2.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip.cpp" />
-    <ClCompile Include="src\SpaceShip5.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip5.0.cpp" />
+    <ClCompile Include="src\SSAO.cpp" />
     <ClCompile Include="src\Sun.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -257,6 +259,12 @@
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_planet_ver.shader" />
     <None Include="res\shader\00_SpaceShip\instancingFRAG3.0.shader" />
     <None Include="res\shader\00_SpaceShip\instancingVER.shader" />
+    <None Include="res\shader\SSAO\ssao_blur_frag.shader" />
+    <None Include="res\shader\SSAO\ssao_frag.shader" />
+    <None Include="res\shader\SSAO\ssao_geometry_frag.shader" />
+    <None Include="res\shader\SSAO\ssao_geometry_ver.shader" />
+    <None Include="res\shader\SSAO\ssao_lighting_frag.shader" />
+    <None Include="res\shader\SSAO\ssao_ver.shader" />
     <None Include="res\shader\BloomShaders\blur_frag.shader" />
     <None Include="res\shader\BloomShaders\blur_ver.shader" />
     <None Include="res\shader\BloomShaders\bright_pass_frag.shader" />
@@ -282,13 +290,13 @@
     <None Include="res\shader\BloomShaders\composite_frag.shader" />
     <None Include="res\shader\BloomShaders\composite_frag2.0.shader" />
     <None Include="res\shader\BloomShaders\composite_ver.shader" />
-    <None Include="res\shader\Bloom\bloom_final_frag.shader" />
-    <None Include="res\shader\Bloom\bloom_final_ver.shader" />
-    <None Include="res\shader\Bloom\bloom_frag.shader" />
-    <None Include="res\shader\Bloom\bloom_ver.shader" />
-    <None Include="res\shader\Bloom\blur_frag.shader" />
-    <None Include="res\shader\Bloom\blur_ver.shader" />
-    <None Include="res\shader\Bloom\light_box_frag.shader" />
+    <None Include="res\shader\Advanced_lighting\Bloom\bloom_final_frag.shader" />
+    <None Include="res\shader\Advanced_lighting\Bloom\bloom_final_ver.shader" />
+    <None Include="res\shader\Advanced_lighting\Bloom\bloom_frag.shader" />
+    <None Include="res\shader\Advanced_lighting\Bloom\bloom_ver.shader" />
+    <None Include="res\shader\Advanced_lighting\Bloom\blur_frag.shader" />
+    <None Include="res\shader\Advanced_lighting\Bloom\blur_ver.shader" />
+    <None Include="res\shader\Advanced_lighting\Bloom\light_box_frag.shader" />
     <None Include="res\shader\CubeMapsShader\cubeMap_frag.shader" />
     <None Include="res\shader\CubeMapsShader\cubeMap_ver.shader" />
     <None Include="res\shader\DeeptestShader\deeptest_frag1.0.shader" />
@@ -303,10 +311,10 @@
     <None Include="res\shader\GeometryShader\frag.shader" />
     <None Include="res\shader\GeometryShader\geo.shader" />
     <None Include="res\shader\GeometryShader\ver.shader" />
-    <None Include="res\shader\HDR\hdr_frag.shader" />
-    <None Include="res\shader\HDR\hdr_lighting_frag.shader" />
-    <None Include="res\shader\HDR\hdr_lighting_ver.shader" />
-    <None Include="res\shader\HDR\hdr_ver.shader" />
+    <None Include="res\shader\Advanced_lighting\HDR\hdr_frag.shader" />
+    <None Include="res\shader\Advanced_lighting\HDR\hdr_lighting_frag.shader" />
+    <None Include="res\shader\Advanced_lighting\HDR\hdr_lighting_ver.shader" />
+    <None Include="res\shader\Advanced_lighting\HDR\hdr_ver.shader" />
     <None Include="res\shader\InstancingShader\aster_frag.shader" />
     <None Include="res\shader\InstancingShader\aster_frag2.0.shader" />
     <None Include="res\shader\InstancingShader\aster_ver.shader" />

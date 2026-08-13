@@ -195,28 +195,28 @@
     <ClCompile Include="src\SpaceShip\SpaceShip3.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip4.0.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip4.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\HDR.cpp">
+    <ClCompile Include="src\05_AdvancedLighting\HDR.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip5.0.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip5.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip5.0_ds_method.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip5.0_ds_method.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip5.0_my_method.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip5.0_my_method.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\Shadow4.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\NormalMap_Model2.0.cpp">
+    <ClCompile Include="src\05_AdvancedLighting\NormalMap\NormalMap_Model2.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip6.0.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip6.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\Debug_Shader.cpp">
@@ -228,13 +228,10 @@
     <ClCompile Include="src\Sun.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip7.0.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip7.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\Skybox.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Bloom.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\SpaceShip8.0.cpp">
@@ -247,6 +244,15 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\SpaceShip9.A.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SSAO.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\05_AdvancedLighting\Bloom.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip10.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -383,10 +389,10 @@
     <None Include="res\shader\BloomShaders\blur_ver.shader" />
     <None Include="res\shader\LensFlareShader\lens_flare_ver.shader" />
     <None Include="res\shader\LensFlareShader\lens_flare_frag.shader" />
-    <None Include="res\shader\HDR\hdr_lighting_ver.shader" />
-    <None Include="res\shader\HDR\hdr_lighting_frag.shader" />
-    <None Include="res\shader\HDR\hdr_ver.shader" />
-    <None Include="res\shader\HDR\hdr_frag.shader" />
+    <None Include="res\shader\Advanced_lighting\HDR\hdr_lighting_ver.shader" />
+    <None Include="res\shader\Advanced_lighting\HDR\hdr_lighting_frag.shader" />
+    <None Include="res\shader\Advanced_lighting\HDR\hdr_ver.shader" />
+    <None Include="res\shader\Advanced_lighting\HDR\hdr_frag.shader" />
     <None Include="res\shader\BloomShaders\composite_frag2.0.shader" />
     <None Include="res\shader\StarShader\StarList2.0\core_frag2.0.shader" />
     <None Include="res\shader\StarShader\StarList2.0\corona_frag2.0.shader" />
@@ -402,13 +408,6 @@
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_ver2.0.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_ver2.1.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_ver2.2.shader" />
-    <None Include="res\shader\Bloom\bloom_ver.shader" />
-    <None Include="res\shader\Bloom\bloom_frag.shader" />
-    <None Include="res\shader\Bloom\light_box_frag.shader" />
-    <None Include="res\shader\Bloom\blur_ver.shader" />
-    <None Include="res\shader\Bloom\blur_frag.shader" />
-    <None Include="res\shader\Bloom\bloom_final_ver.shader" />
-    <None Include="res\shader\Bloom\bloom_final_frag.shader" />
     <None Include="res\shader\#Deferred\G-Buffer_ver.shader" />
     <None Include="res\shader\#Deferred\G-Buffer_frag.shader" />
     <None Include="res\shader\#Deferred\Deferred_shading_ver.shader" />
@@ -423,6 +422,19 @@
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\deferred_lighting_frag.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_frag_vsm.shader" />
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\deferred_lighting_frag_vsm.shader" />
+    <None Include="res\shader\SSAO\ssao_blur_frag.shader" />
+    <None Include="res\shader\SSAO\ssao_frag.shader" />
+    <None Include="res\shader\SSAO\ssao_geometry_frag.shader" />
+    <None Include="res\shader\SSAO\ssao_geometry_ver.shader" />
+    <None Include="res\shader\SSAO\ssao_lighting_frag.shader" />
+    <None Include="res\shader\SSAO\ssao_ver.shader" />
+    <None Include="res\shader\Advanced_lighting\Bloom\bloom_final_frag.shader" />
+    <None Include="res\shader\Advanced_lighting\Bloom\bloom_final_ver.shader" />
+    <None Include="res\shader\Advanced_lighting\Bloom\bloom_frag.shader" />
+    <None Include="res\shader\Advanced_lighting\Bloom\bloom_ver.shader" />
+    <None Include="res\shader\Advanced_lighting\Bloom\blur_frag.shader" />
+    <None Include="res\shader\Advanced_lighting\Bloom\blur_ver.shader" />
+    <None Include="res\shader\Advanced_lighting\Bloom\light_box_frag.shader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\texture\container.jpg">
