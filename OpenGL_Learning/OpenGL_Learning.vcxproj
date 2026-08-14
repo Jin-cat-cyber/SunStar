@@ -131,7 +131,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SSAO;</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SHIP_10_0;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -247,6 +247,7 @@
     <None Include="res\shader\00_SpaceShip\aster_ver.shader" />
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\deferred_lighting_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\deferred_lighting_frag_vsm.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading\defer_light_ssao_frag.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_frag.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_frag_vsm.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_geo.shader" />
@@ -259,6 +260,10 @@
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_planet_ver.shader" />
     <None Include="res\shader\00_SpaceShip\instancingFRAG3.0.shader" />
     <None Include="res\shader\00_SpaceShip\instancingVER.shader" />
+    <None Include="res\shader\00_SpaceShip\SSAO\defer_light_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\SSAO\defer_light_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\SSAO\ssao_Blur_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\SSAO\ssao_frag.shader" />
     <None Include="res\shader\SSAO\ssao_blur_frag.shader" />
     <None Include="res\shader\SSAO\ssao_frag.shader" />
     <None Include="res\shader\SSAO\ssao_geometry_frag.shader" />

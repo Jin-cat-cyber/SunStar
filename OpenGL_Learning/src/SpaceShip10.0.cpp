@@ -1,8 +1,8 @@
-#include <glad/glad.h>
+ï»¿#include <glad/glad.h>
 #include <glfw3.h>
 #include <assimp/config.h>
 #include <assimp/revision.h>
-
+#include <random>
 
 
 
@@ -15,154 +15,175 @@
 
 #include "camera_ver2.h"
 #include "Model.h"
-#include "Shader.h" // °üº¬×Ô¶¨Òå×ÅÉ«Æ÷Àà
+#include "Shader.h" // åŒ…å«è‡ªå®šä¹‰ç€è‰²å™¨ç±»
 #include "Sun.h"
 #include "Skybox.h"
 
 
-//#ifdef SHIP_9_0
+#ifdef SHIP_10_0
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // ´°¿Ú´óĞ¡»Øµ÷º¯Êı
-void processInput(GLFWwindow* window);  // ÊäÈë¼ì²éº¯Êı
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);  // Êó±ê ÒÆ¶¯ »Øµ÷º¯Êı
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);   // Êó±ê ¹öÂÖ »Øµ÷º¯Êı
-unsigned int loadTexture(char const* path);     // ÎÆÀí¼ÓÔØº¯Êı
-unsigned int loadCubemap(std::vector<std::string> faces);   // Á¢·½ÌåÌùÍ¼¼ÓÔØº¯Êı
-void setupFramebuffers(int eidth, int height);  //  ÀëÆÁäÖÈ¾Ö¡»º³å
-void rebuildFramebuffers(int width, int height);  //  ÖØ½¨ÀëÆÁäÖÈ¾Ö¡»º³å
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // çª—å£å¤§å°å›è°ƒå‡½æ•°
+void processInput(GLFWwindow* window);  // è¾“å…¥æ£€æŸ¥å‡½æ•°
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);  // é¼ æ ‡ ç§»åŠ¨ å›è°ƒå‡½æ•°
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);   // é¼ æ ‡ æ»šè½® å›è°ƒå‡½æ•°
+unsigned int loadTexture(char const* path);     // çº¹ç†åŠ è½½å‡½æ•°
+unsigned int loadCubemap(std::vector<std::string> faces);   // ç«‹æ–¹ä½“è´´å›¾åŠ è½½å‡½æ•°
+void setupFramebuffers(int eidth, int height);  //  ç¦»å±æ¸²æŸ“å¸§ç¼“å†²
+void rebuildFramebuffers(int width, int height);  //  é‡å»ºç¦»å±æ¸²æŸ“å¸§ç¼“å†²
 
-const unsigned int SCR_WIDTH = 960; // ´°¿Ú¿í¶È
-const unsigned int SCR_HEIGHT = 600; // ´°¿Ú¸ß¶È
+// æ˜Ÿçƒç›¸å…³å‡½æ•°
+void RocksModelMatricesInit(unsigned int& amount, Model& rock);
+void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& starIndices,
+    const unsigned int X_SEGMENTS, const unsigned int Y_SEGMENTS, const float PI);
+
+// é˜´å½±ç›¸å…³å‡½æ•°
+void DepthCubeMapInit();
+void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTransforms, const glm::vec3& pointSunPositions);
+
+// SSAOç›¸å…³å‡½æ•°
+void SSAOInit();
+
+
+const unsigned int SCR_WIDTH = 960; // çª—å£å®½åº¦
+const unsigned int SCR_HEIGHT = 600; // çª—å£é«˜åº¦
 int windowwidth = SCR_WIDTH;
 int windowheight = SCR_HEIGHT;
 
-// ÉãÏñ»úÏà¹Ø
+// æ‘„åƒæœºç›¸å…³
 Camera_ver2 camera(glm::vec3(-40.0f, 10.0f, 200.0f));
 float lastX = SCR_WIDTH / 2.0F;
 float lastY = SCR_HEIGHT / 2.0F;
 
 
-// °´¼üÊäÈë¼ì²â
+// æŒ‰é”®è¾“å…¥æ£€æµ‹
 bool firstMouse = true;
 bool cursorLocked = true;
-bool tabKeyPressed = false;   // ÓÃÓÚ¼ì²â TAB ¼üµÄÉÏÉıÑØ
-bool f10Pressed = false;    // ÓÃÓÚ¼ì²â F10 ¼üµÄÉÏÉıÑØ
-bool f11Pressed = false;    // ÓÃÓÚ¼ì²â F11 ¼üµÄÉÏÉıÑØ
-bool isFullscreen = false; // ÊÇ·ñÈ«ÆÁ
+bool tabKeyPressed = false;   // ç”¨äºæ£€æµ‹ TAB é”®çš„ä¸Šå‡æ²¿
+bool f10Pressed = false;    // ç”¨äºæ£€æµ‹ F10 é”®çš„ä¸Šå‡æ²¿
+bool f11Pressed = false;    // ç”¨äºæ£€æµ‹ F11 é”®çš„ä¸Šå‡æ²¿
+bool isFullscreen = false; // æ˜¯å¦å…¨å±
 bool shadows = true;
 bool PCSS = false;
+bool ssaoEnabled = true;
+bool unify = true;
+
 
 bool shadowKeyPressed = false;
 bool PCSSKeyPressed = false;
+bool ssaoKeyPressed = false;
+bool unifyKeyPressed = false;
 
 int savedX = 0, savedY = 0;
 int savedWidth = SCR_WIDTH, savedHeight = SCR_HEIGHT;
 
 
-// ÉèÖÃÖ¡ÊıäÖÈ¾Ê±¼ä
-float deltaTime = 0.0f;	// µ±Ç°Ö¡ÓëÉÏÒ»Ö¡µÄÊ±¼ä²î
-float lastFrame = 0.0f; // ÉÏÒ»Ö¡µÄÊ±¼ä
+// è®¾ç½®å¸§æ•°æ¸²æŸ“æ—¶é—´
+float deltaTime = 0.0f;	// å½“å‰å¸§ä¸ä¸Šä¸€å¸§çš„æ—¶é—´å·®
+float lastFrame = 0.0f; // ä¸Šä¸€å¸§çš„æ—¶é—´
 
 
-
-// ĞÇÇòÏà¹Øº¯Êı
-void RocksModelMatricesInit(unsigned int& amount, Model& rock);
-void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& starIndices,
-    const unsigned int X_SEGMENTS, const unsigned int Y_SEGMENTS, const float PI);
-
-
-// ºó´¦ÀíÖ¡»º³å±äÁ¿
+// åå¤„ç†å¸§ç¼“å†²å˜é‡
 unsigned int hdrFBO;
 unsigned int hdrColorBuffer;
 unsigned int pingpongFBO[2];
 unsigned int pingpongColorbuffers[2];
 
 unsigned int hdrDepthRBO;
-// ĞÂÔö¶àÖØ²ÉÑù FBO ¾ä±ú
+// æ–°å¢å¤šé‡é‡‡æ · FBO å¥æŸ„
 unsigned int msFBO = 0;
 unsigned int msColorRBO = 0;
 unsigned int msDepthRBO = 0;
 
-// ĞÂÔö G-buffer
+// æ–°å¢ G-buffer
 unsigned int gBuffer;
 unsigned int gPosition, gNormal, gAlbedoSpec;
 unsigned int gDepthRBO;
 
-// ºó´¦ÀíËÄ±ßĞÎ¶¥µãÊı×é¶ÔÏóºÍ¶¥µã»º³å¶ÔÏó
+// åå¤„ç†å››è¾¹å½¢é¡¶ç‚¹æ•°ç»„å¯¹è±¡å’Œé¡¶ç‚¹ç¼“å†²å¯¹è±¡
 void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO);
 
-// ÒõÓ°Ïà¹Ø
+// é˜´å½±ç›¸å…³
 const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
 unsigned int depthCubeMap, depthCubeFBO;
 float shadow_near = 1.0f;
-float shadow_far = 800.0f;    // ÄãµÄ³¡¾°Ô¶´ï -600£¬far_plane ÒªÉè´ó£¡
-// ÒõÓ°Ïà¹Øº¯Êı
-void DepthCubeMapInit();
-void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTransforms, const glm::vec3& pointSunPositions);
+float shadow_far = 800.0f;    // ä½ çš„åœºæ™¯è¿œè¾¾ -600ï¼Œfar_plane è¦è®¾å¤§ï¼
+
+// SSAOç›¸å…³
+unsigned int ssaoFBO, ssaoBlurFBO;
+unsigned int ssaoColorBuffer, ssaoColorBufferBlur;
+std::vector<glm::vec3>ssaoKernel;
+unsigned int noiseTexture;
+
 
 int main()
 {
-    glfwInit(); // ³õÊ¼»¯GLFW¿â
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);  // ÉèÖÃOpenGL°æ±¾£ºÖ÷°æ±¾ºÅ
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);  // ÉèÖÃOpenGL°æ±¾£º´Î°æ±¾ºÅ
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // Ê¹ÓÃºËĞÄÄ£Ê½
+    glfwInit(); // åˆå§‹åŒ–GLFWåº“
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);  // è®¾ç½®OpenGLç‰ˆæœ¬ï¼šä¸»ç‰ˆæœ¬å·
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);  // è®¾ç½®OpenGLç‰ˆæœ¬ï¼šæ¬¡ç‰ˆæœ¬å·
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // ä½¿ç”¨æ ¸å¿ƒæ¨¡å¼
     glfwWindowHint(GLFW_SAMPLES, 4);
 
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    // ´´½¨´°¿Ú¶ÔÏó
+    // åˆ›å»ºçª—å£å¯¹è±¡
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Hello OpenGL", NULL, NULL);
 
-    // »ñÈ¡Êµ¼Ê´°¿Ú´óĞ¡£¨ÒòÎªÔÚÄ³Ğ©Æ½Ì¨ÉÏ£¬´°¿ÚµÄÊµ¼Ê´óĞ¡¿ÉÄÜÓëÇëÇóµÄ´óĞ¡²»Í¬£©
+    // è·å–å®é™…çª—å£å¤§å°ï¼ˆå› ä¸ºåœ¨æŸäº›å¹³å°ä¸Šï¼Œçª—å£çš„å®é™…å¤§å°å¯èƒ½ä¸è¯·æ±‚çš„å¤§å°ä¸åŒï¼‰
     glfwGetFramebufferSize(window, &windowwidth, &windowheight);
 
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate(); // ÇåÀí´°¿Ú×ÊÔ´
+        glfwTerminate(); // æ¸…ç†çª—å£èµ„æº
         return -1;
     }
-    glfwMakeContextCurrent(window); // ÉèÖÃµ±Ç°´°¿ÚÎªÉÏÏÂÎÄ
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); // ÉèÖÃ´°¿Ú´óĞ¡»Øµ÷º¯Êı
-    glfwSetCursorPosCallback(window, mouse_callback); // ÉèÖÃÊó±êÒÆ¶¯»Øµ÷º¯Êı
-    glfwSetScrollCallback(window, scroll_callback); // ÉèÖÃÊó±ê¹öÂÖ»Øµ÷º¯Êı
+    glfwMakeContextCurrent(window); // è®¾ç½®å½“å‰çª—å£ä¸ºä¸Šä¸‹æ–‡
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); // è®¾ç½®çª—å£å¤§å°å›è°ƒå‡½æ•°
+    glfwSetCursorPosCallback(window, mouse_callback); // è®¾ç½®é¼ æ ‡ç§»åŠ¨å›è°ƒå‡½æ•°
+    glfwSetScrollCallback(window, scroll_callback); // è®¾ç½®é¼ æ ‡æ»šè½®å›è°ƒå‡½æ•°
 
-    // ²¶»ñÊó±ê£¨Òş²ØÊó±ê¹â±ê£¬²¢Ìá¹©ÎŞÏŞµÄÊó±êÒÆ¶¯£©
+    // æ•è·é¼ æ ‡ï¼ˆéšè—é¼ æ ‡å…‰æ ‡ï¼Œå¹¶æä¾›æ— é™çš„é¼ æ ‡ç§»åŠ¨ï¼‰
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    // ³õÊ¼»¯GLAD£¬¹ÜÀíOpenGLº¯ÊıÖ¸Õë£¬¼ÓÔØËùÓĞOpenGLº¯ÊıÖ¸Õë
+    // åˆå§‹åŒ–GLADï¼Œç®¡ç†OpenGLå‡½æ•°æŒ‡é’ˆï¼ŒåŠ è½½æ‰€æœ‰OpenGLå‡½æ•°æŒ‡é’ˆ
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
 
-    // ÎÆÀíyÖá·­×ª(ÒòÎªOpenGLµÄyÖá×ø±êÊÇ´ÓÏÂÍùÉÏ£¬¶øÍ¼Æ¬µÄyÖá×ø±êÊÇ´ÓÉÏÍùÏÂ)
+    // çº¹ç†yè½´ç¿»è½¬(å› ä¸ºOpenGLçš„yè½´åæ ‡æ˜¯ä»ä¸‹å¾€ä¸Šï¼Œè€Œå›¾ç‰‡çš„yè½´åæ ‡æ˜¯ä»ä¸Šå¾€ä¸‹)
     stbi_set_flip_vertically_on_load(true);
 
-    //¼ÓÔØÉî¶È»º³å
+    //åŠ è½½æ·±åº¦ç¼“å†²
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_MULTISAMPLE); // ÆôÓÃ¶àÖØ²ÉÑù¿¹¾â³İ
-    setupFramebuffers(windowwidth, windowheight); // ÉèÖÃÀëÆÁäÖÈ¾Ö¡»º³å
+    glEnable(GL_MULTISAMPLE); // å¯ç”¨å¤šé‡é‡‡æ ·æŠ—é”¯é½¿
+    setupFramebuffers(windowwidth, windowheight); // è®¾ç½®ç¦»å±æ¸²æŸ“å¸§ç¼“å†²
 
-    // ´´½¨×ÅÉ«Æ÷¶ÔÏó
+    // åˆ›å»ºç€è‰²å™¨å¯¹è±¡
    /* Shader planetshader("res/shader/00_SpaceShip/instancingVER.shader",
         "res/shader/00_SpaceShip/instancingFRAG3.0.shader");
     Shader asteroidShader("res/shader/00_SpaceShip/aster_ver.shader",
         "res/shader/00_SpaceShip/aster_frag3.0.shader");*/
 
-        // ¼¸ºÎPass
+        // å‡ ä½•Pass
     Shader gBufferPlanetShader("res/shader/00_SpaceShip/Deferred_Shading/gBuffer_planet_ver.shader",
         "res/shader/00_SpaceShip/Deferred_Shading/gBuffer_planet_frag.shader");
     Shader gBufferAsteroidShader("res/shader/00_SpaceShip/Deferred_Shading/gBuffer_asteroid_ver.shader",
         "res/shader/00_SpaceShip/Deferred_Shading/gBuffer_asteroid_frag.shader");
 
-    // ÑÓ³Ù¹âÕÕ
+    // å»¶è¿Ÿå…‰ç…§
     Shader deferredLightingShader("res/shader/00_SpaceShip/Deferred_Shading/deferred_lighting_ver.shader",
-        "res/shader/00_SpaceShip/Deferred_Shading/deferred_lighting_frag.shader");
+        "res/shader/00_SpaceShip/Deferred_Shading/defer_light_ssao_frag.shader");
+
+    // SSAO
+    Shader ssao("res/shader/00_SpaceShip/SSAO/defer_light_ver.shader",
+        "res/shader/00_SpaceShip/SSAO/ssao_frag.shader");
+    Shader ssaoBlurShader("res/shader/00_SpaceShip/SSAO/defer_light_ver.shader",
+        "res/shader/00_SpaceShip/SSAO/ssao_Blur_frag.shader");
 
     Shader sunCoreShader("res/shader/StarShader/StarList2.0/core_ver.shader",
         "res/shader/StarShader/StarList2.0/core_frag2.0.shader");
@@ -193,14 +214,14 @@ int main()
     Model rock("res/model/rock/rock.obj");
     Model planet("res/model/planet/planet.obj");
 
-    // ×ÅÉ«Æ÷³õÊ¼»¯£¨¸öÈË·ç¸ñÎÊÌâ£¬ÎÒ¸üÏ²»¶ÔÚÑ­»·ÌåÖĞÈ¥Ğ´
+    // ç€è‰²å™¨åˆå§‹åŒ–ï¼ˆä¸ªäººé£æ ¼é—®é¢˜ï¼Œæˆ‘æ›´å–œæ¬¢åœ¨å¾ªç¯ä½“ä¸­å»å†™
     //brightPassShader.use();
     //brightPassShader.setInt("hdrImage", 0);
     //blurShader.use();
     //blurShader.setInt("image", 0);
 
 
-    // ¼ÓÔØ¹âÔÎÌùÍ¼
+    // åŠ è½½å…‰æ™•è´´å›¾
     unsigned int flareTexture = loadTexture("res/texture/lens_flare/lens_white.jpg");
     unsigned int flareTexture1 = loadTexture("res/texture/lens_flare/glow light lens flare(1).png");
 
@@ -210,49 +231,58 @@ int main()
         {flareTexture1, glm::vec4(1.0f, 0.8f, 0.5f, 0.6f), 3.0f}
     };
 
-    // ÒõÓ°ÌùÍ¼³õÊ¼»¯
+    // é˜´å½±è´´å›¾åˆå§‹åŒ–
     DepthCubeMapInit();
 
-    // Éú³ÉÒ»¸ö´óĞÍµÄ°ëËæ»úÄ£ĞÍ±ä»»¾ØÕóÁĞ±í
+    // SSAOåˆå§‹åŒ–
+    // é…ç½® SSAO shader çš„çº¹ç†å•å…ƒï¼ˆåªéœ€è®¾ç½®ä¸€æ¬¡ï¼‰
+    SSAOInit();
+    ssao.use();
+    ssao.setInt("gPosition", 0);
+    ssao.setInt("gNormal", 1);
+    ssao.setInt("texNoise", 2);
+    ssaoBlurShader.use();
+    ssaoBlurShader.setInt("ssaoInput", 0);
+
+    // ç”Ÿæˆä¸€ä¸ªå¤§å‹çš„åŠéšæœºæ¨¡å‹å˜æ¢çŸ©é˜µåˆ—è¡¨
     // ------------------------------------------------------------------
     unsigned int amount = 50000;
     RocksModelMatricesInit(amount, rock);
 
 
     // =======================================================
-    // ³ÌĞò»¯Éú³ÉºãĞÇ¶¥µãÊı¾İ
-    // ÇòÌå¶¥µãÊı¾İ
+    // ç¨‹åºåŒ–ç”Ÿæˆæ’æ˜Ÿé¡¶ç‚¹æ•°æ®
+    // çƒä½“é¡¶ç‚¹æ•°æ®
     std::vector<float> starVertices;
     std::vector<unsigned int> starIndices;
-    // Éú³ÉÇòÌå¶¥µãÊı¾İ£¨¿ÉÒÔÊ¹ÓÃUVÇòÌå»òÆäËû·½·¨£©
+    // ç”Ÿæˆçƒä½“é¡¶ç‚¹æ•°æ®ï¼ˆå¯ä»¥ä½¿ç”¨UVçƒä½“æˆ–å…¶ä»–æ–¹æ³•ï¼‰
     const unsigned int X_SEGMENTS = 64;
     const unsigned int Y_SEGMENTS = 64;
     const float PI = 3.14159265359f;
     BallGenerate(starVertices, starIndices, X_SEGMENTS, Y_SEGMENTS, PI);
 
 
-    // ºãĞÇ VAO, VBO, EBO
+    // æ’æ˜Ÿ VAO, VBO, EBO
     unsigned int starVAO, starVBO, starEBO;
 
-    // ÈÕÃá¹«¸æ°å¶¥µãÊı¾İ
+    // æ—¥å†•å…¬å‘Šæ¿é¡¶ç‚¹æ•°æ®
     unsigned int coronaQuadVAO, coronaQuadVBO;
-    /*unsigned int lensQuadVAO, lensQuadVBO*/;
 
-    // ´´½¨ºãĞÇ¶ÔÏó
+    // åˆ›å»ºæ’æ˜Ÿå¯¹è±¡
     Sun Sun(starVAO, starVBO, starEBO, coronaQuadVAO, coronaQuadVBO);
 
 
     // =============================================
-    // Ö¡»º³åËÄ±ßĞÎ
+    // å¸§ç¼“å†²å››è¾¹å½¢
     unsigned int quadVAO, quadVBO;
     FrameQuadInit(quadVAO, quadVBO);
 
     // =============================================
-    // Ìì¿ÕºĞ¶¥µãÊı¾İ°ó¶¨
+    // å¤©ç©ºç›’é¡¶ç‚¹æ•°æ®ç»‘å®š
     unsigned int skyboxVAO, skyboxVBO;
 
 
-    // ¼ÓÔØÌì¿ÕÎÆÀí
+    // åŠ è½½å¤©ç©ºçº¹ç†
     // NightSky
     //std::vector<std::string> face
     //{
@@ -277,27 +307,27 @@ int main()
 
 
     unsigned int cubemapTexture = loadCubemap(face);
-    // ´´½¨Ìì¿ÕºĞ¶ÔÏó
+    // åˆ›å»ºå¤©ç©ºç›’å¯¹è±¡
     Skybox SpaceBox(skyboxVAO, skyboxVBO, cubemapTexture);
 
 
 
-    // ÉèÖÃºãĞÇ£¬ĞÇÇòÎ»ÖÃºÍ´óĞ¡
+    // è®¾ç½®æ’æ˜Ÿï¼Œæ˜Ÿçƒä½ç½®å’Œå¤§å°
     glm::vec3 pointSunPositions = glm::vec3(-50.0f, 50.0f, -600.0f);
     //glm::vec3 SunScale = glm::vec3(120.0f);
     glm::vec3 planetPosition = glm::vec3(0.0f, -3.0f, 0.0f);
     glm::vec3 planetScale = glm::vec3(11.0f);
 
-    // ¼¤»î×ÅÉ«Æ÷ÎÆÀíµ¥Ôª
+    // æ¿€æ´»ç€è‰²å™¨çº¹ç†å•å…ƒ
     //planetshader.use();
-    //planetshader.setInt("material.diffuse", 0); // ¸æËß×ÅÉ«Æ÷Ã¿¸ö²ÉÑùÆ÷ÊôÓÚÄÄ¸öÎÆÀíµ¥Ôª(Ö»ĞèÒªÉèÖÃÒ»´Î)
+    //planetshader.setInt("material.diffuse", 0); // å‘Šè¯‰ç€è‰²å™¨æ¯ä¸ªé‡‡æ ·å™¨å±äºå“ªä¸ªçº¹ç†å•å…ƒ(åªéœ€è¦è®¾ç½®ä¸€æ¬¡)
     //planetshader.setInt("material.specular", 1);
 
 
-    // Ö÷Ñ­»·
+    // ä¸»å¾ªç¯
     while (!glfwWindowShouldClose(window))
     {
-        // ====== ÒõÓ° Pass£ºäÖÈ¾Éî¶È CubeMap ======
+        // ====== é˜´å½± Passï¼šæ¸²æŸ“æ·±åº¦ CubeMap ======
         std::vector<glm::mat4> shadowTransforms;
         glm::mat4 shadowProj = glm::perspective(
             glm::radians(90.0f),
@@ -313,7 +343,7 @@ int main()
         simpleDepthShader.setFloat("far_plane", shadow_far);
         simpleDepthShader.setVec3("lightPos", pointSunPositions);
 
-        // --- Ğ¡ĞĞĞÇ´ø ---
+        // --- å°è¡Œæ˜Ÿå¸¦ ---
         simpleDepthShader.setBool("instanced", true);
         for (unsigned int i = 0; i < rock.meshes.size(); i++)
         {
@@ -325,7 +355,7 @@ int main()
         }
 
 
-        // --- ĞÇÇò ---
+        // --- æ˜Ÿçƒ ---
         simpleDepthShader.setBool("instanced", false);
         glm::mat4 sdModel = glm::mat4(1.0f);
         sdModel = glm::translate(sdModel, planetPosition);
@@ -338,28 +368,28 @@ int main()
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glCullFace(GL_BACK);
-        // ====== ÒõÓ° Pass ½áÊø ======
+        // ====== é˜´å½± Pass ç»“æŸ ======
 
 
         glViewport(0, 0, windowwidth, windowheight);
 
 
-        // ¼ÆËãÖ¡Ê±¼ä
+        // è®¡ç®—å¸§æ—¶é—´
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // ÊäÈë¹ÜÀí
+        // è¾“å…¥ç®¡ç†
         processInput(window);
-        // äÖÈ¾
+        // æ¸²æŸ“
         // ------
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);  // °ó¶¨µ½HDRÖ¡»º³å
+        glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);  // ç»‘å®šåˆ°HDRå¸§ç¼“å†²
         glViewport(0, 0, windowwidth, windowheight);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // ÅäÖÃ±ä»»¾ØÕó
+        // é…ç½®å˜æ¢çŸ©é˜µ
         int winWidth, winHeight;
         glfwGetFramebufferSize(window, &winWidth, &winHeight);
         float aspect = winWidth / (float)winHeight;
@@ -367,7 +397,7 @@ int main()
         glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), aspect, 0.1f, 2000.0f);
         glm::mat4 view = camera.GetViewMatrix();
 
-        // === ¼¸ºÎ Pass: Planet ===
+        // === å‡ ä½• Pass: Planet ===
         gBufferPlanetShader.use();
         gBufferPlanetShader.setMat4("projection", projection);
         gBufferPlanetShader.setMat4("view", view);
@@ -377,7 +407,7 @@ int main()
         gBufferPlanetShader.setMat4("model", model);
         planet.Draw(gBufferPlanetShader);
 
-        // === ¼¸ºÎ Pass: Asteroids ===
+        // === å‡ ä½• Pass: Asteroids ===
         gBufferAsteroidShader.use();
         gBufferAsteroidShader.setMat4("projection", projection);
         gBufferAsteroidShader.setMat4("view", view);
@@ -394,14 +424,44 @@ int main()
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        // === ½« G-Buffer Éî¶È´«µ½ hdrFBO ===
+        // === å°† G-Buffer æ·±åº¦ä¼ åˆ° hdrFBO ===
         glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdrFBO);
         glBlitFramebuffer(0, 0, windowwidth, windowheight,
             0, 0, windowwidth, windowheight,
             GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
-        // === ¹âÕÕ Pass ===
+        // === SSAO Pass ===
+        glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ssao.use();
+        for (unsigned int i = 0; i < 64; ++i)
+            ssao.setVec3("samples[" + std::to_string(i) + "]", ssaoKernel[i]);
+        ssao.setMat4("projection", projection);
+        ssao.setMat4("view", view);
+        ssao.setBool("unify", unify);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, gPosition);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, gNormal);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, noiseTexture);
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        // === SSAO Blur Pass ===
+        glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFBO);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ssaoBlurShader.use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+        // === å…‰ç…§ Pass ===
         glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
         glClear(GL_COLOR_BUFFER_BIT);
         deferredLightingShader.use();
@@ -416,13 +476,17 @@ int main()
         deferredLightingShader.setInt("gAlbedoSpec", 2);
         glActiveTexture(GL_TEXTURE3);
         glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
-
         deferredLightingShader.setInt("depthMap", 3);
+        glActiveTexture(GL_TEXTURE4);
+        glBindTexture(GL_TEXTURE_2D, ssaoColorBufferBlur);
+        deferredLightingShader.setInt("ssao", 4);
+
         deferredLightingShader.setVec3("lightPos", pointSunPositions);
         deferredLightingShader.setVec3("viewPos", camera.Position);
         deferredLightingShader.setFloat("far_plane", shadow_far);
         deferredLightingShader.setBool("shadows", shadows);
         deferredLightingShader.setBool("PCSS", PCSS);
+        deferredLightingShader.setBool("ssaoEnabled", ssaoEnabled);
 
         // DirLight
         deferredLightingShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
@@ -450,13 +514,13 @@ int main()
 
 
         // =================================
-        // ===== Ìì¿ÕºĞ£¨±³¾°£©=====
+        // ===== å¤©ç©ºç›’ï¼ˆèƒŒæ™¯ï¼‰=====
         // =================================
         SpaceBox.SkyboxRender(spaceboxShader, camera, projection);
-        // ======= Ìì¿ÕºĞ»æÖÆ½áÊø ========
+        // ======= å¤©ç©ºç›’ç»˜åˆ¶ç»“æŸ ========
 
 
-        // ÏÈ±£´æµ±Ç°µÄÉî¶È×´Ì¬ºÍ»ìºÏ×´Ì¬£¬ÒÔ±ãºóĞø»Ö¸´
+        // å…ˆä¿å­˜å½“å‰çš„æ·±åº¦çŠ¶æ€å’Œæ··åˆçŠ¶æ€ï¼Œä»¥ä¾¿åç»­æ¢å¤
         GLboolean depthEnabled;
         glGetBooleanv(GL_DEPTH_TEST, &depthEnabled);
         GLboolean blendEnabled;
@@ -469,48 +533,48 @@ int main()
 
 
         // ========================================
-        // ºãĞÇäÖÈ¾²¿·Ö - ¿ªÊ¼
+        // æ’æ˜Ÿæ¸²æŸ“éƒ¨åˆ† - å¼€å§‹
         // ========================================
-        //float starTime = static_cast<float>(glfwGetTime()); // ºãĞÇĞı×ªÊ±¼ä
-        //float starPulse = 1.0f + sin(starTime * 1.5f) * 0.0003f; // ¼ÆËãÂö³åĞ§¹û
+        //float starTime = static_cast<float>(glfwGetTime()); // æ’æ˜Ÿæ—‹è½¬æ—¶é—´
+        //float starPulse = 1.0f + sin(starTime * 1.5f) * 0.0003f; // è®¡ç®—è„‰å†²æ•ˆæœ
 
         Sun.SunRender(sunCoreShader, sunCoronaShader, CoreCoronaShader, sunGlowShader, camera, projection, view);
 
         // ========================================
-        // ºãĞÇäÖÈ¾²¿·Ö - ½áÊø
+        // æ’æ˜Ÿæ¸²æŸ“éƒ¨åˆ† - ç»“æŸ
         // ========================================
 
 
-        // »Ö¸´Ô­Ê¼×´Ì¬
+        // æ¢å¤åŸå§‹çŠ¶æ€
         if (!depthEnabled) glDisable(GL_DEPTH_TEST);
         else glEnable(GL_DEPTH_TEST);
         glDepthMask(depthMask ? GL_TRUE : GL_FALSE);
         glDepthFunc(depthFunc);
         if (blendEnabled) glEnable(GL_BLEND);
         else glDisable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // »Ö¸´Ä¬ÈÏ»ìºÏº¯Êı
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // æ¢å¤é»˜è®¤æ··åˆå‡½æ•°
 
 
 
 
         //==========================================
-        // äÖÈ¾µ½ÆÁÄ»
+        // æ¸²æŸ“åˆ°å±å¹•
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
 
-        // 1. ÁÁ¶ÈÌáÈ¡£º´ÓhdrColorBufferÖĞÌáÈ¡ÁÁ¶ÈĞÅÏ¢µ½blurFBO1
+        // 1. äº®åº¦æå–ï¼šä»hdrColorBufferä¸­æå–äº®åº¦ä¿¡æ¯åˆ°blurFBO1
         glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[0]);
-        glClear(GL_COLOR_BUFFER_BIT); // Õâ¸öÎªÊ²Ã´Ö»ÇåÀíÑÕÉ«»º³å?
+        glClear(GL_COLOR_BUFFER_BIT); // è¿™ä¸ªä¸ºä»€ä¹ˆåªæ¸…ç†é¢œè‰²ç¼“å†²?
         brightPassShader.use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
         brightPassShader.setInt("hdrImage", 0);
-        brightPassShader.setFloat("threshold", 1.2f); // ÉèÖÃÁÁ¶ÈãĞÖµ 1.2f
+        brightPassShader.setFloat("threshold", 1.2f); // è®¾ç½®äº®åº¦é˜ˆå€¼ 1.2f
         glBindVertexArray(quadVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        // 2. Æ¹ÅÒ¸ßË¹Ä£ºı
-        int blurPasses = 10;         // 6~10 Ô½´óÔ½ÈáºÍ
+        // 2. ä¹’ä¹“é«˜æ–¯æ¨¡ç³Š
+        int blurPasses = 10;         // 6~10 è¶Šå¤§è¶ŠæŸ”å’Œ
         bool horizontal = true;
         blurShader.use();
         for (int i = 0; i < blurPasses; i++)
@@ -526,38 +590,38 @@ int main()
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        //// MSAAÖ¡»º³åµ½HDRÖ¡»º³åµÄblit²Ù×÷
+        //// MSAAå¸§ç¼“å†²åˆ°HDRå¸§ç¼“å†²çš„blitæ“ä½œ
         //glBindFramebuffer(GL_READ_FRAMEBUFFER, msFBO);
         //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdrFBO);
         //glBlitFramebuffer(0, 0, windowwidth, windowheight,
         //    0, 0, windowwidth, windowheight,
         //    GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-        //// ¡¾ĞÂÔö¡¿°ÑÉî¶È´Ó msFBO ¸´ÖÆµ½Ä¬ÈÏÖ¡»º³å£¬¹©ºóÃæµÄ¹âÔÎÊ¹ÓÃ
+        //// ã€æ–°å¢ã€‘æŠŠæ·±åº¦ä» msFBO å¤åˆ¶åˆ°é»˜è®¤å¸§ç¼“å†²ï¼Œä¾›åé¢çš„å…‰æ™•ä½¿ç”¨
         //glBindFramebuffer(GL_READ_FRAMEBUFFER, msFBO);
         //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         //glBlitFramebuffer(0, 0, windowwidth, windowheight,
         //    0, 0, windowwidth, windowheight,
         //    GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
-        //// »Ö¸´ÎªÄ¬ÈÏÖ¡»º³å»ò°ó¶¨ hdrFBO ÒÔ±ãºóĞø¶ÁÈ¡ hdrColorBuffer
+        //// æ¢å¤ä¸ºé»˜è®¤å¸§ç¼“å†²æˆ–ç»‘å®š hdrFBO ä»¥ä¾¿åç»­è¯»å– hdrColorBuffer
         //glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 
-        // ------- ºÏ³Éµ½ÆÁÄ» -------
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);   // »Øµ½Ä¬ÈÏÖ¡»º³å
-        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // ÀÏ°æ±¾
-        // Ö»ÇåÀíÑÕÉ«»º³å£¬²»ÇåÀíÉî¶È»º³å£¬ÒÔ´ËÀ´±£ÁôÉî¶ÈĞÅÏ¢£¬È·±£ºóĞøäÖÈ¾µÄÎïÌå²»»á±»Çå³ı
+        // ------- åˆæˆåˆ°å±å¹• -------
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);   // å›åˆ°é»˜è®¤å¸§ç¼“å†²
+        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // è€ç‰ˆæœ¬
+        // åªæ¸…ç†é¢œè‰²ç¼“å†²ï¼Œä¸æ¸…ç†æ·±åº¦ç¼“å†²ï¼Œä»¥æ­¤æ¥ä¿ç•™æ·±åº¦ä¿¡æ¯ï¼Œç¡®ä¿åç»­æ¸²æŸ“çš„ç‰©ä½“ä¸ä¼šè¢«æ¸…é™¤
         glClear(GL_COLOR_BUFFER_BIT);
         compositeShader.use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
         compositeShader.setInt("sceneTexture", 0);
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]); // ×îÖÕÄ£ºı½á¹ûÔÚ blurFBO1 µÄÑÕÉ«¸½¼ş
+        glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]); // æœ€ç»ˆæ¨¡ç³Šç»“æœåœ¨ blurFBO1 çš„é¢œè‰²é™„ä»¶
         compositeShader.setInt("bloomTexture", 1);
-        compositeShader.setFloat("exposure", 1.0f); // ÆØ¹âÖµ
-        compositeShader.setFloat("bloomStrength", 0.6f); // BloomÇ¿¶È
-        compositeShader.setVec3("colorTint", glm::vec3(1.0f, 0.95f, 0.6f)); // BloomÑÕÉ«
+        compositeShader.setFloat("exposure", 1.0f); // æ›å…‰å€¼
+        compositeShader.setFloat("bloomStrength", 0.6f); // Bloomå¼ºåº¦
+        compositeShader.setVec3("colorTint", glm::vec3(1.0f, 0.95f, 0.6f)); // Bloomé¢œè‰²
         glBindVertexArray(quadVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -567,24 +631,24 @@ int main()
         glBlitFramebuffer(0, 0, windowwidth, windowheight,
             0, 0, windowwidth, windowheight,
             GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-        // 5. äÖÈ¾¾µÍ·¹âÔÎ
+        // 5. æ¸²æŸ“é•œå¤´å…‰æ™•
         Sun.LensFlareRender(lensFlareShader, camera, projection, view, flareTextures);
 
-        // »Ö¸´Éî¶È²âÊÔºÍ»ìºÏ×´Ì¬
+        // æ¢å¤æ·±åº¦æµ‹è¯•å’Œæ··åˆçŠ¶æ€
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
         glDepthMask(GL_TRUE);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // »Ö¸´Ä¬ÈÏ»ìºÏº¯Êı
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // æ¢å¤é»˜è®¤æ··åˆå‡½æ•°
 
 
-        // »Ö¸´Ô­Ê¼×´Ì¬
+        // æ¢å¤åŸå§‹çŠ¶æ€
         if (!depthEnabled) glDisable(GL_DEPTH_TEST);
         else glEnable(GL_DEPTH_TEST);
         glDepthMask(depthMask ? GL_TRUE : GL_FALSE);
         glDepthFunc(depthFunc);
         if (blendEnabled) glEnable(GL_BLEND);
         else glDisable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // »Ö¸´Ä¬ÈÏ»ìºÏº¯Êı
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // æ¢å¤é»˜è®¤æ··åˆå‡½æ•°
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -597,28 +661,28 @@ int main()
     glDeleteBuffers(1, &skyboxVBO);
 
 
-    glfwTerminate(); // ÇåÀí²¢¹Ø±ÕGLFW
+    glfwTerminate(); // æ¸…ç†å¹¶å…³é—­GLFW
     return 0;
 }
 
 
 
 
-// ´°¿Ú»Øµ÷º¯Êı
+// çª—å£å›è°ƒå‡½æ•°
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    glViewport(0, 0, width, height); // glViewport ÓÃÓÚÉèÖÃÊÓ¿Ú´óĞ¡
+    glViewport(0, 0, width, height); // glViewport ç”¨äºè®¾ç½®è§†å£å¤§å°
 
     windowwidth = width;
     windowheight = height;
 
-    rebuildFramebuffers(width, height); // ÖØĞÂ´´½¨Ö¡»º³å¶ÔÏó
+    rebuildFramebuffers(width, height); // é‡æ–°åˆ›å»ºå¸§ç¼“å†²å¯¹è±¡
 
     lastX = width / 2.0f;
     lastY = height / 2.0f;
 }
 
-// ÊäÈë¼ì²éº¯Êı
+// è¾“å…¥æ£€æŸ¥å‡½æ•°
 void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -634,10 +698,10 @@ void processInput(GLFWwindow* window)
         camera.ProcessKeyboard(RIGHT, deltaTime);
 
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        camera.Sensitivity += 0.001f; // Ôö¼ÓÊó±êÁéÃô¶È
+        camera.Sensitivity += 0.001f; // å¢åŠ é¼ æ ‡çµæ•åº¦
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        camera.Sensitivity -= 0.001f; // ¼õÉÙÊó±êÁéÃô¶È
-    // ÏŞÖÆ·¶Î§
+        camera.Sensitivity -= 0.001f; // å‡å°‘é¼ æ ‡çµæ•åº¦
+    // é™åˆ¶èŒƒå›´
     camera.Sensitivity = glm::clamp(camera.Sensitivity, 0.01f, 0.5f);
 
     if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS && !tabKeyPressed)
@@ -660,27 +724,27 @@ void processInput(GLFWwindow* window)
         tabKeyPressed = false;
     }
 
-    // F10 ½øÈëÈ«ÆÁ
+    // F10 è¿›å…¥å…¨å±
     if (glfwGetKey(window, GLFW_KEY_F10) == GLFW_PRESS && !f10Pressed)
     {
         f10Pressed = true;
         if (!isFullscreen)
         {
-            // ±£´æµ±Ç°´°¿Ú×´Ì¬
+            // ä¿å­˜å½“å‰çª—å£çŠ¶æ€
             glfwGetWindowPos(window, &savedX, &savedY);
             glfwGetWindowSize(window, &savedWidth, &savedHeight);
             GLFWmonitor* monitor = glfwGetPrimaryMonitor();
             const GLFWvidmode* mode = glfwGetVideoMode(monitor);
             glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
             isFullscreen = true;
-            firstMouse = true; // ÖØÖÃÊó±êÊ×´ÎÒÆ¶¯±êÖ¾
+            firstMouse = true; // é‡ç½®é¼ æ ‡é¦–æ¬¡ç§»åŠ¨æ ‡å¿—
         }
     }
     if (glfwGetKey(window, GLFW_KEY_F10) == GLFW_RELEASE)
         f10Pressed = false;
 
 
-    // F11 ÍË³öÈ«ÆÁ
+    // F11 é€€å‡ºå…¨å±
     if (glfwGetKey(window, GLFW_KEY_F11) == GLFW_PRESS && !f11Pressed)
     {
         f11Pressed = true;
@@ -688,7 +752,7 @@ void processInput(GLFWwindow* window)
         {
             glfwSetWindowMonitor(window, nullptr, savedX, savedY, savedWidth, savedHeight, 0);
             isFullscreen = false;
-            firstMouse = true; // ÖØÖÃÊó±êÊ×´ÎÒÆ¶¯±êÖ¾
+            firstMouse = true; // é‡ç½®é¼ æ ‡é¦–æ¬¡ç§»åŠ¨æ ‡å¿—
         }
     }
     if (glfwGetKey(window, GLFW_KEY_F11) == GLFW_RELEASE)
@@ -697,6 +761,7 @@ void processInput(GLFWwindow* window)
 
     //bool shadowKeyPressed = false;
     //bool PCSSKeyPressed = false;
+    // Shadow
     if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS && !shadowKeyPressed)
     {
         shadows = !shadows;
@@ -707,7 +772,7 @@ void processInput(GLFWwindow* window)
         shadowKeyPressed = false;
     }
 
-
+    // PCSS
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && !PCSSKeyPressed)
     {
         PCSS = !PCSS;
@@ -717,9 +782,31 @@ void processInput(GLFWwindow* window)
     {
         PCSSKeyPressed = false;
     }
+
+    // SSAO
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && !ssaoKeyPressed)
+    {
+        ssaoEnabled = !ssaoEnabled;
+        ssaoKeyPressed = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_RELEASE)
+    {
+        ssaoKeyPressed = false;
+    }
+    // SSAOæ˜¯å¦é‡‡ç”¨ç»Ÿä¸€è§’åº¦
+    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS && !unifyKeyPressed)
+    {
+        unify = !unify;
+        unifyKeyPressed = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_RELEASE)
+    {
+        unifyKeyPressed = false;
+    }
+
 }
 
-// Êó±ê»Øµ÷º¯Êı
+// é¼ æ ‡å›è°ƒå‡½æ•°
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
     float xpos = static_cast<float>(xposIn);
@@ -741,13 +828,13 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-// ¹öÂÖ»Øµ÷º¯Êı
+// æ»šè½®å›è°ƒå‡½æ•°
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
 
-// ¼ÓÔØÎÆÀíº¯Êı
+// åŠ è½½çº¹ç†å‡½æ•°
 unsigned int loadTexture(char const* path)
 {
     unsigned int textureID;
@@ -767,7 +854,6 @@ unsigned int loadTexture(char const* path)
 
         glBindTexture(GL_TEXTURE_2D, textureID);
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        //glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, width, height, GL_TRUE);
         glGenerateMipmap(GL_TEXTURE_2D);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -786,7 +872,7 @@ unsigned int loadTexture(char const* path)
     return textureID;
 }
 
-// ¼ÓÔØÁ¢·½ÌåÌùÍ¼
+// åŠ è½½ç«‹æ–¹ä½“è´´å›¾
 unsigned int loadCubemap(std::vector<std::string> faces)
 {
     unsigned int textureID;
@@ -820,7 +906,7 @@ unsigned int loadCubemap(std::vector<std::string> faces)
     return textureID;
 }
 
-// ´ÓÎÄ¼ş¼ÓÔØÎÆÀí
+// ä»æ–‡ä»¶åŠ è½½çº¹ç†
 unsigned int TextureFromFile(const char* path, const string& directory, bool gamma)
 {
     string filename = string(path);
@@ -856,15 +942,15 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
     return textureID;
 }
 
-// Ö¡»º³å¶ÔÏóºÍÎÆÀí
+// å¸§ç¼“å†²å¯¹è±¡å’Œçº¹ç†
 //unsigned int hdrFBO, blurFBO1, blurFBO2;
 //unsigned int hdrColorBuffer, blurColorBuffer1, blurColorBuffer2;
 //unsigned int hdrDepthRBO;
 void setupFramebuffers(int width, int height)
 {
-    const int samples = 4; // ¶àÖØ²ÉÑùÑù±¾Êı,Óë glfwWindowHint(GLFW_SAMPLES, 4) ±£³ÖÒ»ÖÂ
+    const int samples = 4; // å¤šé‡é‡‡æ ·æ ·æœ¬æ•°,ä¸ glfwWindowHint(GLFW_SAMPLES, 4) ä¿æŒä¸€è‡´
 
-    // --- 1) ´´½¨ G-Buffer ²¢½øĞĞ³õÊ¼»¯---
+    // --- 1) åˆ›å»º G-Buffer å¹¶è¿›è¡Œåˆå§‹åŒ–---
     glGenFramebuffers(1, &gBuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 
@@ -905,7 +991,7 @@ void setupFramebuffers(int width, int height)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
-    // --- 2) ´´½¨¿É²ÉÑùµÄ HDR FBO£¨ÓÃÓÚºó´¦Àí£¬×÷Îª resolve Ä¿±ê£© ---
+    // --- 2) åˆ›å»ºå¯é‡‡æ ·çš„ HDR FBOï¼ˆç”¨äºåå¤„ç†ï¼Œä½œä¸º resolve ç›®æ ‡ï¼‰ ---
     glGenFramebuffers(1, &hdrFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
     glGenTextures(1, &hdrColorBuffer);
@@ -941,112 +1027,143 @@ void setupFramebuffers(int width, int height)
             std::cout << "Pingpong FBO incomplete!" << i << "incomplete" << std::endl;
     }
 
+    // --- 3) SSAO å¸§ç¼“å†²ï¼ˆå•é€šé“ GL_REDï¼‰ ---
+    glGenFramebuffers(1, &ssaoFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
+    glGenTextures(1, &ssaoColorBuffer);
+    glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoColorBuffer, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "SSAO Framebuffer not complete!" << std::endl;
+
+    // --- 4) SSAO æ¨¡ç³Šå¸§ç¼“å†² ---
+    glGenFramebuffers(1, &ssaoBlurFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFBO);
+    glGenTextures(1, &ssaoColorBufferBlur);
+    glBindTexture(GL_TEXTURE_2D, ssaoColorBufferBlur);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoColorBufferBlur, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "SSAO Blur Framebuffer not complete!" << std::endl;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-// ÖØĞÂ´´½¨Ö¡»º³å¶ÔÏó
+// é‡æ–°åˆ›å»ºå¸§ç¼“å†²å¯¹è±¡
 void rebuildFramebuffers(int width, int height)
 {
-    // °²È«½â°ó
+    // å®‰å…¨è§£ç»‘
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    // É¾³ı¾ÉµÄÖ¡»º³åºÍÎÆÀí
+    // åˆ é™¤æ—§çš„å¸§ç¼“å†²å’Œçº¹ç†
 
-    // É¾³ı MSAA ×ÊÔ´
+    // åˆ é™¤ MSAA èµ„æº
     if (msFBO) { glDeleteFramebuffers(1, &msFBO); msFBO = 0; }
     if (msColorRBO) { glDeleteRenderbuffers(1, &msColorRBO); msColorRBO = 0; }
     if (msDepthRBO) { glDeleteRenderbuffers(1, &msDepthRBO); msDepthRBO = 0; }
 
-    // É¾³ıÔ­ÓĞ HDR / blur ×ÊÔ´
+    // åˆ é™¤åŸæœ‰ HDR / blur èµ„æº
     glDeleteFramebuffers(1, &hdrFBO);
     glDeleteTextures(1, &hdrColorBuffer);
     glDeleteRenderbuffers(1, &hdrDepthRBO);
 
-    // É¾³ı ping-pong ×ÊÔ´
+    // åˆ é™¤ ping-pong èµ„æº
     if (pingpongFBO[0]) { glDeleteFramebuffers(1, &pingpongFBO[0]);     pingpongFBO[0] = 0; }
     if (pingpongFBO[1]) { glDeleteFramebuffers(1, &pingpongFBO[1]);     pingpongFBO[1] = 0; }
     if (pingpongColorbuffers[0]) { glDeleteTextures(1, &pingpongColorbuffers[0]); pingpongColorbuffers[0] = 0; }
     if (pingpongColorbuffers[1]) { glDeleteTextures(1, &pingpongColorbuffers[1]); pingpongColorbuffers[1] = 0; }
 
+    // åˆ é™¤ G-Buffer èµ„æº
     if (gBuffer) { glDeleteFramebuffers(1, &gBuffer);     gBuffer = 0; }
     if (gPosition) { glDeleteTextures(1, &gPosition);       gPosition = 0; }
     if (gNormal) { glDeleteTextures(1, &gNormal);         gNormal = 0; }
     if (gAlbedoSpec) { glDeleteTextures(1, &gAlbedoSpec);     gAlbedoSpec = 0; }
     if (gDepthRBO) { glDeleteRenderbuffers(1, &gDepthRBO);  gDepthRBO = 0; }
-    // ÖØĞÂ´´½¨Ö¡»º³å
+
+    // åˆ é™¤ SSAO èµ„æº
+    if (ssaoFBO) { glDeleteFramebuffers(1, &ssaoFBO); ssaoFBO = 0; }
+    if (ssaoBlurFBO) { glDeleteFramebuffers(1, &ssaoBlurFBO); ssaoBlurFBO = 0; }
+    if (ssaoColorBuffer) { glDeleteTextures(1, &ssaoColorBuffer); ssaoColorBuffer = 0; }
+    if (ssaoColorBufferBlur) { glDeleteTextures(1, &ssaoColorBufferBlur); ssaoColorBufferBlur = 0; }
+
+    // é‡æ–°åˆ›å»ºå¸§ç¼“å†²
     setupFramebuffers(width, height);
 }
 
-// Ğ¡ĞĞĞÇ´ø³õÊ¼»¯
+// å°è¡Œæ˜Ÿå¸¦åˆå§‹åŒ–
 void RocksModelMatricesInit(unsigned int& amount, Model& rock)
 {
     glm::mat4* modelMatrices;
     modelMatrices = new glm::mat4[amount];
-    srand(static_cast<unsigned int>(glfwGetTime())); // Éú³ÉËæ»úÖÖ×Ó
+    srand(static_cast<unsigned int>(glfwGetTime())); // ç”Ÿæˆéšæœºç§å­
     float radius = 200.0;
     float offset = 20.0f;
     for (unsigned int i = 0; i < amount; i++)
     {
         glm::mat4 model = glm::mat4(1.0f);
-        // 1.  Æ½ÒÆ  £ºÑØÔ²ÖÜÎ»ÒÆ£¬'°ë¾¶'ÔÚ·¶Î§ÄÚ [-offset, offset]
+        // 1.  å¹³ç§»  ï¼šæ²¿åœ†å‘¨ä½ç§»ï¼Œ'åŠå¾„'åœ¨èŒƒå›´å†… [-offset, offset]
         float angle = (float)i / (float)amount * 360.0f;
         float displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
         float x = sin(angle) * radius + displacement;
 
         displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
-        float y = displacement * 0.1f; // ±£³Ö³¡µØµÄ¸ß¶ÈĞ¡ÓÚxÖáºÍzÖáµÄ¿í¶È¡£
+        float y = displacement * 0.1f; // ä¿æŒåœºåœ°çš„é«˜åº¦å°äºxè½´å’Œzè½´çš„å®½åº¦ã€‚
 
         displacement = (rand() % (int)(2 * offset * 100)) / 100.00f - offset;
         float z = cos(angle) * radius + displacement;
 
         model = glm::translate(model, glm::vec3(x, y, z));
 
-        // 2.  Ëõ·Å  £ºÔÚ 0.05 ºÍ 0.25f Ö®¼ä½øĞĞËõ·Å 
-        float scale = static_cast<float>((rand() % 30) / 100.0 + 0.01); // ÔÚ 0.05 ºÍ 0.17f Ö®¼äËõ·Å£¬Ê¹µÃĞ¡ĞĞĞÇ¸üĞ¡Ò»Ğ©
-        // Ìí¼Ó³ß´ç±ä»¯ÒÔÄ£Äâ¸üÕæÊµµÄĞ¡ĞĞĞÇ´ø
+        // 2.  ç¼©æ”¾  ï¼šåœ¨ 0.05 å’Œ 0.25f ä¹‹é—´è¿›è¡Œç¼©æ”¾ 
+        float scale = static_cast<float>((rand() % 30) / 100.0 + 0.01); // åœ¨ 0.05 å’Œ 0.17f ä¹‹é—´ç¼©æ”¾ï¼Œä½¿å¾—å°è¡Œæ˜Ÿæ›´å°ä¸€äº›
+        // æ·»åŠ å°ºå¯¸å˜åŒ–ä»¥æ¨¡æ‹Ÿæ›´çœŸå®çš„å°è¡Œæ˜Ÿå¸¦
         if (i % 200 == 0)
         {
-            scale *= 6.0f; // Ã¿200¸öĞ¡ĞĞĞÇÖĞÓĞÒ»¸ö¸ü´óÒ»Ğ©
+            scale *= 6.0f; // æ¯200ä¸ªå°è¡Œæ˜Ÿä¸­æœ‰ä¸€ä¸ªæ›´å¤§ä¸€äº›
         }
         else if (i % 20 == 0)
         {
-            scale *= 3.0f; // Ã¿20¸öĞ¡ĞĞĞÇÖĞÓĞÒ»¸öÖĞµÈ´óĞ¡
+            scale *= 3.0f; // æ¯20ä¸ªå°è¡Œæ˜Ÿä¸­æœ‰ä¸€ä¸ªä¸­ç­‰å¤§å°
         }
         else if (i % 5 == 0)
         {
-            scale *= 1.5f; // Ã¿5¸öĞ¡ĞĞĞÇÖĞÓĞÒ»¸öÉÔÎ¢´óÒ»Ğ©
+            scale *= 1.5f; // æ¯5ä¸ªå°è¡Œæ˜Ÿä¸­æœ‰ä¸€ä¸ªç¨å¾®å¤§ä¸€äº›
         }
         model = glm::scale(model, glm::vec3(scale));
 
-        // 3.  Ğı×ª  £ºÎ§ÈÆÒ»¸ö£¨°ë£©Ëæ»úÑ¡È¡µÄĞı×ªÖáÏòÁ¿½øĞĞËæ»úĞı×ª¡£
+        // 3.  æ—‹è½¬  ï¼šå›´ç»•ä¸€ä¸ªï¼ˆåŠï¼‰éšæœºé€‰å–çš„æ—‹è½¬è½´å‘é‡è¿›è¡Œéšæœºæ—‹è½¬ã€‚
         float rotAngle = static_cast<float>((rand() % 360));
         //model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
-            // ¸ü¸´ÔÓµÄĞı×ª - ¶à¸öĞı×ªÖá×éºÏ
+            // æ›´å¤æ‚çš„æ—‹è½¬ - å¤šä¸ªæ—‹è½¬è½´ç»„åˆ
         glm::mat4 rotation = glm::mat4(1.0f);
         rotation = glm::rotate(rotation, rotAngle * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
         rotation = glm::rotate(rotation, rotAngle * 0.3f, glm::vec3(0.0f, 1.0f, 0.0f));
         rotation = glm::rotate(rotation, rotAngle * 0.2f, glm::vec3(0.0f, 0.0f, 1.0f));
         model = model * rotation;
 
-        // 4. ÏÖÔÚÌí¼Óµ½¾ØÕóÁĞ±íÖĞ
+        // 4. ç°åœ¨æ·»åŠ åˆ°çŸ©é˜µåˆ—è¡¨ä¸­
         modelMatrices[i] = model;
     }
 
-    // ÉèÖÃÊµÀı»¯¶¥µãÊôĞÔ
+    // è®¾ç½®å®ä¾‹åŒ–é¡¶ç‚¹å±æ€§
     unsigned int buffer;
     glGenBuffers(1, &buffer);
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
     glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
 
-    // ½«±ä»»¾ØÕóÉèÖÃÎªÊµÀı¶¥µãÊôĞÔ£¨Ê¹ÓÃ³ıÊı1£©
-    // ×¢Òâ£ºÎÒÃÇÕâÀïÓĞµãÈ¡ÇÉ£¬Ö±½Ó»ñÈ¡Ä£ĞÍÍø¸ñ£¨¶à¸öÍø¸ñÊ±£©ÏÖÔÚ¹«¿ªÉùÃ÷µÄVAO£¬²¢Ìí¼ÓĞÂµÄvertexAttribPointers
-    // Õı³£Çé¿öÏÂ£¬Äã»áÏ£ÍûÒÔ¸üÓĞÌõÀíµÄ·½Ê½À´×öÕâ¼şÊÂ£¬µ«³öÓÚÑ§Ï°Ä¿µÄ£¬ÕâÑù×ö¾Í¿ÉÒÔÁË¡£
+    // å°†å˜æ¢çŸ©é˜µè®¾ç½®ä¸ºå®ä¾‹é¡¶ç‚¹å±æ€§ï¼ˆä½¿ç”¨é™¤æ•°1ï¼‰
+    // æ³¨æ„ï¼šæˆ‘ä»¬è¿™é‡Œæœ‰ç‚¹å–å·§ï¼Œç›´æ¥è·å–æ¨¡å‹ç½‘æ ¼ï¼ˆå¤šä¸ªç½‘æ ¼æ—¶ï¼‰ç°åœ¨å…¬å¼€å£°æ˜çš„VAOï¼Œå¹¶æ·»åŠ æ–°çš„vertexAttribPointers
+    // æ­£å¸¸æƒ…å†µä¸‹ï¼Œä½ ä¼šå¸Œæœ›ä»¥æ›´æœ‰æ¡ç†çš„æ–¹å¼æ¥åšè¿™ä»¶äº‹ï¼Œä½†å‡ºäºå­¦ä¹ ç›®çš„ï¼Œè¿™æ ·åšå°±å¯ä»¥äº†ã€‚
     // 
     for (unsigned int i = 0; i < rock.meshes.size(); i++)
     {
         unsigned int VAO = rock.meshes[i].VAO;
         glBindVertexArray(VAO);
-        // ÉèÖÃ¶¥µãÊôĞÔÖ¸Õë
+        // è®¾ç½®é¡¶ç‚¹å±æ€§æŒ‡é’ˆ
         glEnableVertexAttribArray(3);
         glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
         glEnableVertexAttribArray(4);
@@ -1065,11 +1182,11 @@ void RocksModelMatricesInit(unsigned int& amount, Model& rock)
     }
 }
 
-// ÇòÌåÉú³É³ÌĞò
+// çƒä½“ç”Ÿæˆç¨‹åº
 void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& starIndices,
     const unsigned int X_SEGMENTS, const unsigned int Y_SEGMENTS, const float PI)
 {
-    // Éú³ÉÇòÌå¶¥µãÊı¾İ
+    // ç”Ÿæˆçƒä½“é¡¶ç‚¹æ•°æ®
     for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
     {
         for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
@@ -1079,21 +1196,21 @@ void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& s
             float xPos = cos(xSegment * 2.0f * PI) * sin(ySegment * PI);
             float yPos = cos(ySegment * PI);
             float zPos = sin(xSegment * 2.0f * PI) * sin(ySegment * PI);
-            // Î»ÖÃ
+            // ä½ç½®
             starVertices.push_back(xPos);
             starVertices.push_back(yPos);
             starVertices.push_back(zPos);
-            // ·¨Ïß
+            // æ³•çº¿
             starVertices.push_back(xPos);
             starVertices.push_back(yPos);
             starVertices.push_back(zPos);
-            // ÎÆÀí×ø±ê
+            // çº¹ç†åæ ‡
             starVertices.push_back(xSegment);
             starVertices.push_back(ySegment);
         }
     }
 
-    // Ë÷ÒıÉú³É
+    // ç´¢å¼•ç”Ÿæˆ
     for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
     {
         for (unsigned int x = 0; x < X_SEGMENTS; ++x)
@@ -1108,11 +1225,11 @@ void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& s
     }
 }
 
-// Ö¡»º³åËÄ±ßĞÎ³õÊ¼»¯
+// å¸§ç¼“å†²å››è¾¹å½¢åˆå§‹åŒ–
 void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO)
 {
     float quadVertices[] = {
-        // Î»ÖÃ(x,y)      ÎÆÀí×ø±ê(u,v)
+        // ä½ç½®(x,y)      çº¹ç†åæ ‡(u,v)
         -1.0f,  1.0f,     0.0f, 1.0f,
         -1.0f, -1.0f,     0.0f, 0.0f,
          1.0f, -1.0f,     1.0f, 0.0f,
@@ -1133,7 +1250,7 @@ void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO)
     glBindVertexArray(0);
 }
 
-// ÒõÓ°ÌùÍ¼³õÊ¼»¯
+// é˜´å½±è´´å›¾åˆå§‹åŒ–
 void DepthCubeMapInit()
 {
     glGenFramebuffers(1, &depthCubeFBO);
@@ -1156,7 +1273,7 @@ void DepthCubeMapInit()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-// ÒõÓ°PASSäÖÈ¾
+// é˜´å½±PASSæ¸²æŸ“
 void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTransforms, const glm::vec3& pointSunPositions)
 {
     /*glm::mat4 shadowProj = glm::perspective(
@@ -1178,4 +1295,70 @@ void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTrans
     glCullFace(GL_BACK);
 }
 
-//#endif
+
+void SSAOInit()
+{
+    std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
+    std::default_random_engine generator;
+
+    // 1. ç”Ÿæˆ 64 ä¸ªåˆ‡çº¿ç©ºé—´åŠçƒé‡‡æ ·ç‚¹
+    ssaoKernel.clear();
+    for (unsigned int i = 0; i < 64; ++i)
+    {
+        glm::vec3 sample(
+            randomFloats(generator) * 2.0f - 1.0f,
+            randomFloats(generator) * 2.0f - 1.0f,
+            randomFloats(generator));
+        sample = glm::normalize(sample);
+        sample *= randomFloats(generator);
+        float scale = (float)i / 64.0f;
+        scale = 0.1f + 0.9f * (scale * scale);   // lerp(0.1, 1.0, scaleÂ²)
+        sample *= scale;
+        ssaoKernel.push_back(sample);
+    }
+
+    // 2. ç”Ÿæˆ 4x4 éšæœºæ—‹è½¬å™ªå£°çº¹ç†
+    std::vector<glm::vec3> ssaoNoise;
+    for (unsigned int i = 0; i < 16; i++)
+    {
+        glm::vec3 noise(
+            randomFloats(generator) * 2.0f - 1.0f,
+            randomFloats(generator) * 2.0f - 1.0f,
+            0.0f);
+        ssaoNoise.push_back(noise);
+    }
+    glGenTextures(1, &noiseTexture);
+    glBindTexture(GL_TEXTURE_2D, noiseTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 4, 4, 0, GL_RGB, GL_FLOAT, &ssaoNoise[0]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    //// 3. SSAO å¸§ç¼“å†²ï¼ˆå•é€šé“ GL_REDï¼‰
+    //glGenFramebuffers(1, &ssaoFBO);
+    //glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
+    //glGenTextures(1, &ssaoColorBuffer);
+    //glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, windowwidth, windowheight, 0, GL_RED, GL_FLOAT, NULL);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoColorBuffer, 0);
+    //if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    //    std::cout << "SSAO Framebuffer not complete!" << std::endl;
+
+    //// 4. SSAO æ¨¡ç³Šå¸§ç¼“å†²
+    //glGenFramebuffers(1, &ssaoBlurFBO);
+    //glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFBO);
+    //glGenTextures(1, &ssaoColorBufferBlur);
+    //glBindTexture(GL_TEXTURE_2D, ssaoColorBufferBlur);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, windowwidth, windowheight, 0, GL_RED, GL_FLOAT, NULL);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoColorBufferBlur, 0);
+    //if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    //    std::cout << "SSAO Blur Framebuffer not complete!" << std::endl;
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+#endif
