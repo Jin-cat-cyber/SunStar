@@ -16,7 +16,7 @@
 #include "Model.h"
 
 
-#ifdef PBR_IBL_1_A
+#ifdef PBR_IBL_4_0
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -108,30 +108,63 @@ int main()
     // 纹理y轴翻转(因为OpenGL的y轴坐标是从下往上，而图片的y轴坐标是从上往下)
     stbi_set_flip_vertically_on_load(true);
 
+
     //加载深度缓冲
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
+    // enable seamless cubemap sampling for lower mip levels in the pre-filter map.
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-    Shader pbrShader("res/shader/#PBR/pbr_ver.shader", "res/shader/#PBR/pbr_frag2.0.shader");
-    Shader equirectangularToCubemapShader("res/shader/#PBR/cubemap_ver.shader", "res/shader/#PBR/cubemap_frag.shader");
-    Shader irradianceShader("res/shader/#PBR/cubemap_ver.shader", "res/shader/#PBR/irradiance_frag.shader");
-    Shader backgroundShader("res/shader/#PBR/background_ver.shader", "res/shader/#PBR/background_frag.shader");
+
+    Shader pbrShader("res/shader/#PBR/IBL3.0/pbr_ver4.0.shader", "res/shader/#PBR/IBL3.0/pbr_frag5.0.shader");
+    Shader equirectangularToCubemapShader("res/shader/#PBR/IBL3.0/cubemap_ver3.0.shader", "res/shader/#PBR/IBL3.0/cubemap_frag3.0.shader");
+    Shader irradianceShader("res/shader/#PBR/IBL3.0/cubemap_ver3.0.shader", "res/shader/#PBR/IBL3.0/irradiance_frag.shader");
+
+    Shader backgroundShader("res/shader/#PBR/IBL3.0/background_ver.shader", "res/shader/#PBR/IBL3.0/background_frag.shader");
+
+    Shader prefilterShader("res/shader/#PBR/IBL3.0/cubemap_ver3.0.shader", "res/shader/#PBR/IBL3.0/prefilter_frag.shader");
+    Shader brdfShader("res/shader/#PBR/IBL3.0/BRDF_ver.shader", "res/shader/#PBR/IBL3.0/BRDF_frag.shader");
+
+    Model spaceship("res/model/cool_spaceship/Cool_spaceship_with_logo.fbx");
 
     pbrShader.use();
     pbrShader.setInt("irradianceMap", 0);
-    pbrShader.setVec3("albedo", 0.5f, 0.0f, 0.0f);
-    pbrShader.setFloat("ao", 1.0f);
+    pbrShader.setInt("prefilterMap", 1);
+    pbrShader.setInt("brdfLUT", 2);
+    pbrShader.setInt("albedoMap", 3);
+    pbrShader.setInt("normalMap", 4);
+    pbrShader.setInt("metallicMap", 5);
+    pbrShader.setInt("roughnessMap", 6);
+    pbrShader.setInt("aoMap", 7);
 
     backgroundShader.use();
     backgroundShader.setInt("environmentMap", 0);
 
+    // 加载材质
+
+    // blackglass（缺 metallic/roughness，硬编码）
+    unsigned int bg_Albedo = loadTexture("res/model/cool_spaceship/Spaceship_uvd_blackglass_BaseColor.png");
+    unsigned int bg_Normal = loadTexture("res/model/cool_spaceship/Spaceship_uvd_blackglass_Normal.png");
+
+    // grey
+    unsigned int gy_Albedo = loadTexture("res/model/cool_spaceship/Spaceship_uvd_grey_BaseColor.png");
+    unsigned int gy_Metallic = loadTexture("res/model/cool_spaceship/Spaceship_uvd_grey_Metallic.png");
+    unsigned int gy_Normal = loadTexture("res/model/cool_spaceship/Spaceship_uvd_grey_Normal.png");
+    unsigned int gy_Roughness = loadTexture("res/model/cool_spaceship/Spaceship_uvd_grey_Roughness.png");
+
+    // metalplating
+    unsigned int mt_Albedo = loadTexture("res/model/cool_spaceship/Spaceship_uvd_metalplating_BaseColor.png");
+    unsigned int mt_Metallic = loadTexture("res/model/cool_spaceship/Spaceship_uvd_metalplating_Metallic.png");
+    unsigned int mt_Normal = loadTexture("res/model/cool_spaceship/Spaceship_uvd_metalplating_Normal.png");
+    unsigned int mt_Roughness = loadTexture("res/model/cool_spaceship/Spaceship_uvd_metalplating_Roughness.png");
+
     // lights
     // ------
     glm::vec3 lightPositions[] = {
-    glm::vec3(-10.0f,  10.0f, 10.0f),
-    glm::vec3(10.0f,  10.0f, 10.0f),
-    glm::vec3(-10.0f, -10.0f, 10.0f),
-    glm::vec3(10.0f, -10.0f, 10.0f),
+        glm::vec3(-10.0f,  10.0f, 10.0f),
+        glm::vec3(10.0f,  10.0f, 10.0f),
+        glm::vec3(-10.0f, -10.0f, 10.0f),
+        glm::vec3(10.0f, -10.0f, 10.0f),
     };
     glm::vec3 lightColors[] = {
         glm::vec3(300.0f, 300.0f, 300.0f),
@@ -139,9 +172,9 @@ int main()
         glm::vec3(300.0f, 300.0f, 300.0f),
         glm::vec3(300.0f, 300.0f, 300.0f)
     };
-    int nrRows = 7;
-    int nrColumns = 7;
-    float spacing = 2.5;
+    //int nrRows = 7;
+    //int nrColumns = 7;
+    //float spacing = 2.5;
 
     // pbr: setup framebuffer
     // ----------------------
@@ -193,7 +226,7 @@ int main()
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // pbr: set up projection and view matrices for capturing data onto the 6 cubemap face directions
@@ -212,7 +245,7 @@ int main()
     // pbr: convert HDR equirectangular environment map to cubemap equivalent
     // ----------------------------------------------------------------------
     equirectangularToCubemapShader.use();
-    equirectangularToCubemapShader.setInt("equiretangularMap", 0);
+    equirectangularToCubemapShader.setInt("equirectangularMap", 0);
     equirectangularToCubemapShader.setMat4("projection", captureProjection);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, hdrTexture);
@@ -228,6 +261,10 @@ int main()
         renderCube();
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // then let OpenGL generate mipmaps from first mip face (combatting visible dots artifact)
+    glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
     // pbr: create an irradiance cubemap, and re-scale capture FBO to irradiance scale.
     // --------------------------------------------------------------------------------
@@ -248,7 +285,7 @@ int main()
     glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 32, 32);
 
-    // pbr: solve diffuse integral by convolution to create an irradiance (cube)map.
+    //*** pbr: solve diffuse integral by convolution to create an irradiance (cube)map.
     // -----------------------------------------------------------------------------
     irradianceShader.use();
     irradianceShader.setInt("environmentMap", 0);
@@ -267,6 +304,84 @@ int main()
         renderCube();
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    //*** pbr: create a pre-filter cubemap, and re-scale capture FBO to pre-filter scale.
+   // --------------------------------------------------------------------------------
+    unsigned int prefilterMap;
+    glGenTextures(1, &prefilterMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
+    for (unsigned int i = 0; i < 6; ++i)
+    {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 128, 128, 0, GL_RGB, GL_FLOAT, nullptr);
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // be sure to set minification filter to mip_linear 
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // generate mipmaps for the cubemap so OpenGL automatically allocates the required memory.
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+    //*** pbr: run a quasi monte-carlo simulation on the environment lighting to create a prefilter (cube)map.
+    // ----------------------------------------------------------------------------------------------------
+    prefilterShader.use();
+    prefilterShader.setInt("environmentMap", 0);
+    prefilterShader.setMat4("projection", captureProjection);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+    unsigned int maxMipLevels = 5;
+    for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
+    {
+        // reisze framebuffer according to mip-level size.
+        unsigned int mipWidth = static_cast<unsigned int>(128 * std::pow(0.5, mip));
+        unsigned int mipHeight = static_cast<unsigned int>(128 * std::pow(0.5, mip));
+        glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
+        glViewport(0, 0, mipWidth, mipHeight);
+
+        float roughness = (float)mip / (float)(maxMipLevels - 1);
+        prefilterShader.setFloat("roughness", roughness);
+        for (unsigned int i = 0; i < 6; ++i)
+        {
+            prefilterShader.setMat4("view", captureViews[i]);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilterMap, mip);
+
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            renderCube();
+        }
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    //*** pbr: generate a 2D LUT from the BRDF equations used.
+    // ----------------------------------------------------
+    unsigned int brdfLUTTexture;
+    glGenTextures(1, &brdfLUTTexture);
+
+    // pre-allocate enough memory for the LUT texture.
+    glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, 0, GL_RG, GL_FLOAT, 0);
+    // be sure to set wrapping mode to GL_CLAMP_TO_EDGE
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // then re-configure capture framebuffer object and render screen-space quad with BRDF shader.
+    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0);
+
+    glViewport(0, 0, 512, 512);
+    brdfShader.use();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    renderQuad();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
 
     // initialize static shader uniforms before rendering
     // --------------------------------------------------
@@ -304,49 +419,69 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         pbrShader.use();
+
+        for (unsigned int i = 0; i < sizeof(lightPositions) / sizeof(lightPositions[0]); ++i)
+        {
+            pbrShader.setVec3("lightPositions[" + std::to_string(i) + "]", lightPositions[i]);
+            pbrShader.setVec3("lightColors[" + std::to_string(i) + "]", lightColors[i]);
+        }
+
+        glm::mat4 model = glm::mat4(1.0f);
         glm::mat4 view = camera.GetViewMatrix();
         pbrShader.setMat4("view", view);
         pbrShader.setVec3("camPos", camera.Position);
 
         // bind pre-computed IBL data
-        //glActiveTexture(GL_TEXTURE0);
-        //glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
 
-        glm::mat4 model = glm::mat4(1.0f);
-        for (int row = 0; row < nrRows; ++row)
+
+        // 变换 + 无 AO 硬编码
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(1.0f));
+        pbrShader.setMat4("model", model);
+        pbrShader.setMat3("normalMatrix", glm::transpose(glm::inverse(glm::mat3(model))));
+        pbrShader.setBool("useAOMap", false);
+        pbrShader.setFloat("aoValue", 1.0f);
+
+        // 按 mesh 绑材质（3 个 mesh = 3 个材质）
+        for (unsigned int m = 0; m < spaceship.meshes.size(); m++)
         {
-            pbrShader.setFloat("metallic", (float)row / (float)nrRows);
-            for (int col = 0; col < nrColumns; ++col)
-            {
-                // we clamp the roughness to 0.05 - 1.0 as perfectly smooth surfaces (roughness of 0.0) tend to look a bit off
-                // on direct lighting.
-                pbrShader.setFloat("roughness", glm::clamp((float)col / (float)nrColumns, 0.05f, 1.0f));
-
-                model = glm::mat4(1.0f);
-                model = glm::translate(model, glm::vec3(
-                    (col - (nrColumns / 2)) * spacing,
-                    (row - (nrRows / 2)) * spacing,
-                    -2.0f
-                ));
-                pbrShader.setMat4("model", model);
-                pbrShader.setMat3("normalMatrix", glm::transpose(glm::inverse(glm::mat3(model))));
-                renderSphere();
+            if (m == 0) {  // metalplating
+                pbrShader.setBool("useMetallicMap", true);
+                pbrShader.setBool("useRoughnessMap", true);
+                glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, mt_Albedo);
+                glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, mt_Normal);
+                glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, mt_Metallic);
+                glActiveTexture(GL_TEXTURE6); glBindTexture(GL_TEXTURE_2D, mt_Roughness);
             }
-        }
+            else if (m == 1) {  // grey
+                pbrShader.setBool("useMetallicMap", true);
+                pbrShader.setBool("useRoughnessMap", true);
+                glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, gy_Albedo);
+                glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, gy_Normal);
+                glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, gy_Metallic);
+                glActiveTexture(GL_TEXTURE6); glBindTexture(GL_TEXTURE_2D, gy_Roughness);
+            }
+            else {  // blackglass：硬编码 metallic=0, roughness=0.1
+                pbrShader.setBool("useMetallicMap", false);
+                pbrShader.setBool("useRoughnessMap", false);
+                pbrShader.setFloat("metallicValue", 0.0f);
+                pbrShader.setFloat("roughnessValue", 0.1f);
+                glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, bg_Albedo);
+                glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, bg_Normal);
+            }
 
-        for (unsigned int i = 0; i < sizeof(lightPositions) / sizeof(lightPositions[0]); ++i)
-        {
-            glm::vec3 newPos = lightPositions[i] + glm::vec3(sin(glfwGetTime() * 5.0) * 5.0, 0.0, 0.0);
-            newPos = lightPositions[i];
-            pbrShader.setVec3("lightPositions[" + std::to_string(i) + "]", newPos);
-            pbrShader.setVec3("lightColors[" + std::to_string(i) + "]", lightColors[i]);
-
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, newPos);
-            model = glm::scale(model, glm::vec3(0.5f));
-            pbrShader.setMat4("model", model);
-            pbrShader.setMat3("normalMatrix", glm::transpose(glm::inverse(glm::mat3(model))));
-            renderSphere();
+            //// 画当前 mesh 的几何
+            //glBindVertexArray(spaceship.meshes[m].VAO);
+            //glDrawElements(GL_TRIANGLES, (GLsizei)spaceship.meshes[m].indices.size(), GL_UNSIGNED_INT, 0);
+            //glBindVertexArray(0);
+            spaceship.meshes[m].Draw(pbrShader);   // ← 用 Draw()
         }
 
         // render skybox (render as last to prevent overdraw)
@@ -354,13 +489,13 @@ int main()
         backgroundShader.setMat4("view", view);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+        //glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap); // display irradiance map
+        //glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap); // display prefilter map
         renderCube();
 
-        /*    equirectangularToCubemapShader.Use();
-        equirectangularToCubemapShader.setMat4("view", view");
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, hdrTexture);
-        renderCube();*/
+        // render BRDF map to screen
+        //brdfShader.Use();
+        //renderQuad();
 
 
         glfwSwapBuffers(window);

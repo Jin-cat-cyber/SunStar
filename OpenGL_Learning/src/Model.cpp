@@ -14,9 +14,9 @@ void Model::Draw(Shader& shader)
 void Model::loadMode(string const& path)
 {
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(
-		path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace
-	);
+	//const aiScene* scene = importer.ReadFile(
+	//	path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace
+	//);
 	/*
 	aiProcess_Triangulate
 	作用：把所有的模型面片都转换成三角形。因为大多数渲染管线（包括 OpenGL）只支持三角形，所以这是常用的预处理步骤。
@@ -28,6 +28,16 @@ void Model::loadMode(string const& path)
 	作用：计算每个顶点的切线和副切线（tangent/bitangent）。这在做法线贴图（normal mapping）时非常重要，因为需要切线空间。
 	这些参数是 Assimp（模型导入库）在导入模型时的处理选项，用于保证导入后的数据适合你的渲染需求。
 	*/
+
+	// === 根据文件后缀决定是否翻转 UV ===
+	std::string ext = path.substr(path.find_last_of('.'));
+	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower); // 转小写，防 .FBX/.Fbx 大小写不一致
+
+	unsigned int flags = aiProcess_Triangulate | aiProcess_CalcTangentSpace;
+	if (ext == ".obj")                       // 只有 OBJ 需要翻（UV 原点在左下）
+		flags |= aiProcess_FlipUVs;
+
+	const aiScene* scene = importer.ReadFile(path, flags);
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{

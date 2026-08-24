@@ -18,6 +18,9 @@
 #include <vector>
 #include <string>
 
+#include <algorithm>   // std::transform
+#include <cctype>      // ::tolower
+
 using namespace std;
 
 unsigned int TextureFromFile(const char* path, const string & directory, bool gamma = false);

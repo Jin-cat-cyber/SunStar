@@ -264,6 +264,18 @@
     <ClCompile Include="src\PBR_IBL1.A.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\PBR_IBL2.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBR_IBL_3.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBR_IBL4.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBR_test_luzi.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -452,13 +464,43 @@
     <None Include="res\shader\#PBR\pbr_ver.shader" />
     <None Include="res\shader\#PBR\pbr_frag.shader" />
     <None Include="res\shader\#PBR\pbr_frag2.0.shader" />
-    <None Include="res\shader\#PBR\pbr_ver2.0.shader" />
     <None Include="res\shader\#PBR\cubemap_ver.shader" />
     <None Include="res\shader\#PBR\cubemap_frag.shader" />
     <None Include="res\shader\#PBR\background_ver.shader" />
     <None Include="res\shader\#PBR\background_frag.shader" />
     <None Include="res\shader\#PBR\irradiance_frag.shader" />
-    <None Include="res\shader\#PBR\cubemap_frag2.0.shader" />
+    <None Include="res\shader\#PBR\IBL2.0\pbr_ver3.0.shader" />
+    <None Include="res\shader\#PBR\IBL2.0\pbr_frag3.0.shader" />
+    <None Include="res\shader\#PBR\IBL2.0\irradiance_frag.shader" />
+    <None Include="res\shader\#PBR\IBL2.0\cubemap_ver3.0.shader" />
+    <None Include="res\shader\#PBR\IBL2.0\cubemap_frag3.0.shader" />
+    <None Include="res\shader\#PBR\IBL2.0\background_ver.shader" />
+    <None Include="res\shader\#PBR\IBL2.0\background_frag.shader" />
+    <None Include="res\shader\#PBR\IBL2.0\prefilter_frag.shader" />
+    <None Include="res\shader\#PBR\IBL2.0\BRDF_ver.shader" />
+    <None Include="res\shader\#PBR\IBL2.0\BRDF_frag.shader" />
+    <None Include="res\shader\#PBR\IBL3.0\prefilter_frag.shader" />
+    <None Include="res\shader\#PBR\IBL3.0\background_frag.shader" />
+    <None Include="res\shader\#PBR\IBL3.0\background_ver.shader" />
+    <None Include="res\shader\#PBR\IBL3.0\BRDF_frag.shader" />
+    <None Include="res\shader\#PBR\IBL3.0\BRDF_ver.shader" />
+    <None Include="res\shader\#PBR\IBL3.0\cubemap_frag3.0.shader" />
+    <None Include="res\shader\#PBR\IBL3.0\cubemap_ver3.0.shader" />
+    <None Include="res\shader\#PBR\IBL3.0\irradiance_frag.shader" />
+    <None Include="res\shader\#PBR\IBL3.0\pbr_frag4.0.shader" />
+    <None Include="res\shader\#PBR\IBL3.0\pbr_ver4.0.shader" />
+    <None Include="..\..\Cerberus_by_Andrew_Maximov\Cerberus_by_Andrew_Maximov\Cerberus_LP.FBX" />
+    <None Include="res\shader\#PBR\IBL3.0\pbr_frag5.0.shader" />
+    <None Include="res\shader\#PBR\test\background_frag.shader" />
+    <None Include="res\shader\#PBR\test\background_ver.shader" />
+    <None Include="res\shader\#PBR\test\BRDF_frag.shader" />
+    <None Include="res\shader\#PBR\test\BRDF_ver.shader" />
+    <None Include="res\shader\#PBR\test\cubemap_frag3.0.shader" />
+    <None Include="res\shader\#PBR\test\cubemap_ver3.0.shader" />
+    <None Include="res\shader\#PBR\test\irradiance_frag.shader" />
+    <None Include="res\shader\#PBR\test\pbr_test.shader" />
+    <None Include="res\shader\#PBR\test\pbr_ver3.0.shader" />
+    <None Include="res\shader\#PBR\test\prefilter_frag.shader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\texture\container.jpg">

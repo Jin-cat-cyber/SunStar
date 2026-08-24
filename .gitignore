@@ -25,3 +25,7 @@ CopilotSnapshots/
 
 # Claude 配置
 .claude/
+/OpenGL_Learning/res/model/Cerberus
+/OpenGL_Learning/res/model/coolSpaceShip
+/OpenGL_Learning/res/texture/hdr/NightSkyHDRI006_4K_HDR.hdr
+/OpenGL_Learning/res/model/cool_spaceship
