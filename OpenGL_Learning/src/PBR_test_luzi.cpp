@@ -1,10 +1,10 @@
-#include <glad/glad.h>
+ï»¿#include <glad/glad.h>
 #include <glfw3.h>
 #include <assimp/config.h>
 #include <assimp/revision.h>
 #include <random>
 
-#include "Shader.h" // °üº¬×Ô¶¨Òå×ÅÉ«Æ÷Àà
+#include "Shader.h" // åŒ…å«è‡ªå®šä¹‰ç€è‰²å™¨ç±»
 
 
 #include <iostream>
@@ -16,100 +16,100 @@
 #include "Model.h"
 
 
-//#ifdef PBR_IBL_TEST
+#ifdef PBR_IBL_TEST_LUZI
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height); // ´°¿Ú´óĞ¡»Øµ÷º¯Êı
-void processInput(GLFWwindow* window); // ÊäÈë¼ì²éº¯Êı
-void mouse_callback(GLFWwindow* window, double xpos, double ypos); // Êó±ê ÒÆ¶¯ »Øµ÷º¯Êı
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset); // Êó±ê ¹öÂÖ »Øµ÷º¯Êı
-unsigned int loadTexture(char const* path); // ÎÆÀí¼ÓÔØº¯Êı
+void framebuffer_size_callback(GLFWwindow* window, int width, int height); // çª—å£å¤§å°å›è°ƒå‡½æ•°
+void processInput(GLFWwindow* window); // è¾“å…¥æ£€æŸ¥å‡½æ•°
+void mouse_callback(GLFWwindow* window, double xpos, double ypos); // é¼ æ ‡ ç§»åŠ¨ å›è°ƒå‡½æ•°
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset); // é¼ æ ‡ æ»šè½® å›è°ƒå‡½æ•°
+unsigned int loadTexture(char const* path); // çº¹ç†åŠ è½½å‡½æ•°
 
-// äÖÈ¾º¯Êı
-void renderScene(const Shader& shader); // ³¡¾°äÖÈ¾º¯Êı
+// æ¸²æŸ“å‡½æ•°
+void renderScene(const Shader& shader); // åœºæ™¯æ¸²æŸ“å‡½æ•°
 void renderCube();
 void renderQuad();
 void renderSphere();
 
-// ´°¿Ú²ÎÊı
-const unsigned int SCR_WIDTH = 960; // ´°¿Ú¿í¶È
-const unsigned int SCR_HEIGHT = 600; // ´°¿Ú¸ß¶È
+// çª—å£å‚æ•°
+const unsigned int SCR_WIDTH = 960; // çª—å£å®½åº¦
+const unsigned int SCR_HEIGHT = 600; // çª—å£é«˜åº¦
 int windowwidth = SCR_WIDTH;
 int windowheight = SCR_HEIGHT;
 
-// ¼üÅÌ¿ØÖÆ
-bool hdr = true; // ÊÇ·ñ¿ªÆôHDR
-bool hdrKeyPressed = false; // ÊÇ·ñ°´ÏÂÁË¿Õ¸ñ¼ü
-float exposure = 1.0f; // ÆØ¹âÖµ
-bool shadows = true; // ÊÇ·ñ¿ªÆôÒõÓ°
-bool shadowsKeyPressed = false; // ÊÇ·ñ°´ÏÂÁË¿Õ¸ñ¼ü
+// é”®ç›˜æ§åˆ¶
+bool hdr = true; // æ˜¯å¦å¼€å¯HDR
+bool hdrKeyPressed = false; // æ˜¯å¦æŒ‰ä¸‹äº†ç©ºæ ¼é”®
+float exposure = 1.0f; // æ›å…‰å€¼
+bool shadows = true; // æ˜¯å¦å¼€å¯é˜´å½±
+bool shadowsKeyPressed = false; // æ˜¯å¦æŒ‰ä¸‹äº†ç©ºæ ¼é”®
 bool SSAO_Key = true;
 
-// ÉãÏñ»úÏà¹Ø
+// æ‘„åƒæœºç›¸å…³
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0F;
 float lastY = SCR_HEIGHT / 2.0F;
 bool firstMouse = true;
 bool cursorLocked = true;
-bool tabKeyPressed = false;   // ÓÃÓÚ¼ì²â TAB ¼üµÄÉÏÉıÑØ
+bool tabKeyPressed = false;   // ç”¨äºæ£€æµ‹ TAB é”®çš„ä¸Šå‡æ²¿
 bool bloom = true;
 bool bloomKeyPressed;
 
-// ÉèÖÃÖ¡ÊıäÖÈ¾Î»ÖÃ
-float deltaTime = 0.0f;	// µ±Ç°Ö¡ÓëÉÏÒ»Ö¡µÄÊ±¼ä²î
-float lastFrame = 0.0f; // ÉÏÒ»Ö¡µÄÊ±¼ä
+// è®¾ç½®å¸§æ•°æ¸²æŸ“ä½ç½®
+float deltaTime = 0.0f;	// å½“å‰å¸§ä¸ä¸Šä¸€å¸§çš„æ—¶é—´å·®
+float lastFrame = 0.0f; // ä¸Šä¸€å¸§çš„æ—¶é—´
 
 float ourLerp(float a, float b, float f)
 {
     return a + f * (b - a);
 }
 
-// ÉèÖÃÆ½ÃæVAO
+// è®¾ç½®å¹³é¢VAO
 unsigned int planeVAO;
 
 
 
 int main()
 {
-    glfwInit(); // ³õÊ¼»¯GLFW¿â
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);  // ÉèÖÃOpenGL°æ±¾£ºÖ÷°æ±¾ºÅ
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);  // ÉèÖÃOpenGL°æ±¾£º´Î°æ±¾ºÅ
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // Ê¹ÓÃºËĞÄÄ£Ê½
+    glfwInit(); // åˆå§‹åŒ–GLFWåº“
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);  // è®¾ç½®OpenGLç‰ˆæœ¬ï¼šä¸»ç‰ˆæœ¬å·
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);  // è®¾ç½®OpenGLç‰ˆæœ¬ï¼šæ¬¡ç‰ˆæœ¬å·
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // ä½¿ç”¨æ ¸å¿ƒæ¨¡å¼
     glfwWindowHint(GLFW_SAMPLES, 4);
 
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    // ´´½¨´°¿Ú¶ÔÏó
+    // åˆ›å»ºçª—å£å¯¹è±¡
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Hello OpenGL", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate(); // ÇåÀí´°¿Ú×ÊÔ´
+        glfwTerminate(); // æ¸…ç†çª—å£èµ„æº
         return -1;
     }
-    glfwMakeContextCurrent(window); // ÉèÖÃµ±Ç°´°¿ÚÎªÉÏÏÂÎÄ
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); // ÉèÖÃ´°¿Ú´óĞ¡»Øµ÷º¯Êı
-    glfwSetCursorPosCallback(window, mouse_callback); // ÉèÖÃÊó±êÒÆ¶¯»Øµ÷º¯Êı
-    glfwSetScrollCallback(window, scroll_callback); // ÉèÖÃÊó±ê¹öÂÖ»Øµ÷º¯Êı
+    glfwMakeContextCurrent(window); // è®¾ç½®å½“å‰çª—å£ä¸ºä¸Šä¸‹æ–‡
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); // è®¾ç½®çª—å£å¤§å°å›è°ƒå‡½æ•°
+    glfwSetCursorPosCallback(window, mouse_callback); // è®¾ç½®é¼ æ ‡ç§»åŠ¨å›è°ƒå‡½æ•°
+    glfwSetScrollCallback(window, scroll_callback); // è®¾ç½®é¼ æ ‡æ»šè½®å›è°ƒå‡½æ•°
 
-    // ²¶»ñÊó±ê£¨Òş²ØÊó±ê¹â±ê£¬²¢Ìá¹©ÎŞÏŞµÄÊó±êÒÆ¶¯£©
+    // æ•è·é¼ æ ‡ï¼ˆéšè—é¼ æ ‡å…‰æ ‡ï¼Œå¹¶æä¾›æ— é™çš„é¼ æ ‡ç§»åŠ¨ï¼‰
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 
-    // ³õÊ¼»¯GLAD£¬¹ÜÀíOpenGLº¯ÊıÖ¸Õë£¬¼ÓÔØËùÓĞOpenGLº¯ÊıÖ¸Õë
+    // åˆå§‹åŒ–GLADï¼Œç®¡ç†OpenGLå‡½æ•°æŒ‡é’ˆï¼ŒåŠ è½½æ‰€æœ‰OpenGLå‡½æ•°æŒ‡é’ˆ
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
 
-    // ÎÆÀíyÖá·­×ª(ÒòÎªOpenGLµÄyÖá×ø±êÊÇ´ÓÏÂÍùÉÏ£¬¶øÍ¼Æ¬µÄyÖá×ø±êÊÇ´ÓÉÏÍùÏÂ)
+    // çº¹ç†yè½´ç¿»è½¬(å› ä¸ºOpenGLçš„yè½´åæ ‡æ˜¯ä»ä¸‹å¾€ä¸Šï¼Œè€Œå›¾ç‰‡çš„yè½´åæ ‡æ˜¯ä»ä¸Šå¾€ä¸‹)
     stbi_set_flip_vertically_on_load(true);
 
 
-    //¼ÓÔØÉî¶È»º³å
+    //åŠ è½½æ·±åº¦ç¼“å†²
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
     // enable seamless cubemap sampling for lower mip levels in the pre-filter map.
@@ -124,12 +124,13 @@ int main()
 
     Shader prefilterShader("res/shader/#PBR/test/cubemap_ver3.0.shader", "res/shader/#PBR/test/prefilter_frag.shader");
     Shader brdfShader("res/shader/#PBR/test/BRDF_ver.shader", "res/shader/#PBR/test/BRDF_frag.shader");
-
+    Shader kullaContyShader("res/shader/#PBR/test/BRDF_ver.shader", "res/shader/#PBR/test/KullaConty_frag.shader");
 
     pbrShader.use();
     pbrShader.setInt("irradianceMap", 0);
     pbrShader.setInt("prefilterMap", 1);
     pbrShader.setInt("brdfLUT", 2);
+    pbrShader.setInt("kullaContyLUT", 3);
     //pbrShader.setVec3("albedo", 0.5f, 0.0f, 0.0f);
     pbrShader.setVec3("albedo", 1.0f, 1.0f, 1.0f);
     pbrShader.setFloat("ao", 1.0f);
@@ -371,6 +372,31 @@ int main()
 
 
 
+    //*** pbr: Kulla-Conty å¤šæ¬¡æ•£å°„è¡¥å¿ LUTï¼ˆE(Î¼â‚€), E_avgï¼‰
+    // --------------------------------------------------------------------
+    unsigned int kullaContyLUT;
+    glGenTextures(1, &kullaContyLUT);
+    glBindTexture(GL_TEXTURE_2D, kullaContyLUT);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 64, 64, 0, GL_RG, GL_FLOAT, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 64, 64);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, kullaContyLUT, 0);
+
+    glViewport(0, 0, 64, 64);
+    kullaContyShader.use();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    renderQuad();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+
     // initialize static shader uniforms before rendering
     // --------------------------------------------------
     glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
@@ -387,24 +413,24 @@ int main()
 
     // render loop
     // -----------
-    // Ö÷Ñ­»·
+    // ä¸»å¾ªç¯
     while (!glfwWindowShouldClose(window))
     {
-        // Ê±ÖÓÂß¼­
+        // æ—¶é’Ÿé€»è¾‘
         // --------------------
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // ÊäÈë
+        // è¾“å…¥
         // -----
         processInput(window);
 
 
-        // äÖÈ¾
+        // æ¸²æŸ“
         // ------
         //glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);   // Ô­À´ (0.1, 0.1, 0.1)
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);   // åŸæ¥ (0.1, 0.1, 0.1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         pbrShader.use();
@@ -419,6 +445,8 @@ int main()
         glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, kullaContyLUT);
 
         glm::mat4 model = glm::mat4(1.0f);
         for (int row = 0; row < nrRows; ++row)
@@ -475,12 +503,12 @@ int main()
         glfwPollEvents();
     }
 
-    glfwTerminate(); // ÇåÀí²¢¹Ø±ÕGLFW
+    glfwTerminate(); // æ¸…ç†å¹¶å…³é—­GLFW
     return 0;
 }
 
 
-// äÖÈ¾3D³¡¾°£ºµØÃæºÍÁ¢·½Ìå
+// æ¸²æŸ“3Dåœºæ™¯ï¼šåœ°é¢å’Œç«‹æ–¹ä½“
 // --------------------
 void renderScene(const Shader& shader)
 {
@@ -488,11 +516,11 @@ void renderScene(const Shader& shader)
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::scale(model, glm::vec3(10.0f));
     shader.setMat4("model", model);
-    glDisable(GL_CULL_FACE); // ½ûÓÃÃæÌŞ³ı£¬ÒÔ±ã´ÓÄÚ²¿¿´µ½Á¢·½Ìå
-    shader.setInt("reverse_normals", 1); // ·´×ª·¨Ïß£¬ÒÔ±ãÁ¢·½ÌåÄÚ²¿ÕıÈ·¼ÆËã¹âÕÕ
+    glDisable(GL_CULL_FACE); // ç¦ç”¨é¢å‰”é™¤ï¼Œä»¥ä¾¿ä»å†…éƒ¨çœ‹åˆ°ç«‹æ–¹ä½“
+    shader.setInt("reverse_normals", 1); // åè½¬æ³•çº¿ï¼Œä»¥ä¾¿ç«‹æ–¹ä½“å†…éƒ¨æ­£ç¡®è®¡ç®—å…‰ç…§
     renderCube();
-    shader.setInt("reverse_normals", 0); // »Ö¸´Ä¬ÈÏµÄ·¨ÏßÉèÖÃ
-    glEnable(GL_CULL_FACE); // »Ö¸´Ä¬ÈÏµÄÃæÌŞ³ıÉèÖÃ
+    shader.setInt("reverse_normals", 0); // æ¢å¤é»˜è®¤çš„æ³•çº¿è®¾ç½®
+    glEnable(GL_CULL_FACE); // æ¢å¤é»˜è®¤çš„é¢å‰”é™¤è®¾ç½®
 
     // cubes
     model = glm::mat4(1.0f);
@@ -523,7 +551,7 @@ void renderScene(const Shader& shader)
     renderCube();
 }
 
-// renderCube() äÖÈ¾Ò»¸öÎ»ÓÚ NDC ÖĞµÄ 1x1 3D Á¢·½Ìå¡£
+// renderCube() æ¸²æŸ“ä¸€ä¸ªä½äº NDC ä¸­çš„ 1x1 3D ç«‹æ–¹ä½“ã€‚
 // -----------------------------------------
 unsigned int cubeVAO = 0;
 unsigned int cubeVBO = 0;
@@ -577,10 +605,10 @@ void renderCube()
         };
         glGenVertexArrays(1, &cubeVAO);
         glGenBuffers(1, &cubeVBO);
-        // Ìî³ä»º³åÇø
+        // å¡«å……ç¼“å†²åŒº
         glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-        // Á´½Ó¶¥µãÊôĞÔ
+        // é“¾æ¥é¡¶ç‚¹å±æ€§
         glBindVertexArray(cubeVAO);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
@@ -598,7 +626,7 @@ void renderCube()
     glBindVertexArray(0);
 }
 
-// renderQuad() ÔÚ NDC ÖĞäÖÈ¾Ò»¸ö 1x1 µÄ XY ËÄ±ßĞÎ¡£
+// renderQuad() åœ¨ NDC ä¸­æ¸²æŸ“ä¸€ä¸ª 1x1 çš„ XY å››è¾¹å½¢ã€‚
 // ---------------------------------------------
 unsigned int quadVAO = 0;
 unsigned int quadVBO;
@@ -613,7 +641,7 @@ void renderQuad()
              1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
              1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
         };
-        // ÉèÖÃ plane VAO
+        // è®¾ç½® plane VAO
         glGenVertexArrays(1, &quadVAO);
         glGenBuffers(1, &quadVBO);
         glBindVertexArray(quadVAO);
@@ -630,16 +658,16 @@ void renderQuad()
 }
 
 
-// ´°¿Ú»Øµ÷º¯Êı
+// çª—å£å›è°ƒå‡½æ•°
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     //windowwidth = width;
     //windowheight = height;
-    //glViewport(0, 0, width, height); // glViewport ÓÃÓÚÉèÖÃÊÓ¿Ú´óĞ¡
+    //glViewport(0, 0, width, height); // glViewport ç”¨äºè®¾ç½®è§†å£å¤§å°
     //lastX = width / 2.0f;
     //lastY = height / 2.0f;
 
-    if (width == 0 || height == 0) return; // ±ÜÃâ×îĞ¡»¯Ê±Òì³£
+    if (width == 0 || height == 0) return; // é¿å…æœ€å°åŒ–æ—¶å¼‚å¸¸
 
     windowwidth = width;
     windowheight = height;
@@ -647,7 +675,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     lastX = width / 2.0f;
     lastY = height / 2.0f;
 
-    //// ÖØĞÂ·ÖÅä HDR ÑÕÉ«ÎÆÀíºÍÉî¶È»º³å£¨Èç¹ûÒÑ´´½¨£©
+    //// é‡æ–°åˆ†é… HDR é¢œè‰²çº¹ç†å’Œæ·±åº¦ç¼“å†²ï¼ˆå¦‚æœå·²åˆ›å»ºï¼‰
     //if (colorBuffer != 0)
     //{
     //    glBindTexture(GL_TEXTURE_2D, colorBuffer);
@@ -658,10 +686,10 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     //    glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
     //    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowwidth, windowheight);
     //}
-    // Èç¹ûÄãÔÚ»Øµ÷ºóĞèÒªÂíÉÏ¼ì²é FBO ÍêÕûĞÔ£¬¿É°ó¶¨ hdrFBO ²¢¼ì²é£¬µ«Í¨³£ÉÏÃæ×ã¹»
+    // å¦‚æœä½ åœ¨å›è°ƒåéœ€è¦é©¬ä¸Šæ£€æŸ¥ FBO å®Œæ•´æ€§ï¼Œå¯ç»‘å®š hdrFBO å¹¶æ£€æŸ¥ï¼Œä½†é€šå¸¸ä¸Šé¢è¶³å¤Ÿ
 }
 
-// ÊäÈë¼ì²éº¯Êı
+// è¾“å…¥æ£€æŸ¥å‡½æ•°
 void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -726,7 +754,7 @@ void processInput(GLFWwindow* window)
 //    glViewport(0, 0, width, height);
 //}
 
-// Êó±êÒÆ¶¯»Øµ÷º¯Êı
+// é¼ æ ‡ç§»åŠ¨å›è°ƒå‡½æ•°
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
     float xpos = static_cast<float>(xposIn);
@@ -748,13 +776,13 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-// Êó±ê¹öÂÖ»Øµ÷º¯Êı
+// é¼ æ ‡æ»šè½®å›è°ƒå‡½æ•°
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
 
-// ÎÆÀí¼ÓÔØº¯Êı
+// çº¹ç†åŠ è½½å‡½æ•°
 unsigned int loadTexture(char const* path)
 {
     unsigned int textureID;
@@ -792,7 +820,7 @@ unsigned int loadTexture(char const* path)
     return textureID;
 }
 
-// ´ÓÎÄ¼ş¼ÓÔØÎÆÀí
+// ä»æ–‡ä»¶åŠ è½½çº¹ç†
 unsigned int TextureFromFile(const char* path, const string& directory, bool gamma)
 {
     string filename = string(path);
@@ -925,4 +953,4 @@ void renderSphere()
     glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
 }
 
-//#endif
+#endif

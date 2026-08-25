@@ -112,9 +112,9 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    Shader pbrShader("res/shader/#PBR/pbr_ver.shader", "res/shader/#PBR/pbr_frag.shader");
-    Shader equirectangularToCubemapShader("res/shader/#PBR/cubemap_ver.shader", "res/shader/#PBR/cubemap_frag.shader");
-    Shader backgroundShader("res/shader/#PBR/background_ver.shader", "res/shader/#PBR/background_frag.shader");
+    Shader pbrShader("res/shader/#PBR/ver1.0/pbr_ver.shader", "res/shader/#PBR/ver1.0/pbr_frag.shader");
+    Shader equirectangularToCubemapShader("res/shader/#PBR/ver1.0/cubemap_ver.shader", "res/shader/#PBR/ver1.0/cubemap_frag.shader");
+    Shader backgroundShader("res/shader/#PBR/ver1.0/background_ver.shader", "res/shader/#PBR/ver1.0/background_frag.shader");
 
     pbrShader.use();
     pbrShader.setVec3("albedo", 0.5f, 0.0f, 0.0f);

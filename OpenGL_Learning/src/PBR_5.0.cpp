@@ -16,7 +16,7 @@
 #include "Model.h"
 
 
-#ifdef PBR_IBL_4_0
+//#ifdef PBR_IBL_4_0
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -116,7 +116,7 @@ int main()
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 
-    Shader pbrShader("res/shader/#PBR/IBL3.0/pbr_ver4.0.shader", "res/shader/#PBR/IBL3.0/pbr_frag5.0.shader");
+    Shader pbrShader("res/shader/#PBR/IBL3.0/pbr_ver4.0.shader", "res/shader/#PBR/IBL3.0/pbr_frag5.1.shader");
     Shader equirectangularToCubemapShader("res/shader/#PBR/IBL3.0/cubemap_ver3.0.shader", "res/shader/#PBR/IBL3.0/cubemap_frag3.0.shader");
     Shader irradianceShader("res/shader/#PBR/IBL3.0/cubemap_ver3.0.shader", "res/shader/#PBR/IBL3.0/irradiance_frag.shader");
 
@@ -125,7 +125,8 @@ int main()
     Shader prefilterShader("res/shader/#PBR/IBL3.0/cubemap_ver3.0.shader", "res/shader/#PBR/IBL3.0/prefilter_frag.shader");
     Shader brdfShader("res/shader/#PBR/IBL3.0/BRDF_ver.shader", "res/shader/#PBR/IBL3.0/BRDF_frag.shader");
 
-    Model spaceship("res/model/cool_spaceship/Cool_spaceship_with_logo.fbx");
+    //Model spaceship("res/model/cool_spaceship/Cool_spaceship_with_logo.fbx");
+    Model spaceship("res/model/starfighter_viper/starfighter_viper.fbx");
 
     pbrShader.use();
     pbrShader.setInt("irradianceMap", 0);
@@ -140,23 +141,27 @@ int main()
     backgroundShader.use();
     backgroundShader.setInt("environmentMap", 0);
 
-    // 加载材质
-
-    // blackglass（缺 metallic/roughness，硬编码）
-    unsigned int bg_Albedo = loadTexture("res/model/cool_spaceship/Spaceship_uvd_blackglass_BaseColor.png");
-    unsigned int bg_Normal = loadTexture("res/model/cool_spaceship/Spaceship_uvd_blackglass_Normal.png");
+    // blackglass（座舱玻璃）
+    unsigned int bg_Albedo = loadTexture("res/model/starfighter_viper/ship2022V5fixed_blackglass_BaseColor.png");
+    unsigned int bg_Metallic = loadTexture("res/model/starfighter_viper/ship2022V5fixed_blackglass_Metallic.png");
+    unsigned int bg_Normal = loadTexture("res/model/starfighter_viper/ship2022V5fixed_blackglass_Normal.png");
+    unsigned int bg_Roughness = loadTexture("res/model/starfighter_viper/ship2022V5fixed_blackglass_Roughness.png");
 
     // grey
-    unsigned int gy_Albedo = loadTexture("res/model/cool_spaceship/Spaceship_uvd_grey_BaseColor.png");
-    unsigned int gy_Metallic = loadTexture("res/model/cool_spaceship/Spaceship_uvd_grey_Metallic.png");
-    unsigned int gy_Normal = loadTexture("res/model/cool_spaceship/Spaceship_uvd_grey_Normal.png");
-    unsigned int gy_Roughness = loadTexture("res/model/cool_spaceship/Spaceship_uvd_grey_Roughness.png");
+    unsigned int gy_Albedo = loadTexture("res/model/starfighter_viper/ship2022V5fixed_grey_BaseColor.png");
+    unsigned int gy_Metallic = loadTexture("res/model/starfighter_viper/ship2022V5fixed_grey_Metallic.png");
+    unsigned int gy_Normal = loadTexture("res/model/starfighter_viper/ship2022V5fixed_grey_Normal.png");
+    unsigned int gy_Roughness = loadTexture("res/model/starfighter_viper/ship2022V5fixed_grey_Roughness.png");
 
-    // metalplating
-    unsigned int mt_Albedo = loadTexture("res/model/cool_spaceship/Spaceship_uvd_metalplating_BaseColor.png");
-    unsigned int mt_Metallic = loadTexture("res/model/cool_spaceship/Spaceship_uvd_metalplating_Metallic.png");
-    unsigned int mt_Normal = loadTexture("res/model/cool_spaceship/Spaceship_uvd_metalplating_Normal.png");
-    unsigned int mt_Roughness = loadTexture("res/model/cool_spaceship/Spaceship_uvd_metalplating_Roughness.png");
+    // red（主外壳）
+    unsigned int rd_Albedo = loadTexture("res/model/starfighter_viper/ship2022V5fixed_red_BaseColor.png");
+    unsigned int rd_Metallic = loadTexture("res/model/starfighter_viper/ship2022V5fixed_red_Metallic.png");
+    unsigned int rd_Normal = loadTexture("res/model/starfighter_viper/ship2022V5fixed_red_Normal.png");
+    unsigned int rd_Roughness = loadTexture("res/model/starfighter_viper/ship2022V5fixed_red_Roughness.png");
+
+    // EngineGLow（引擎发光，只有 BaseColor + Normal）
+    unsigned int eg_Albedo = loadTexture("res/model/starfighter_viper/ship2022V5fixed_EngineGLow_BaseColor.png");
+    unsigned int eg_Normal = loadTexture("res/model/starfighter_viper/ship2022V5fixed_EngineGLow_Normal.png");
 
     // lights
     // ------
@@ -450,40 +455,104 @@ int main()
         pbrShader.setBool("useAOMap", false);
         pbrShader.setFloat("aoValue", 1.0f);
 
-        // 按 mesh 绑材质（3 个 mesh = 3 个材质）
+        // starfighter_viper 是纯几何导出，assimp 读不到 mesh→材质映射，只能硬编码
+        // 材质: 0=grey  1=red  2=blackglass  3=EngineGLow
+        // mesh 映射 {0,1,0,2,3,1}
         for (unsigned int m = 0; m < spaceship.meshes.size(); m++)
         {
-            if (m == 0) {  // metalplating
+            switch (m)
+            {
+            case 0:          // red（主外壳 / 腹部块）
                 pbrShader.setBool("useMetallicMap", true);
                 pbrShader.setBool("useRoughnessMap", true);
-                glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, mt_Albedo);
-                glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, mt_Normal);
-                glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, mt_Metallic);
-                glActiveTexture(GL_TEXTURE6); glBindTexture(GL_TEXTURE_2D, mt_Roughness);
-            }
-            else if (m == 1) {  // grey
+                pbrShader.setBool("useEmissiveMap", false);
+                glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, rd_Albedo);
+                glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, rd_Normal);
+                glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, rd_Metallic);
+                glActiveTexture(GL_TEXTURE6); glBindTexture(GL_TEXTURE_2D, rd_Roughness);
+                break;
+
+            case 1:          // grey（机翼 / 尾部小碎块）
                 pbrShader.setBool("useMetallicMap", true);
                 pbrShader.setBool("useRoughnessMap", true);
+                pbrShader.setBool("useEmissiveMap", false);
                 glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, gy_Albedo);
                 glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, gy_Normal);
                 glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, gy_Metallic);
                 glActiveTexture(GL_TEXTURE6); glBindTexture(GL_TEXTURE_2D, gy_Roughness);
-            }
-            else {  // blackglass：硬编码 metallic=0, roughness=0.1
-                pbrShader.setBool("useMetallicMap", false);
-                pbrShader.setBool("useRoughnessMap", false);
-                pbrShader.setFloat("metallicValue", 0.0f);
-                pbrShader.setFloat("roughnessValue", 0.1f);
+                break;
+
+            case 3:  // blackglass（座舱玻璃 + 前伸细杆）
+                pbrShader.setBool("useMetallicMap", true);
+                pbrShader.setBool("useRoughnessMap", true);
+                pbrShader.setBool("useEmissiveMap", false);
                 glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, bg_Albedo);
                 glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, bg_Normal);
+                glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, bg_Metallic);
+                glActiveTexture(GL_TEXTURE6); glBindTexture(GL_TEXTURE_2D, bg_Roughness);
+                break;
+
+            case 4:  case 2: // EngineGLow（引擎发光，无 metallic/roughness 贴图）
+                pbrShader.setBool("useMetallicMap", false);
+                pbrShader.setBool("useRoughnessMap", false);
+                pbrShader.setBool("useEmissiveMap", true);
+                pbrShader.setFloat("metallicValue", 0.0f);
+                pbrShader.setFloat("roughnessValue", 0.4f);
+                pbrShader.setFloat("emissiveStrength", 5.0);
+                glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, eg_Albedo);
+                glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, eg_Normal);
+                break;
             }
 
-            //// 画当前 mesh 的几何
-            //glBindVertexArray(spaceship.meshes[m].VAO);
-            //glDrawElements(GL_TRIANGLES, (GLsizei)spaceship.meshes[m].indices.size(), GL_UNSIGNED_INT, 0);
-            //glBindVertexArray(0);
-            spaceship.meshes[m].Draw(pbrShader);   // ← 用 Draw()
+            spaceship.meshes[m].Draw(pbrShader);
         }
+        //spaceship.Draw(pbrShader);
+        //for (unsigned int m = 0; m < spaceship.meshes.size(); m++)
+        //{
+        //    if (m == 0)  // red（主外壳 / 腹部块）
+        //    {
+        //        pbrShader.setBool("useMetallicMap", true);
+        //        pbrShader.setBool("useRoughnessMap", true);
+        //        pbrShader.setBool("useEmissiveMap", false);
+        //        glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, rd_Albedo);
+        //        glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, rd_Normal);
+        //        glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, rd_Metallic);
+        //        glActiveTexture(GL_TEXTURE6); glBindTexture(GL_TEXTURE_2D, rd_Roughness);
+        //    }
+        //    else if (m == 1)  // grey（机翼 / 尾部小碎块）
+        //    {
+        //        pbrShader.setBool("useMetallicMap", true);
+        //        pbrShader.setBool("useRoughnessMap", true);
+        //        pbrShader.setBool("useEmissiveMap", false);
+        //        glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, gy_Albedo);
+        //        glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, gy_Normal);
+        //        glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, gy_Metallic);
+        //        glActiveTexture(GL_TEXTURE6); glBindTexture(GL_TEXTURE_2D, gy_Roughness);
+        //    }
+        //    else if (m == 3)  // blackglass（座舱玻璃 + 前伸细杆）
+        //    {
+        //        pbrShader.setBool("useMetallicMap", true);
+        //        pbrShader.setBool("useRoughnessMap", true);
+        //        pbrShader.setBool("useEmissiveMap", false);
+        //        glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, bg_Albedo);
+        //        glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, bg_Normal);
+        //        glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, bg_Metallic);
+        //        glActiveTexture(GL_TEXTURE6); glBindTexture(GL_TEXTURE_2D, bg_Roughness);
+        //    }
+        //    else  // m == 2 || 4，EngineGLow（引擎发光，无 metallic/roughness 贴图）
+        //    {
+        //        pbrShader.setBool("useMetallicMap", false);
+        //        pbrShader.setBool("useRoughnessMap", false);
+        //        pbrShader.setBool("useEmissiveMap", true);
+        //        pbrShader.setFloat("metallicValue", 0.0f);
+        //        pbrShader.setFloat("roughnessValue", 0.4f);
+        //        pbrShader.setFloat("emissiveStrength", 5.0);
+        //        glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, eg_Albedo);
+        //        glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, eg_Normal);
+        //    }
+
+        //    spaceship.meshes[m].Draw(pbrShader);
+        //}
 
         // render skybox (render as last to prevent overdraw)
         backgroundShader.use();
@@ -953,4 +1022,4 @@ void renderSphere()
     glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
 }
 
-#endif
+//#endif

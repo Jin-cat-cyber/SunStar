@@ -14,9 +14,11 @@ uniform sampler2D aoMap;
 uniform bool  useMetallicMap;
 uniform bool  useRoughnessMap;
 uniform bool  useAOMap;
+uniform bool  useEmissiveMap;
 uniform float metallicValue;
 uniform float roughnessValue;
 uniform float aoValue;
+uniform float emissiveStrength;
 
 // IBL
 uniform samplerCube irradianceMap;

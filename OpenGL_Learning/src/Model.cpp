@@ -131,6 +131,10 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 	}
 	// 处理材质
 	aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+	aiString matName; material->Get(AI_MATKEY_NAME, matName);
+	std::cout << "=== 材质总数: " << scene->mNumMaterials << " ===" << std::endl;
+	std::cout << "mesh[" << meshes.size() << "] -> 材质索引 " << mesh->mMaterialIndex
+		<< " / 名 " << matName.C_Str() << std::endl;
 	// 我们对着色器中的采样器名称采用一套约定。每个漫反射纹理都应命名为
 	// “texture_diffuseN”，其中 N 是从 1 到 MAX_SAMPLER_NUMBER（最大采样器数量）的连续序号。
 	// 其他类型的纹理也遵循相同规则，具体如下列表所示：
