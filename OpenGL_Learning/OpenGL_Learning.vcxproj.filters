@@ -291,6 +291,12 @@
     <ClCompile Include="src\SpaceShip11.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\ForwardPbr.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Procedural.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -327,6 +333,15 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\MeshTypes.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ForwardPbr.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Procedural.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Globals.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -538,6 +553,8 @@
     <None Include="res\shader\00_SpaceShip\Deferred_Shading2.0\deferred_lighting_ver.shader" />
     <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\planet_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\planet_ver.shader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\texture\container.jpg">

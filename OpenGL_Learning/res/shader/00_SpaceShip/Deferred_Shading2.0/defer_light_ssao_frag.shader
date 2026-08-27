@@ -14,6 +14,11 @@ uniform sampler2D   brdfLUT;
 
 uniform vec3 viewPos;
 
+// 菲涅尔
+uniform vec3  rimColor;
+uniform float rimPower;
+uniform float rimStrength;
+
 
 // --- Point Light ---
 struct PointLight {
@@ -125,6 +130,12 @@ void main()
 
     vec3 color = ambient * ssaoFactor + Lo;
     color += albedo * emission;
+
+    // 菲涅尔边缘光：小行星轮廓
+    vec3 Lsun = normalize(pointLights[0].position - FragPos);
+    float rim = pow(1.0 - max(dot(N, V), 0.0), rimPower);
+    //color += rimColor * rim * rimStrength;
+    color += rimColor * rim * rimStrength * max(dot(N, Lsun), 0.0);
 
     FragColor = vec4(color, 1.0);
 }

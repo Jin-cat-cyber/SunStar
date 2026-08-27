@@ -90,6 +90,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -105,6 +106,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -118,6 +120,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -133,6 +136,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,6 +145,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\ForwardPbr.cpp" />
     <ClCompile Include="src\PBR_6.0.cpp" />
     <ClCompile Include="src\PbrMesh.cpp" />
     <ClCompile Include="src\PbrModel.cpp" />
@@ -154,6 +159,7 @@
     <ClCompile Include="src\PBR_IBL4.0.cpp" />
     <ClCompile Include="src\PBR_IBL_3.0.cpp" />
     <ClCompile Include="src\PBR_test_luzi.cpp" />
+    <ClCompile Include="src\Procedural.cpp" />
     <ClCompile Include="src\Skybox.cpp" />
     <ClCompile Include="src\Debug_Shader.cpp" />
     <ClCompile Include="src\OldVersion\BezierCurve.cpp" />
@@ -235,9 +241,12 @@
     <ClCompile Include="src\Sun.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ForwardPbr.h" />
+    <ClInclude Include="src\Globals.h" />
     <ClInclude Include="src\MeshTypes.h" />
     <ClInclude Include="src\PbrMesh.h" />
     <ClInclude Include="src\PbrModel.h" />
+    <ClInclude Include="src\Procedural.h" />
     <ClInclude Include="src\Skybox.h" />
     <ClInclude Include="src\Debug_Shader.h" />
     <ClInclude Include="src\OldVersion\BezierCurve.h" />
@@ -320,6 +329,8 @@
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_asteroid_ver.shader" />
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_planet_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_planet_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\planet_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\planet_ver.shader" />
     <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_ver.shader" />
     <None Include="res\shader\00_SpaceShip\G_buffer\gBuffer_asteroid_frag.shader" />

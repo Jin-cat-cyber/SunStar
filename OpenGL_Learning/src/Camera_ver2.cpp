@@ -1,31 +1,31 @@
 #include "Camera_ver2.h"
 
-// ´øÓÐÏòÁ¿²ÎÊýµÄ¹¹Ôìº¯Êý
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¹ï¿½ï¿½ìº¯ï¿½ï¿½
 Camera_ver2::Camera_ver2(glm::vec3 position) :Speed(SPEED), Sensitivity(SENSITIVITY), Fov(FOV)
 {
 	Position = position;
-	Orient = glm::quat(1.0f, 0.0f, 0.0f, 0.0f); // µ¥Î»ËÄÔªÊý£º³¯Ïò (0,0,-1)
+	Orient = glm::quat(1.0f, 0.0f, 0.0f, 0.0f); // ï¿½ï¿½Î»ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (0,0,-1)
 	updateCameraVectors();
 }
 
-// ´øÓÐ±êÁ¿²ÎÊýµÄ¹¹Ôìº¯Êý
+// ï¿½ï¿½ï¿½Ð±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¹ï¿½ï¿½ìº¯ï¿½ï¿½
 Camera_ver2::Camera_ver2(float posX, float posY, float posZ) : Speed(SPEED), Sensitivity(SENSITIVITY), Fov(FOV)
 {
 	Position = glm::vec3(posX, posY, posZ);
-	Orient = glm::quat(1.0f, 0.0f, 0.0f, 0.0f); // µ¥Î»ËÄÔªÊý£º³¯Ïò (0,0,-1)
+	Orient = glm::quat(1.0f, 0.0f, 0.0f, 0.0f); // ï¿½ï¿½Î»ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (0,0,-1)
 	updateCameraVectors();
 }
 
-// ÊÓÍ¼¾ØÕó¹¹Ôìº¯Êý
+// ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½ï¿½ìº¯ï¿½ï¿½
 glm::mat4 Camera_ver2::GetViewMatrix()
 {
 	return glm::lookAt(Position, Position + Front, Up);
 }
 
-// ¼üÅÌ¿ØÖÆº¯Êý
+// ï¿½ï¿½ï¿½Ì¿ï¿½ï¿½Æºï¿½ï¿½ï¿½
 void Camera_ver2::ProcessKeyboard(Camera_Movement direction, float deltaTime)
 {
-	float velocity = Speed * deltaTime * 10; // Ë¢ÐÂÂÊ
+	float velocity = Speed * deltaTime * 10; // Ë¢ï¿½ï¿½ï¿½ï¿½
 	if (direction == FORWARD)
 		Position += Front * velocity;
 	if (direction == BACKWARD)
@@ -35,36 +35,36 @@ void Camera_ver2::ProcessKeyboard(Camera_Movement direction, float deltaTime)
 	if (direction == RIGHT)
 		Position += Right * velocity;
 
-	// ÆÕÍ¨FPSÏà»úÌí¼Ó
-	//Position.y = 0.0f; // È¡ÏûYÖáÒÆ¶¯,È·±£Íæ¼ÒÖ»ÄÜÔÚxzÉÏÒÆ¶¯
+	// ï¿½ï¿½Í¨FPSï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	//Position.y = 0.0f; // È¡ï¿½ï¿½Yï¿½ï¿½ï¿½Æ¶ï¿½,È·ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½ï¿½xzï¿½ï¿½ï¿½Æ¶ï¿½
 }
 
-// Êó±êÒÆ¶¯¿ØÖÆº¯Êý£¬ÍêÈ«»ùÓÚËÄÔªÊýÐý×ªÊµÏÖ
+// ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½Æºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½×ªÊµï¿½ï¿½
 void Camera_ver2::ProcessMouseMovement(float xoffset, float yoffset)
 {
 	xoffset *= Sensitivity;
 	yoffset *= Sensitivity;
 
-	// ¼ÆËãµ±Ç°µÄ¸©Ñö½Ç-->»¡¶È
-	float YawAngle = glm::radians(-xoffset); // ¼ÆËãµ±Ç°¸©Ñö½Ç£¨ÒÔ¶ÈÎªµ¥Î»£©
+	// ï¿½ï¿½ï¿½ãµ±Ç°ï¿½Ä¸ï¿½ï¿½ï¿½ï¿½ï¿½-->ï¿½ï¿½ï¿½ï¿½
+	float YawAngle = glm::radians(-xoffset); // ï¿½ï¿½ï¿½ãµ±Ç°ï¿½ï¿½ï¿½ï¿½ï¿½Ç£ï¿½ï¿½Ô¶ï¿½Îªï¿½ï¿½Î»ï¿½ï¿½
 	float PitchAngle = glm::radians(yoffset);
 
-	// ÔöÁ¿ËÄÔªÊý£ºÈÆÏà»úµÄ¾Ö²¿UpÖáÐý×ªyaw
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¾Ö²ï¿½Upï¿½ï¿½ï¿½ï¿½×ªyaw
 	//glm::quat deltaYaw = glm::angleAxis(YawAngle, Up);
-	//glm::quat deltaPitch = glm::angleAxis(PitchAngle, Right); // ÈÆÏà»úµÄ¾Ö²¿RightÖáÐý×ªpitch
+	//glm::quat deltaPitch = glm::angleAxis(PitchAngle, Right); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¾Ö²ï¿½Rightï¿½ï¿½ï¿½ï¿½×ªpitch
 
-	// ÔöÁ¿ËÄÔªÊý£ºÈÆÏà»ú±¾µØÖáÐý×ª£¨ÓÒ³Ë = ±¾µØ¿Õ¼ä£©£¬ÏÈpitchºóyaw£¬
-	// pitchÈÆ±¾µØX(ÓÒÖá)¡¢yawÈÆ±¾µØY(ÉÏÖá)£¬È«²¿ÓÒ³ËÈ·±£Ê¼ÖÕÏà¶ÔÏà»ú×ÔÉíÐý×ª
-	glm::quat deltaYaw = glm::angleAxis(YawAngle, glm::vec3(0.0f, 1.0f, 0.0f)); // ±¾µØYÖá
-	glm::quat deltaPitch = glm::angleAxis(PitchAngle, glm::vec3(1.0f, 0.0f, 0.0f)); // ±¾µØXÖá
-	Orient = Orient * deltaPitch * deltaYaw; // ×¢Òâ³Ë·¨Ë³Ðò£¬ÏÈÓ¦ÓÃpitchÔÙÓ¦ÓÃyaw
-	Orient = glm::normalize(Orient); // ¹éÒ»»¯ËÄÔªÊý£¬±ÜÃâÊýÖµÎó²îµ¼ÖÂÐý×ªÊ§Õæ
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½Ò³ï¿½ = ï¿½ï¿½ï¿½Ø¿Õ¼ä£©ï¿½ï¿½ï¿½ï¿½pitchï¿½ï¿½yawï¿½ï¿½
+	// pitchï¿½Æ±ï¿½ï¿½ï¿½X(ï¿½ï¿½ï¿½ï¿½)ï¿½ï¿½yawï¿½Æ±ï¿½ï¿½ï¿½Y(ï¿½ï¿½ï¿½ï¿½)ï¿½ï¿½È«ï¿½ï¿½ï¿½Ò³ï¿½È·ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ª
+	glm::quat deltaYaw = glm::angleAxis(YawAngle, glm::vec3(0.0f, 1.0f, 0.0f)); // ï¿½ï¿½ï¿½ï¿½Yï¿½ï¿½
+	glm::quat deltaPitch = glm::angleAxis(PitchAngle, glm::vec3(1.0f, 0.0f, 0.0f)); // ï¿½ï¿½ï¿½ï¿½Xï¿½ï¿½
+	Orient = Orient * deltaPitch * deltaYaw; // ×¢ï¿½ï¿½Ë·ï¿½Ë³ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½pitchï¿½ï¿½Ó¦ï¿½ï¿½yaw
+	Orient = glm::normalize(Orient); // ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½îµ¼ï¿½ï¿½ï¿½ï¿½×ªÊ§ï¿½ï¿½
 
-	// ÖØÐÂ¼ÆËã·½ÏòÏòÁ¿
+	// ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ã·½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	updateCameraVectors();
 }
 
-// Êó±ê¹öÂÖ¿ØÖÆº¯Êý
+// ï¿½ï¿½ï¿½ï¿½ï¿½Ö¿ï¿½ï¿½Æºï¿½ï¿½ï¿½
 void Camera_ver2::ProcessMouseScroll(float yoffset)
 {
 	Fov -= (float)yoffset;
@@ -74,7 +74,26 @@ void Camera_ver2::ProcessMouseScroll(float yoffset)
 		Fov = 45.0f;
 }
 
-// Ïà»ú×´Ì¬¸üÐÂº¯Êý
+void Camera_ver2::ProcessKeyboardRotate(float angleDeg, float deltaTime)
+{
+	float angle = glm::radians(angleDeg) * deltaTime * 50.0f;   // ×ªï¿½ï¿½Ïµï¿½ï¿½ï¿½ï¿½ï¿½Éµï¿½
+	glm::quat delta = glm::angleAxis(angle, glm::vec3(0.0f, 1.0f, 0.0f)); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Yï¿½ï¿½
+	Orient = delta * Orient;   // ï¿½ï¿½ï¿½=ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	Orient = glm::normalize(Orient);
+	updateCameraVectors();
+}
+
+// rotate camera around world X axis by keyboard (R/F), pitch
+void Camera_ver2::ProcessKeyboardPitch(float angleDeg, float deltaTime)
+{
+	float pitchAngle = glm::radians(angleDeg) * deltaTime * 50.0f;
+	glm::quat deltaP = glm::angleAxis(pitchAngle, glm::vec3(1.0f, 0.0f, 0.0f)); // world X
+	Orient = Orient * deltaP;   // right-multiply, consistent with mouse pitch
+	Orient = glm::normalize(Orient);
+	updateCameraVectors();
+}
+
+// ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½Âºï¿½ï¿½ï¿½
 void Camera_ver2::updateCameraVectors()
 {
 	Front = glm::normalize(Orient * glm::vec3(0.0f, 0.0f, -1.0f));

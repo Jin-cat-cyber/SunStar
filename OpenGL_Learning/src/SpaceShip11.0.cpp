@@ -4,7 +4,7 @@
 #include <assimp/revision.h>
 #include <random>
 
-
+#include "Globals.h"
 
 #include <iostream>
 #include <string>
@@ -19,10 +19,9 @@
 #include "Shader.h" // 包含自定义着色器类
 #include "Sun.h"
 #include "Skybox.h"
-
+#include "Procedural.h"
 
 //#ifdef SHIP_11_0
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 
@@ -30,18 +29,13 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // �
 void processInput(GLFWwindow* window);  // 输入检查函数
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);  // 鼠标 移动 回调函数
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);   // 鼠标 滚轮 回调函数
-unsigned int loadTexture(char const* path);     // 纹理加载函数
-unsigned int loadCubemap(std::vector<std::string> faces);   // 立方体贴图加载函数
 void setupFramebuffers(int eidth, int height);  //  离屏渲染帧缓冲
 void rebuildFramebuffers(int width, int height);  //  重建离屏渲染帧缓冲
 
-void renderCube();
-void renderQuad();
+
 
 // 星球相关函数
 void RocksModelMatricesInit(unsigned int& amount, Model& rock);
-void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& starIndices,
-    const unsigned int X_SEGMENTS, const unsigned int Y_SEGMENTS, const float PI);
 
 // 阴影相关函数
 void DepthCubeMapInit();
@@ -51,75 +45,17 @@ void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTrans
 void SSAOInit();
 
 
-const unsigned int SCR_WIDTH = 960; // 窗口宽度
-const unsigned int SCR_HEIGHT = 600; // 窗口高度
-int windowwidth = SCR_WIDTH;
-int windowheight = SCR_HEIGHT;
-
-// 摄像机相关
-Camera_ver2 camera(glm::vec3(-40.0f, 10.0f, 200.0f));
-float lastX = SCR_WIDTH / 2.0F;
-float lastY = SCR_HEIGHT / 2.0F;
-
-
-// 按键输入检测
-bool firstMouse = true;
-bool cursorLocked = true;
-bool tabKeyPressed = false;   // 用于检测 TAB 键的上升沿
-bool f10Pressed = false;    // 用于检测 F10 键的上升沿
-bool f11Pressed = false;    // 用于检测 F11 键的上升沿
-bool isFullscreen = false; // 是否全屏
-bool shadows = true;
-bool PCSS = false;
-bool ssaoEnabled = true;
-bool unify = true;
-
-
-bool shadowKeyPressed = false;
-bool PCSSKeyPressed = false;
-bool ssaoKeyPressed = false;
-bool unifyKeyPressed = false;
-
-int savedX = 0, savedY = 0;
-int savedWidth = SCR_WIDTH, savedHeight = SCR_HEIGHT;
-
-
-// 设置帧数渲染时间
-float deltaTime = 0.0f;	// 当前帧与上一帧的时间差
-float lastFrame = 0.0f; // 上一帧的时间
-
-
-// 后处理帧缓冲变量
-unsigned int hdrFBO;
-unsigned int hdrColorBuffer;
-unsigned int pingpongFBO[2];
-unsigned int pingpongColorbuffers[2];
-
-unsigned int hdrDepthRBO;
 // 新增多重采样 FBO 句柄
 unsigned int msFBO = 0;
 unsigned int msColorRBO = 0;
 unsigned int msDepthRBO = 0;
 
-// 新增 G-buffer
-unsigned int gBuffer;
-unsigned int gPosition, gNormal, gAlbedo, gPBR;
-unsigned int gDepthRBO;
+
 
 // 后处理四边形顶点数组对象和顶点缓冲对象
 void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO);
 
-// 阴影相关
-const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
-unsigned int depthCubeMap, depthCubeFBO;
-float shadow_near = 1.0f;
-float shadow_far = 800.0f;    // 你的场景远达 -600，far_plane 要设大！
 
-// SSAO相关
-unsigned int ssaoFBO, ssaoBlurFBO;
-unsigned int ssaoColorBuffer, ssaoColorBufferBlur;
-std::vector<glm::vec3>ssaoKernel;
-unsigned int noiseTexture;
 
 
 int main()
@@ -174,8 +110,8 @@ int main()
         "res/shader/00_SpaceShip/aster_frag3.0.shader");*/
 
     // G-buffer
-    Shader gBufferPlanetShader("res/shader/00_SpaceShip/G_buffer/gBuffer_planet_ver.shader",
-        "res/shader/00_SpaceShip/G_buffer/gBuffer_planet_frag.shader");
+    //Shader gBufferPlanetShader("res/shader/00_SpaceShip/G_buffer/gBuffer_planet_ver.shader",
+    //    "res/shader/00_SpaceShip/G_buffer/gBuffer_planet_frag.shader");
     Shader gBufferAsteroidShader("res/shader/00_SpaceShip/G_buffer/gBuffer_asteroid_ver.shader",
         "res/shader/00_SpaceShip/G_buffer/gBuffer_asteroid_frag.shader");
 
@@ -186,8 +122,11 @@ int main()
     // Spaceship
     Shader spaceshipShader("res/shader/00_SpaceShip/Forward_Shading/spaceship_ver.shader",
         "res/shader/00_SpaceShip/Forward_Shading/spaceship_frag.shader");
+    // 火星
+    Shader MarsShader("res/shader/00_SpaceShip/Forward_Shading/planet_ver.shader",
+        "res/shader/00_SpaceShip/Forward_Shading/planet_frag.shader");
 
-    // IBL 
+    // IBL
     Shader equirectangularToCubemapShader("res/shader/#PBR/IBL3.0/cubemap_ver3.0.shader",
         "res/shader/#PBR/IBL3.0/cubemap_frag3.0.shader");
     Shader irradianceShader("res/shader/#PBR/IBL3.0/cubemap_ver3.0.shader",
@@ -237,7 +176,7 @@ int main()
 
 
     Model rock("res/model/rock/rock.obj");
-    Model planet("res/model/planet/planet.obj");
+    PbrModel planet("res/model/glb_model/planet/mars_2k.glb");
 
     PbrModel spaceship("res/model/glb_model/homeworld_-_vaygr_battlecruiser_1k.glb");
     
@@ -254,6 +193,18 @@ int main()
     spaceshipShader.setInt("aoMap", 7);
     spaceshipShader.setInt("emissionMap", 8);
     spaceshipShader.setInt("depthMap", 9);   // 阴影 cubemap 用 unit9，避开 IBL/材质
+
+    MarsShader.use();
+    MarsShader.setInt("irradianceMap", 0);
+    MarsShader.setInt("prefilterMap", 1);
+    MarsShader.setInt("brdfLUT", 2);
+    MarsShader.setInt("albedoMap", 3);
+    MarsShader.setInt("normalMap", 4);
+    MarsShader.setInt("metallicMap", 5);
+    MarsShader.setInt("roughnessMap", 6);
+    MarsShader.setInt("aoMap", 7);
+    MarsShader.setInt("emissionMap", 8);
+    MarsShader.setInt("depthMap", 9);   // 阴影 cubemap 用 unit9，避开 IBL/材质
     // 着色器初始化（个人风格问题，我更喜欢在循环体中去写
     //brightPassShader.use();
     //brightPassShader.setInt("hdrImage", 0);
@@ -330,7 +281,7 @@ int main()
     glm::vec3 pointSunPositions = glm::vec3(-50.0f, 50.0f, -600.0f);
     //glm::vec3 SunScale = glm::vec3(120.0f);
     glm::vec3 planetPosition = glm::vec3(0.0f, -3.0f, 0.0f);
-    glm::vec3 planetScale = glm::vec3(11.0f);
+    glm::vec3 planetScale = glm::vec3(0.8f);
 
     // 激活着色器纹理单元
     //planetshader.use();
@@ -640,15 +591,15 @@ int main()
         glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), aspect, 0.1f, 2000.0f);
         glm::mat4 view = camera.GetViewMatrix();
 
-        // === 几何 Pass: Planet ===
-        gBufferPlanetShader.use();
-        gBufferPlanetShader.setMat4("projection", projection);
-        gBufferPlanetShader.setMat4("view", view);
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, planetPosition);
-        model = glm::scale(model, planetScale);
-        gBufferPlanetShader.setMat4("model", model);
-        planet.Draw(gBufferPlanetShader);
+        // === 几何 Pass: Planet === (火星改前向渲染，不再进 G-Buffer)
+        //gBufferPlanetShader.use();
+        //gBufferPlanetShader.setMat4("projection", projection);
+        //gBufferPlanetShader.setMat4("view", view);
+        //glm::mat4 model = glm::mat4(1.0f);
+        //model = glm::translate(model, planetPosition);
+        //model = glm::scale(model, planetScale);
+        //gBufferPlanetShader.setMat4("model", model);
+        //planet.Draw(gBufferPlanetShader);
 
         // === 几何 Pass: Asteroids ===
         gBufferAsteroidShader.use();
@@ -744,6 +695,11 @@ int main()
         deferredLightingShader.setBool("PCSS", PCSS);
         deferredLightingShader.setBool("ssaoEnabled", ssaoEnabled);
 
+        // 菲涅尔边缘光（延迟着色 — 小行星等）
+        deferredLightingShader.setVec3("rimColor", glm::vec3(0.6f, 0.55f, 0.5f));  // 暖灰，模拟阳光掠射
+        deferredLightingShader.setFloat("rimPower", 3.0f);
+        deferredLightingShader.setFloat("rimStrength", 0.35f);
+
         // PointLight[0]
         deferredLightingShader.setVec3("pointLights[0].position", pointSunPositions);
         deferredLightingShader.setVec3("pointLights[0].color", glm::vec3(200.0f, 200.0f, 160.0f));
@@ -802,6 +758,49 @@ int main()
         else glDisable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // 恢复默认混合函数
 
+
+        // ====== 火星 forward PBR 渲染 ======
+        glm::mat4 planetModel = glm::mat4(1.0f);
+        planetModel = glm::translate(planetModel, planetPosition);
+        planetModel = glm::scale(planetModel, planetScale);
+
+        MarsShader.use();
+        MarsShader.setMat4("projection", projection);
+        MarsShader.setMat4("view", view);
+        MarsShader.setMat4("model", planetModel);
+        MarsShader.setMat3("normalMatrix", glm::transpose(glm::inverse(glm::mat3(planetModel))));
+        MarsShader.setVec3("camPos", camera.Position);
+
+        MarsShader.setVec3("lightPositions[0]", pointSunPositions);
+        MarsShader.setVec3("lightColors[0]", glm::vec3(200.0f, 200.0f, 160.0f));
+        MarsShader.setFloat("lightConstant", 1.0f);
+        MarsShader.setFloat("lightLinear", 0.0002f);
+        MarsShader.setFloat("lightQuadratic", 0.000005f);
+
+        // 星球材质：非金属、高粗糙
+        MarsShader.setBool("useMetallicMap", true);
+        MarsShader.setBool("useRoughnessMap", true);
+        MarsShader.setFloat("metallicValue", 0.0f);
+        MarsShader.setFloat("roughnessValue", 1.0f);
+        MarsShader.setBool("useEmissiveMap", false);
+        MarsShader.setBool("useAOMap", false);
+        MarsShader.setFloat("aoValue", 1.0f);
+        MarsShader.setBool("shadows", true);
+        MarsShader.setBool("PCSS", false);
+        MarsShader.setFloat("far_plane", shadow_far);
+
+        // 菲涅尔边缘光：星球淡蓝大气轮廓
+        MarsShader.setVec3("rimColor", glm::vec3(0.4f, 0.7f, 1.0f));
+        MarsShader.setFloat("rimPower", 4.0f);
+        MarsShader.setFloat("rimStrength", 0.15f);
+
+        glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+        glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
+        glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
+        glActiveTexture(GL_TEXTURE9); glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+
+        glCullFace(GL_BACK);
+        planet.Draw(MarsShader);
 
         // ====== 飞船 forward PBR 渲染 ======
         glDepthMask(GL_TRUE);
@@ -989,6 +988,17 @@ void processInput(GLFWwindow* window)
         camera.Sensitivity += 0.001f; // 增加鼠标灵敏度
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
         camera.Sensitivity -= 0.001f; // 减少鼠标灵敏度
+
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+        camera.ProcessKeyboardRotate(1.0f, deltaTime);    // 逆时针 (左转)
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+        camera.ProcessKeyboardRotate(-1.0f, deltaTime);   // 顺时针 (右转)
+
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+        camera.ProcessKeyboardPitch(1.0f, deltaTime);     // 抬头
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+        camera.ProcessKeyboardPitch(-1.0f, deltaTime);    // 低头
+
     // 限制范围
     camera.Sensitivity = glm::clamp(camera.Sensitivity, 0.01f, 0.5f);
 
@@ -1121,79 +1131,6 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
-
-// 加载纹理函数
-unsigned int loadTexture(char const* path)
-{
-    unsigned int textureID;
-    glGenTextures(1, &textureID);
-
-    int width, height, nrComponents;
-    unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
-    if (data)
-    {
-        GLenum format;
-        if (nrComponents == 1)
-            format = GL_RED;
-        else if (nrComponents == 3)
-            format = GL_RGB;
-        else if (nrComponents == 4)
-            format = GL_RGBA;
-
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        stbi_image_free(data);
-    }
-    else
-    {
-        std::cout << "Texture failed to load at path: " << path << std::endl;
-        stbi_image_free(data);
-    }
-
-    return textureID;
-}
-
-// 加载立方体贴图
-unsigned int loadCubemap(std::vector<std::string> faces)
-{
-    unsigned int textureID;
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-
-    // Ensure cubemap faces are not flipped vertically
-    stbi_set_flip_vertically_on_load(false);
-
-    int width, height, nrChannels;
-    for (unsigned int i = 0; i < faces.size(); i++)
-    {
-        unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-        if (data)
-        {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-            stbi_image_free(data);
-        }
-        else
-        {
-            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
-            stbi_image_free(data);
-        }
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    }
-
-    return textureID;
-}
-
 
 
 // 帧缓冲对象和纹理
@@ -1445,49 +1382,6 @@ void RocksModelMatricesInit(unsigned int& amount, Model& rock)
     }
 }
 
-// 球体生成程序
-void BallGenerate(std::vector<float>& starVertices, std::vector<unsigned int>& starIndices,
-    const unsigned int X_SEGMENTS, const unsigned int Y_SEGMENTS, const float PI)
-{
-    // 生成球体顶点数据
-    for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
-    {
-        for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
-        {
-            float xSegment = (float)x / (float)X_SEGMENTS;
-            float ySegment = (float)y / (float)Y_SEGMENTS;
-            float xPos = cos(xSegment * 2.0f * PI) * sin(ySegment * PI);
-            float yPos = cos(ySegment * PI);
-            float zPos = sin(xSegment * 2.0f * PI) * sin(ySegment * PI);
-            // 位置
-            starVertices.push_back(xPos);
-            starVertices.push_back(yPos);
-            starVertices.push_back(zPos);
-            // 法线
-            starVertices.push_back(xPos);
-            starVertices.push_back(yPos);
-            starVertices.push_back(zPos);
-            // 纹理坐标
-            starVertices.push_back(xSegment);
-            starVertices.push_back(ySegment);
-        }
-    }
-
-    // 索引生成
-    for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
-    {
-        for (unsigned int x = 0; x < X_SEGMENTS; ++x)
-        {
-            starIndices.push_back(y * (X_SEGMENTS + 1) + x);
-            starIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-            starIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x + 1);
-            starIndices.push_back(y * (X_SEGMENTS + 1) + x);
-            starIndices.push_back((y + 1) * (X_SEGMENTS + 1) + x + 1);
-            starIndices.push_back(y * (X_SEGMENTS + 1) + x + 1);
-        }
-    }
-}
-
 // 帧缓冲四边形初始化
 void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO)
 {
@@ -1558,7 +1452,7 @@ void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTrans
     glCullFace(GL_BACK);
 }
 
-
+// SSAO初始化
 void SSAOInit()
 {
     std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
@@ -1626,108 +1520,6 @@ void SSAOInit()
 
 // renderCube() 渲染一个位于 NDC 中的 1x1 3D 立方体。
 // -----------------------------------------
-unsigned int cubeVAO = 0;
-unsigned int cubeVBO = 0;
-void renderCube()
-{
-    if (cubeVAO == 0)
-    {
-        float vertices[] = {
-            // back face
-            -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-             1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-             1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
-             1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-            -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-            -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
-            // front face
-            -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-             1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
-             1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-             1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-            -1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
-            -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-            // left face
-            -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-            -1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
-            -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-            -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-            -1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-            -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-            // right face
-             1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-             1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-             1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
-             1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-             1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-             1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
-             // bottom face
-             -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-              1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
-              1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-              1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-             -1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-             -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-             // top face
-             -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-              1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-              1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
-              1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-             -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-             -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
-        };
-        glGenVertexArrays(1, &cubeVAO);
-        glGenBuffers(1, &cubeVBO);
-        // 填充缓冲区
-        glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-        // 链接顶点属性
-        glBindVertexArray(cubeVAO);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-    }
 
-    // render Cube
-    glBindVertexArray(cubeVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    glBindVertexArray(0);
-}
-
-// renderQuad() 在 NDC 中渲染一个 1x1 的 XY 四边形。
-// ---------------------------------------------
-unsigned int AquadVAO = 0;
-unsigned int AquadVBO;
-void renderQuad()
-{
-    if (AquadVAO == 0)
-    {
-        float quadVertices[] = {
-            // positions        // texture Coords
-            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-             1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-             1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-        };
-        // 设置 plane VAO
-        glGenVertexArrays(1, &AquadVAO);
-        glGenBuffers(1, &AquadVBO);
-        glBindVertexArray(AquadVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, AquadVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    }
-    glBindVertexArray(AquadVAO);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0);
-}
 
 //#endif
