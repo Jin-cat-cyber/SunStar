@@ -180,7 +180,7 @@
     <ClCompile Include="src\Camera_ver2.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\BezierCurve.cpp">
+    <ClCompile Include="src\OldVersion\BezierCurve.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\Model.cpp">
@@ -279,6 +279,18 @@
     <ClCompile Include="src\PBR_5.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\PbrModel.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PbrMesh.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PBR_6.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip11.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -293,7 +305,7 @@
     <ClInclude Include="src\Camera_ver2.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\BezierCurve.h">
+    <ClInclude Include="src\OldVersion\BezierCurve.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\Model.h">
@@ -306,6 +318,15 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\Skybox.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PbrModel.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PbrMesh.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MeshTypes.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -492,7 +513,6 @@
     <None Include="res\shader\#PBR\IBL3.0\irradiance_frag.shader" />
     <None Include="res\shader\#PBR\IBL3.0\pbr_frag4.0.shader" />
     <None Include="res\shader\#PBR\IBL3.0\pbr_ver4.0.shader" />
-    <None Include="..\..\Cerberus_by_Andrew_Maximov\Cerberus_by_Andrew_Maximov\Cerberus_LP.FBX" />
     <None Include="res\shader\#PBR\IBL3.0\pbr_frag5.0.shader" />
     <None Include="res\shader\#PBR\test\background_frag.shader" />
     <None Include="res\shader\#PBR\test\background_ver.shader" />
@@ -506,6 +526,18 @@
     <None Include="res\shader\#PBR\test\prefilter_frag.shader" />
     <None Include="res\shader\#PBR\test\KullaConty_frag.shader" />
     <None Include="res\shader\#PBR\IBL3.0\pbr_frag5.1.shader" />
+    <None Include="res\shader\#PBR\IBL3.0\#pbr_frag6.0.shader" />
+    <None Include="res\shader\#PBR\IBL3.0\#pbr_ver6.0.shader" />
+    <None Include="res\shader\00_SpaceShip\G_buffer\gBuffer_asteroid_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\G_buffer\gBuffer_asteroid_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\G_buffer\gBuffer_planet_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\G_buffer\gBuffer_planet_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading2.0\defer_light_ssao_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading2.0\deferred_lighting_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading2.0\deferred_lighting_frag_vsm.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading2.0\deferred_lighting_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_ver.shader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\texture\container.jpg">

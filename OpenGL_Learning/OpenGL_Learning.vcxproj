@@ -141,6 +141,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\PBR_6.0.cpp" />
+    <ClCompile Include="src\PbrMesh.cpp" />
+    <ClCompile Include="src\PbrModel.cpp" />
     <ClCompile Include="src\OldVersion\05_AdvancedLighting\Bloom.cpp" />
     <ClCompile Include="src\DeferredShading.cpp" />
     <ClCompile Include="src\PBR.cpp" />
@@ -153,7 +156,7 @@
     <ClCompile Include="src\PBR_test_luzi.cpp" />
     <ClCompile Include="src\Skybox.cpp" />
     <ClCompile Include="src\Debug_Shader.cpp" />
-    <ClCompile Include="src\BezierCurve.cpp" />
+    <ClCompile Include="src\OldVersion\BezierCurve.cpp" />
     <ClCompile Include="src\Camera_ver2.cpp" />
     <ClCompile Include="src\OldVersion\05_AdvancedLighting\Billing_Phong\AdvancedLighting.cpp" />
     <ClCompile Include="src\OldVersion\05_AdvancedLighting\Billing_Phong\AdvancedLighting2.0.cpp" />
@@ -178,6 +181,7 @@
     <ClCompile Include="src\OldVersion\05_AdvancedLighting\NormalMap\NormalMap_Model2.0.cpp" />
     <ClCompile Include="src\Shadow4.0.cpp" />
     <ClCompile Include="src\SpaceShip10.0.cpp" />
+    <ClCompile Include="src\SpaceShip11.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip5.0_my_method.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip5.0_ds_method.cpp" />
     <ClCompile Include="src\SkyBox\cubeMap_SkyBox.cpp" />
@@ -231,9 +235,12 @@
     <ClCompile Include="src\Sun.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\MeshTypes.h" />
+    <ClInclude Include="src\PbrMesh.h" />
+    <ClInclude Include="src\PbrModel.h" />
     <ClInclude Include="src\Skybox.h" />
     <ClInclude Include="src\Debug_Shader.h" />
-    <ClInclude Include="src\BezierCurve.h" />
+    <ClInclude Include="src\OldVersion\BezierCurve.h" />
     <ClInclude Include="src\Camera_ver2.h" />
     <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\Camera.h" />
@@ -242,7 +249,6 @@
     <ClInclude Include="src\Sun.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Cerberus_by_Andrew_Maximov\Cerberus_by_Andrew_Maximov\Cerberus_LP.FBX" />
     <None Include="res\model\backpack\backpack.mtl" />
     <None Include="res\model\planet\planet.mtl" />
     <None Include="res\model\rock\rock.mtl" />
@@ -252,6 +258,8 @@
     <None Include="res\shader\#Deferred\Deferred_shading_ver.shader" />
     <None Include="res\shader\#Deferred\G-Buffer_frag.shader" />
     <None Include="res\shader\#Deferred\G-Buffer_ver.shader" />
+    <None Include="res\shader\#PBR\IBL3.0\#pbr_frag6.0.shader" />
+    <None Include="res\shader\#PBR\IBL3.0\#pbr_ver6.0.shader" />
     <None Include="res\shader\#PBR\IBL3.0\pbr_frag5.1.shader" />
     <None Include="res\shader\#PBR\ver1.0\background_frag.shader" />
     <None Include="res\shader\#PBR\ver1.0\background_ver.shader" />
@@ -295,6 +303,10 @@
     <None Include="res\shader\#PBR\test\prefilter_frag.shader" />
     <None Include="res\shader\00_SpaceShip\aster_frag3.0.shader" />
     <None Include="res\shader\00_SpaceShip\aster_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading2.0\deferred_lighting_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading2.0\deferred_lighting_frag_vsm.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading2.0\deferred_lighting_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading2.0\defer_light_ssao_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\deferred_lighting_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\deferred_lighting_frag_vsm.shader" />
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\defer_light_ssao_frag.shader" />
@@ -308,6 +320,12 @@
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_asteroid_ver.shader" />
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_planet_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_planet_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\G_buffer\gBuffer_asteroid_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\G_buffer\gBuffer_asteroid_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\G_buffer\gBuffer_planet_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\G_buffer\gBuffer_planet_ver.shader" />
     <None Include="res\shader\00_SpaceShip\instancingFRAG3.0.shader" />
     <None Include="res\shader\00_SpaceShip\instancingVER.shader" />
     <None Include="res\shader\00_SpaceShip\SSAO\defer_light_frag.shader" />

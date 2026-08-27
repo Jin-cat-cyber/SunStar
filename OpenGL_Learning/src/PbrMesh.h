@@ -38,7 +38,7 @@
 //	std::string path;
 //};
 
-class Mesh
+class PbrMesh
 {
 public:
 	// 网格数据
@@ -48,7 +48,7 @@ public:
 	unsigned int VAO;
 
 	// 构造函数
-	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
+	PbrMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
 
 	// 绘制网格
 	void Draw(Shader& shader);
