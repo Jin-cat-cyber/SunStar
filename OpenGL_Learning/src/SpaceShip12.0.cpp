@@ -21,7 +21,7 @@
 #include "Skybox.h"
 #include "Procedural.h"
 
-#ifdef SHIP_11_0
+//#ifdef SHIP_11_0
 #include <stb_image.h>
 
 
@@ -109,9 +109,9 @@ int main()
     Shader asteroidShader("res/shader/00_SpaceShip/aster_ver.shader",
         "res/shader/00_SpaceShip/aster_frag3.0.shader");*/
 
-    // G-buffer
-    //Shader gBufferPlanetShader("res/shader/00_SpaceShip/G_buffer/gBuffer_planet_ver.shader",
-    //    "res/shader/00_SpaceShip/G_buffer/gBuffer_planet_frag.shader");
+        // G-buffer
+        //Shader gBufferPlanetShader("res/shader/00_SpaceShip/G_buffer/gBuffer_planet_ver.shader",
+        //    "res/shader/00_SpaceShip/G_buffer/gBuffer_planet_frag.shader");
     Shader gBufferAsteroidShader("res/shader/00_SpaceShip/G_buffer/gBuffer_asteroid_ver.shader",
         "res/shader/00_SpaceShip/G_buffer/gBuffer_asteroid_frag.shader");
 
@@ -164,7 +164,7 @@ int main()
         "res/shader/BloomShaders/blur_frag.shader");
     Shader compositeShader("res/shader/BloomShaders/composite_ver.shader",
         "res/shader/BloomShaders/composite_frag2.0.shader");
-    
+
     // LensFlare
     Shader lensFlareShader("res/shader/LensFlareShader/lens_flare_ver.shader",
         "res/shader/LensFlareShader/lens_flare_frag.shader");
@@ -179,7 +179,7 @@ int main()
     PbrModel planet("res/model/glb_model/planet/mars_2k.glb");
 
     PbrModel spaceship("res/model/glb_model/homeworld_-_vaygr_battlecruiser_1k.glb");
-    
+
 
 
     spaceshipShader.use();
@@ -986,14 +986,14 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
         camera.Sensitivity -= 0.001f; // 减少鼠标灵敏度
 
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS)
         camera.ProcessKeyboardRotate(1.0f, deltaTime);    // 逆时针 (左转)
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_KP_6) == GLFW_PRESS)
         camera.ProcessKeyboardRotate(-1.0f, deltaTime);   // 顺时针 (右转)
 
-    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS)
         camera.ProcessKeyboardPitch(1.0f, deltaTime);     // 抬头
-    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS)
         camera.ProcessKeyboardPitch(-1.0f, deltaTime);    // 低头
 
     // 限制范围
@@ -1280,7 +1280,7 @@ void rebuildFramebuffers(int width, int height)
     if (gAlbedo) { glDeleteTextures(1, &gAlbedo);     gAlbedo = 0; }
     if (gDepthRBO) { glDeleteRenderbuffers(1, &gDepthRBO);  gDepthRBO = 0; }
     if (gPBR) { glDeleteTextures(1, &gPBR);          gPBR = 0; }
-    
+
     // 删除 SSAO 资源
     if (ssaoFBO) { glDeleteFramebuffers(1, &ssaoFBO); ssaoFBO = 0; }
     if (ssaoBlurFBO) { glDeleteFramebuffers(1, &ssaoBlurFBO); ssaoBlurFBO = 0; }
@@ -1516,6 +1516,4 @@ void SSAOInit()
 }
 
 
-
-
-#endif
+//#endif

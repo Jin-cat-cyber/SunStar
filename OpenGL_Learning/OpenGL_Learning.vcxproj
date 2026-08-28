@@ -188,6 +188,7 @@
     <ClCompile Include="src\Shadow4.0.cpp" />
     <ClCompile Include="src\SpaceShip10.0.cpp" />
     <ClCompile Include="src\SpaceShip11.0.cpp" />
+    <ClCompile Include="src\SpaceShip12.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip5.0_my_method.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip5.0_ds_method.cpp" />
     <ClCompile Include="src\SkyBox\cubeMap_SkyBox.cpp" />

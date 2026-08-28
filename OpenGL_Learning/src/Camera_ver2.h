@@ -11,50 +11,49 @@ enum Camera_Movement {
 	RIGHT,
 };
 
-const float SPEED = 2.5f;			// ï¿½Ù¶ï¿½
-const float SENSITIVITY = 0.07f;	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-const float FOV = 45.0f;
+const float SPEED = 2.5f;			// ËÙ¶È
+const float SENSITIVITY = 0.07f;	// Êó±êÁéÃô¶È
+const float FOV = 45.0f;			// ÊÓ³¡½Ç
 
 class Camera_ver2
 {
 public:
-	glm::vec3 Position; // Î»ï¿½ï¿½
-	glm::vec3 Front = glm::vec3(0.0f, 0.0f, -1.0f);    // Ç°ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½ï¿½Ö¸ï¿½ï¿½ -Z
-	glm::vec3 Up = glm::vec3(0.0f, 1.0f, 0.0f);       // ï¿½Ï·ï¿½ï¿½ï¿½
-	glm::vec3 Right = glm::vec3(1.0f, 0.0f, 0.0f);    // ï¿½Ò·ï¿½ï¿½ï¿½
-	glm::vec3 WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½
+	glm::vec3 Position; // Î»ÖÃ
+	glm::vec3 Front = glm::vec3(0.0f, 0.0f, -1.0f);    // Ç°Ïò£¬Ä¬ÈÏÎª -Z
+	glm::vec3 Up = glm::vec3(0.0f, 1.0f, 0.0f);       // ÏòÉÏ·½Ïò
+	glm::vec3 Right = glm::vec3(1.0f, 0.0f, 0.0f);    // ÏòÓÒ·½Ïò
+	glm::vec3 WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);  // ÊÀ½ç×ø±êÏµÖĞµÄÉÏ·½Ïò
 
-	glm::quat Orient;	// ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½×ª
-	float Speed = 2.5f; // ï¿½Æ¶ï¿½ï¿½Ù¶ï¿½
-	float Sensitivity = 0.07f; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-	float Fov = 45.0f; // ï¿½ï¿½Ò°
+	glm::quat Orient;	// Ê¹ÓÃËÄÔªÊı±íÊ¾Ğı×ª
+	float Speed = 2.5f; // ÒÆ¶¯ËÙ¶È
+	float Sensitivity = 0.07f; // Êó±êÁéÃô¶È
+	float Fov = 45.0f; // ÊÓ³¡½Ç
 
-	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ìº¯ï¿½ï¿½
-	//  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// ¹¹Ôìº¯Êı£º½ÓÊÜÎ»ÖÃÏòÁ¿£¬´øÄ¬ÈÏÎ»ÖÃ
 	Camera_ver2(glm::vec3 position = glm::vec3(0.0f, 0.0f, 3.0f));
-	//  ï¿½ï¿½ï¿½Ğ±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	// ¹¹Ôìº¯Êı£º½ÓÊÜ x, y, z ·ÖÁ¿
 	Camera_ver2(float posX, float posY, float posZ);
 
-	// ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½ï¿½ìº¯ï¿½ï¿½
+	// ·µ»ØÊÓÍ¼¾ØÕó
 	glm::mat4 GetViewMatrix();
 
-	// ï¿½ï¿½ï¿½Ì¿ï¿½ï¿½Æºï¿½ï¿½ï¿½
+	// ¼üÅÌ¿ØÖÆ
 	void ProcessKeyboard(Camera_Movement direction, float deltaTime);
 
-	// ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½Æºï¿½ï¿½ï¿½
+	// Êó±êÒÆ¶¯¿ØÖÆ
 	void ProcessMouseMovement(float xoffset, float yoffset);
 
-	// ï¿½ï¿½ï¿½ï¿½ï¿½Ö¿ï¿½ï¿½Æºï¿½ï¿½ï¿½
+	// Êó±ê¹öÂÖ¿ØÖÆ
 	void ProcessMouseScroll(float yoffset);
 
-	// ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½
-	// rotate camera around world Y axis by keyboard (Q/E), angleDeg signed, dt for smoothness
+	// ¼üÅÌĞı×ª
+	// Í¨¹ı¼üÅÌÈÆÊÀ½ç Y ÖáĞı×ªÏà»ú£¨Q/E£©£¬angleDeg Îª´ø·ûºÅ½Ç¶È£¬deltaTime ÓÃÓÚÆ½»¬
 	void ProcessKeyboardRotate(float angleDeg, float deltaTime);
-	// rotate camera around world X axis by keyboard (R/F), pitch, angleDeg signed
+	// ¼üÅÌ¸©Ñö
+	// Í¨¹ı¼üÅÌÈÆÊÀ½ç X ÖáĞı×ªÏà»ú£¨R/F£©£¬angleDeg Îª´ø·ûºÅ½Ç¶È
 	void ProcessKeyboardPitch(float angleDeg, float deltaTime);
 
 private:
-	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Âºï¿½Ä£ï¿½Å·ï¿½ï¿½ï¿½Ç¼ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½
+	// ¸ù¾İËÄÔªÊıÖØĞÂ¼ÆËã Front/Up/Right ÏòÁ¿
 	void updateCameraVectors();
 };
-
