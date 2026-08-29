@@ -3,6 +3,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "camera_ver2.h"
+#include "Spaceship.h"
 
 // ===== 常量 =====
 inline constexpr unsigned int SCR_WIDTH = 960;
@@ -53,7 +54,7 @@ inline float lastFrame = 0.0f;
 inline unsigned int hdrFBO = 0, hdrColorBuffer = 0, hdrDepthRBO = 0;
 inline unsigned int pingpongFBO[2] = { 0, 0 };
 inline unsigned int pingpongColorbuffers[2] = { 0, 0 };
-// G-buffer
+	/*G - buffer*/ 
 inline unsigned int gBuffer = 0;
 inline unsigned int	gPosition = 0;
 inline unsigned int	gNormal = 0;
@@ -71,3 +72,14 @@ inline unsigned int ssaoFBO = 0, ssaoBlurFBO = 0;
 inline unsigned int ssaoColorBuffer = 0, ssaoColorBufferBlur = 0;
 inline std::vector<glm::vec3> ssaoKernel;
 inline unsigned int noiseTexture = 0;
+
+// ===== ship / view mode =====
+inline Spaceship ship;
+inline ViewMode currentMode = MODE_FREE;
+
+// ===== third-person follow params =====
+inline float followDistance = 80.0f;	// camera distance behind the ship
+inline float followHeight = 25.0f;		// camera height above the ship
+inline float followSmooth = 2.0f;		// follow damping (higher = snappier, lower = softer)，10质感偏硬，换5有滞后感
+inline float orbitYaw = 0.0f;    // mode-3 look-around: horizontal orbit angle
+inline float orbitPitch = 0.0f;  // mode-3 look-around: vertical orbit angle

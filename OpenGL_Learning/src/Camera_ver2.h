@@ -52,6 +52,8 @@ public:
 	// 键盘俯仰
 	// 通过键盘绕世界 X 轴旋转相机（R/F），angleDeg 为带符号角度
 	void ProcessKeyboardPitch(float angleDeg, float deltaTime);
+	// rotate camera around its view axis (-Z) by keyboard (KP 7/9), roll, angleDeg signed
+	void ProcessKeyboardRoll(float angleDeg, float deltaTime);
 
 private:
 	// 根据四元数重新计算 Front/Up/Right 向量

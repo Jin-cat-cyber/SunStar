@@ -347,6 +347,12 @@
     <ClInclude Include="src\Globals.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="src\Spaceship_last1.0.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Spaceship.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="res\shader\TheFourShader\TheFirstShader_Basic\vertexShader.shader" />

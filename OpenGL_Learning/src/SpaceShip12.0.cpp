@@ -20,8 +20,9 @@
 #include "Sun.h"
 #include "Skybox.h"
 #include "Procedural.h"
+#include "Spaceship.h"
 
-//#ifdef SHIP_11_0
+//#ifdef SHIP_12_0
 #include <stb_image.h>
 
 
@@ -277,12 +278,6 @@ int main()
 
 
 
-    // 设置恒星，星球位置和大小
-    glm::vec3 pointSunPositions = glm::vec3(-50.0f, 50.0f, -600.0f);
-    //glm::vec3 SunScale = glm::vec3(120.0f);
-    glm::vec3 planetPosition = glm::vec3(0.0f, -3.0f, 0.0f);
-    glm::vec3 planetScale = glm::vec3(0.8f);
-
 
 
     // pbr: setup framebuffer
@@ -500,11 +495,28 @@ int main()
     glViewport(0, 0, scrWidth, scrHeight);
 
 
-    glm::vec3 spaceshipPosition = glm::vec3(-100.0f, 40.0f, 60.0f);
+
+    // 设置恒星，星球位置和大小
+    glm::vec3 pointSunPositions = glm::vec3(-50.0f, 50.0f, -600.0f);
+    //glm::vec3 SunScale = glm::vec3(120.0f);
+    glm::vec3 planetPosition = glm::vec3(0.0f, -3.0f, 0.0f);
+    glm::vec3 planetScale = glm::vec3(0.8f);
+    // 飞船位置
+    //Spaceship ship;
+
+
 
     // 主循环
     while (!glfwWindowShouldClose(window))
     {
+        // 计算帧时间
+        float currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+        // 输入管理
+        processInput(window);
+
+        ship.Update(deltaTime);
 
 
 
@@ -546,12 +558,7 @@ int main()
 
 
         // --- 飞船（向深度 Cubemap 投影）---
-        glm::mat4 spaceshipModel = glm::mat4(1.0f);
-        spaceshipModel = glm::translate(spaceshipModel, spaceshipPosition);
-        spaceshipModel = glm::rotate(spaceshipModel, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        spaceshipModel = glm::rotate(spaceshipModel, glm::radians(15.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        spaceshipModel = glm::rotate(spaceshipModel, glm::radians(185.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        spaceshipModel = glm::scale(spaceshipModel, glm::vec3(0.0005f));
+        glm::mat4 spaceshipModel = ship.GetModelMatrix();
         simpleDepthShader.setBool("instanced", false);
         simpleDepthShader.setMat4("model", spaceshipModel);
         spaceship.Draw(simpleDepthShader);
@@ -562,16 +569,9 @@ int main()
         // ====== 阴影 Pass 结束 ======
 
 
+
+        // ====== 几何pass开头
         glViewport(0, 0, windowwidth, windowheight);
-
-
-        // 计算帧时间
-        float currentFrame = static_cast<float>(glfwGetTime());
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-
-        // 输入管理
-        processInput(window);
         // 渲染
         // ------
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -580,13 +580,34 @@ int main()
         glViewport(0, 0, windowwidth, windowheight);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
+        // 模式3：相机跟随飞船（后方偏上，看向飞船）
+        if (currentMode == MODE_FOLLOW) {
+            glm::vec3 fwd = ship.Forward();
+            glm::vec3 target = ship.position - fwd * followDistance + glm::vec3(0.0f, followHeight, 0.0f);
+           
+            float t = glm::clamp(followSmooth * deltaTime, 0.0f, 1.0f);
+            camera.Position = glm::mix(camera.Position, target, t);    // 平滑逼近，不再瞬移
+
+            // look at ship, plus orbit look-around offset
+            glm::vec3 toShip = glm::normalize(ship.position - camera.Position);
+            glm::quat orbitRot = glm::angleAxis(glm::radians(orbitYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
+                                 glm::angleAxis(glm::radians(orbitPitch), glm::vec3(1.0f, 0.0f, 0.0f));
+
+            camera.Front = orbitRot * toShip;
+            camera.Right = glm::normalize(glm::cross(camera.Front, glm::vec3(0.0f, 1.0f, 0.0f)));
+            camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
+        }
+       
         // 配置变换矩阵
         int winWidth, winHeight;
         glfwGetFramebufferSize(window, &winWidth, &winHeight);
         float aspect = winWidth / (float)winHeight;
         //glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 2000.0f);
+ 
         glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), aspect, 0.1f, 2000.0f);
         glm::mat4 view = camera.GetViewMatrix();
+
 
         // === 几何 Pass: Planet === (火星改前向渲染，不再进 G-Buffer)
         //gBufferPlanetShader.use();
@@ -972,29 +993,91 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.ProcessKeyboard(FORWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.ProcessKeyboard(BACKWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.ProcessKeyboard(LEFT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.ProcessKeyboard(RIGHT, deltaTime);
+    // 模式切换：数字行 1/2/3
+    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+        currentMode = MODE_FREE;
+    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+        currentMode = MODE_REMOTE;
+    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+        currentMode = MODE_FOLLOW;
 
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        camera.Sensitivity += 0.001f; // 增加鼠标灵敏度
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        camera.Sensitivity -= 0.001f; // 减少鼠标灵敏度
+    // 3种模式
+    if (currentMode == MODE_FREE) {
+        // mode 1: WASD moves the camera
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            camera.ProcessKeyboard(FORWARD, deltaTime);
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+            camera.ProcessKeyboard(BACKWARD, deltaTime);
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+            camera.ProcessKeyboard(LEFT, deltaTime);
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+            camera.ProcessKeyboard(RIGHT, deltaTime);
+    }
+    else {
+        // mode 2/3: set target speeds and target angular velocities
+        ship.targetSpeed = 0.0f;
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            ship.targetSpeed = ship.forwardMax;
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+            ship.targetSpeed = -ship.backwardMax;
 
-    if (glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS)
-        camera.ProcessKeyboardRotate(1.0f, deltaTime);    // 逆时针 (左转)
-    if (glfwGetKey(window, GLFW_KEY_KP_6) == GLFW_PRESS)
-        camera.ProcessKeyboardRotate(-1.0f, deltaTime);   // 顺时针 (右转)
+        ship.targetVerticalSpeed = 0.0f;
+        if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+            ship.targetVerticalSpeed = ship.upMax;
+        if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+            ship.targetVerticalSpeed = -ship.downMax;
 
-    if (glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS)
-        camera.ProcessKeyboardPitch(1.0f, deltaTime);     // 抬头
-    if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS)
-        camera.ProcessKeyboardPitch(-1.0f, deltaTime);    // 低头
+        ship.targetYawAV = 0.0f;
+        ship.targetPitchAV = 0.0f;
+        ship.targetRollAV = 0.0f;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+            ship.targetYawAV = ship.turnRate;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+            ship.targetYawAV = -ship.turnRate;
+        if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+            ship.targetPitchAV = ship.turnRate;
+        if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+            ship.targetPitchAV = -ship.turnRate;
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+            ship.targetRollAV = ship.turnRate;
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+            ship.targetRollAV = -ship.turnRate;
+    }
+
+
+
+    // 相机旋转
+    if (currentMode == MODE_FOLLOW) {
+        // mode 3: keypad orbits the camera around the ship
+        if (glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS)
+            orbitYaw += 50.0f * deltaTime;
+        if (glfwGetKey(window, GLFW_KEY_KP_6) == GLFW_PRESS)
+            orbitYaw -= 50.0f * deltaTime;
+        if (glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS)
+            orbitPitch += 50.0f * deltaTime;
+        if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS)
+            orbitPitch -= 50.0f * deltaTime;
+    }
+    else
+    {
+        if (glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS)
+            camera.ProcessKeyboardRotate(1.0f, deltaTime);    // 左转
+        if (glfwGetKey(window, GLFW_KEY_KP_6) == GLFW_PRESS)
+            camera.ProcessKeyboardRotate(-1.0f, deltaTime);   // 右转
+
+        if (glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS)
+            camera.ProcessKeyboardPitch(1.0f, deltaTime);     // 抬头
+        if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS)
+            camera.ProcessKeyboardPitch(-1.0f, deltaTime);    // 低头
+
+        if (glfwGetKey(window, GLFW_KEY_KP_7) == GLFW_PRESS)
+            camera.ProcessKeyboardRoll(1.0f, deltaTime);  // 顺时针
+        if (glfwGetKey(window, GLFW_KEY_KP_9) == GLFW_PRESS)
+            camera.ProcessKeyboardRoll(-1.0f, deltaTime);   // 逆时针
+
+    }
+    
+
 
     // 限制范围
     camera.Sensitivity = glm::clamp(camera.Sensitivity, 0.01f, 0.5f);
@@ -1054,8 +1137,6 @@ void processInput(GLFWwindow* window)
         f11Pressed = false;
 
 
-    //bool shadowKeyPressed = false;
-    //bool PCSSKeyPressed = false;
     // Shadow
     if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS && !shadowKeyPressed)
     {
@@ -1129,11 +1210,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
 
-
 // 帧缓冲对象和纹理
-//unsigned int hdrFBO, blurFBO1, blurFBO2;
-//unsigned int hdrColorBuffer, blurColorBuffer1, blurColorBuffer2;
-//unsigned int hdrDepthRBO;
 void setupFramebuffers(int width, int height)
 {
     const int samples = 4; // 多重采样样本数,与 glfwWindowHint(GLFW_SAMPLES, 4) 保持一致

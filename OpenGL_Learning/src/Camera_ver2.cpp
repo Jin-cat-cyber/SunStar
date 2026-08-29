@@ -74,6 +74,7 @@ void Camera_ver2::ProcessMouseScroll(float yoffset)
 		Fov = 45.0f;
 }
 
+// 通过键盘绕世界 Y 轴旋转相机（KP_4/6），用于俯仰
 void Camera_ver2::ProcessKeyboardRotate(float angleDeg, float deltaTime)
 {
 	float angle = glm::radians(angleDeg) * deltaTime * 50.0f;   // 旋转速度因子，可调整
@@ -83,12 +84,22 @@ void Camera_ver2::ProcessKeyboardRotate(float angleDeg, float deltaTime)
 	updateCameraVectors();
 }
 
-// 通过键盘绕世界 X 轴旋转相机（R/F），用于俯仰
+// 通过键盘绕世界 X 轴旋转相机（KP_8/2），用于俯仰
 void Camera_ver2::ProcessKeyboardPitch(float angleDeg, float deltaTime)
 {
 	float pitchAngle = glm::radians(angleDeg) * deltaTime * 50.0f;
 	glm::quat deltaP = glm::angleAxis(pitchAngle, glm::vec3(1.0f, 0.0f, 0.0f)); // 世界 X 轴
 	Orient = Orient * deltaP;   // 右乘，与鼠标俯仰保持一致
+	Orient = glm::normalize(Orient);
+	updateCameraVectors();
+}
+
+// 通过键盘绕世界 Z 轴旋转相机（KP_7/9），用于俯仰
+void Camera_ver2::ProcessKeyboardRoll(float angleDeg, float deltaTime)
+{
+	float rollAngle = glm::radians(angleDeg) * deltaTime * 50.0f;
+	glm::quat deltaR = glm::angleAxis(rollAngle, glm::vec3(0.0f, 0.0f, 1.0f)); // local -Z (view dir)
+	Orient = Orient * deltaR;   // right-multiply = local view axis
 	Orient = glm::normalize(Orient);
 	updateCameraVectors();
 }

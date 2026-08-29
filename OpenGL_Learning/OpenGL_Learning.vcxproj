@@ -256,6 +256,8 @@
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\Model.h" />
     <ClInclude Include="src\Shader.h" />
+    <ClInclude Include="src\Spaceship.h" />
+    <ClInclude Include="src\Spaceship_last1.0.h" />
     <ClInclude Include="src\Sun.h" />
   </ItemGroup>
   <ItemGroup>
