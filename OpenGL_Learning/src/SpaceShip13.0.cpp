@@ -22,7 +22,7 @@
 #include "Procedural.h"
 #include "Spaceship.h"
 
-//#ifdef SHIP_12_0
+#ifdef SHIP_13_FAIL_0
 #include <stb_image.h>
 
 
@@ -171,9 +171,9 @@ int main()
         "res/shader/LensFlareShader/lens_flare_frag.shader");
 
     // Shadow
-    Shader simpleDepthShader("res/shader/00_SpaceShip/depth_point/depth_point_ver2.2.shader",
-        "res/shader/00_SpaceShip/depth_point/depth_point_frag.shader",
-        "res/shader/00_SpaceShip/depth_point/depth_point_geo.shader");
+    Shader simpleDepthShader("res/shader/00_SpaceShip/depth_Point2.0/depth_point_ver2.2.shader",
+        "res/shader/00_SpaceShip/depth_Point2.0/depth_point_frag.shader",
+        "res/shader/00_SpaceShip/depth_Point2.0/depth_point_geo.shader");
 
 
     Model rock("res/model/rock/rock.obj");
@@ -568,6 +568,9 @@ int main()
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glCullFace(GL_BACK);
+
+        //glBindTexture(GL_TEXTURE_CUBE_MAP, shadowColorMap);
+        //glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
         // ====== 阴影 Pass 结束 ======
 
 
@@ -587,26 +590,26 @@ int main()
         if (currentMode == MODE_FOLLOW) {
             glm::vec3 fwd = ship.Forward();
             glm::vec3 target = ship.position - fwd * followDistance + glm::vec3(0.0f, followHeight, 0.0f);
-           
+
             float t = glm::clamp(followSmooth * deltaTime, 0.0f, 1.0f);
             camera.Position = glm::mix(camera.Position, target, t);    // 平滑逼近，不再瞬移
 
             // look at ship, plus orbit look-around offset
             glm::vec3 toShip = glm::normalize(ship.position - camera.Position);
             glm::quat orbitRot = glm::angleAxis(glm::radians(orbitYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
-                                 glm::angleAxis(glm::radians(orbitPitch), glm::vec3(1.0f, 0.0f, 0.0f));
+                glm::angleAxis(glm::radians(orbitPitch), glm::vec3(1.0f, 0.0f, 0.0f));
 
             camera.Front = orbitRot * toShip;
             camera.Right = glm::normalize(glm::cross(camera.Front, glm::vec3(0.0f, 1.0f, 0.0f)));
             camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
         }
-       
+
         // 配置变换矩阵
         int winWidth, winHeight;
         glfwGetFramebufferSize(window, &winWidth, &winHeight);
         float aspect = winWidth / (float)winHeight;
         //glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 2000.0f);
- 
+
         glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), aspect, 0.1f, 2000.0f);
         glm::mat4 view = camera.GetViewMatrix();
 
@@ -693,6 +696,7 @@ int main()
         deferredLightingShader.setInt("gPBR", 3);
         glActiveTexture(GL_TEXTURE4);
         glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+        //glBindTexture(GL_TEXTURE_CUBE_MAP, shadowColorMap);
         deferredLightingShader.setInt("depthMap", 4);
         glActiveTexture(GL_TEXTURE5);
         glBindTexture(GL_TEXTURE_2D, ssaoColorBufferBlur);
@@ -818,6 +822,8 @@ int main()
         glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
         glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
         glActiveTexture(GL_TEXTURE9); glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+        //glActiveTexture(GL_TEXTURE9); glBindTexture(GL_TEXTURE_CUBE_MAP, shadowColorMap);
+
 
         glCullFace(GL_BACK);
         planet.Draw(MarsShader);
@@ -859,6 +865,7 @@ int main()
         glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
         glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
         glActiveTexture(GL_TEXTURE9); glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+        //glActiveTexture(GL_TEXTURE9); glBindTexture(GL_TEXTURE_CUBE_MAP, shadowColorMap);
 
         glCullFace(GL_BACK);
         spaceship.Draw(spaceshipShader);
@@ -1078,7 +1085,7 @@ void processInput(GLFWwindow* window)
             camera.ProcessKeyboardRoll(-1.0f, deltaTime);   // 逆时针
 
     }
-    
+
 
 
     // 限制范围
@@ -1498,11 +1505,32 @@ void DepthCubeMapInit()
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);    
+    
+    // 颜色 cubemap （VSM存 z, z^2)
+    glGenTextures(1, &shadowColorMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, shadowColorMap);
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RG32F,
+            SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_RG, GL_FLOAT, NULL);
+    }
+    //glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     glBindFramebuffer(GL_FRAMEBUFFER, depthCubeFBO);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubeMap, 0);
-    glDrawBuffer(GL_NONE);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadowColorMap, 0);  // 颜色附件
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubeMap, 0);     // 深度附件
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
     glReadBuffer(GL_NONE);
+
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -1595,4 +1623,4 @@ void SSAOInit()
 }
 
 
-//#endif
+#endif

@@ -48,6 +48,8 @@ struct Spaceship
     float angularAccel = 20.0f;  // 角加速度（度/秒^2）
 
 
+    // ===== 函数区 =====
+
     // 机头在世界空间的方向
     glm::vec3 Forward() const { return heading * glm::vec3(0.0f, -1.0f, 0.0f); }
     // 局部上方向在世界空间的表示

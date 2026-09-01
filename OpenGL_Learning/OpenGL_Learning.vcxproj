@@ -189,6 +189,7 @@
     <ClCompile Include="src\SpaceShip10.0.cpp" />
     <ClCompile Include="src\SpaceShip11.0.cpp" />
     <ClCompile Include="src\SpaceShip12.0.cpp" />
+    <ClCompile Include="src\SpaceShip13.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip5.0_my_method.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip5.0_ds_method.cpp" />
     <ClCompile Include="src\SkyBox\cubeMap_SkyBox.cpp" />
@@ -332,6 +333,10 @@
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_asteroid_ver.shader" />
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_planet_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Deferred_Shading\gBuffer_planet_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\depth_Point2.0\depth_point_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\depth_Point2.0\depth_point_frag_vsm.shader" />
+    <None Include="res\shader\00_SpaceShip\depth_Point2.0\depth_point_geo.shader" />
+    <None Include="res\shader\00_SpaceShip\depth_Point2.0\depth_point_ver2.2.shader" />
     <None Include="res\shader\00_SpaceShip\Forward_Shading\planet_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Forward_Shading\planet_ver.shader" />
     <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_frag.shader" />

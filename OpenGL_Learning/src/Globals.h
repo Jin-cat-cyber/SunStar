@@ -8,8 +8,8 @@
 // ===== ³£Á¿ =====
 inline constexpr unsigned int SCR_WIDTH = 960;
 inline constexpr unsigned int SCR_HEIGHT = 600;
-inline constexpr unsigned int SHADOW_WIDTH = 2048;
-inline constexpr unsigned int SHADOW_HEIGHT = 2048;
+inline constexpr unsigned int SHADOW_WIDTH = 4096;
+inline constexpr unsigned int SHADOW_HEIGHT = 4096;
 
 
 // ===== ´°¿Ú =====
@@ -66,6 +66,7 @@ inline unsigned int gDepthRBO = 0;
 inline unsigned int depthCubeMap = 0, depthCubeFBO = 0;
 inline float shadow_near = 1.0f;
 inline float shadow_far = 800.0f;
+inline unsigned int shadowColorMap = 0;
 
 // ===== SSAO =====
 inline unsigned int ssaoFBO = 0, ssaoBlurFBO = 0;

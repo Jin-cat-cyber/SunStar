@@ -44,7 +44,7 @@ uniform bool PCSS;
 uniform bool ssaoEnabled;
 
 // --- Shadows Func --- 
-float ShadowCalculation(vec3 fragPos, vec3 normal);
+float ShadowCalculationPCF(vec3 fragPos, vec3 normal);
 float ShadowCalculationPCSS(vec3 fragPos, vec3 normal);
 
 
@@ -56,9 +56,6 @@ float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
 vec3 fresnelSchlick(float cosTheta, vec3 F0);
 vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness);
-
-//vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 albedo, float spec);
-//vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 albedo, float spec, float shadow);
 
 
 
@@ -79,7 +76,7 @@ void main()
     vec3 R = reflect(-V, N);
 
     //float shadow = shadows ? ShadowCalculation(FragPos, norm) : 0.0;
-    float shadow = shadows ? PCSS ? ShadowCalculationPCSS(FragPos, N) : ShadowCalculation(FragPos, N) : 0.0;
+    float shadow = shadows ? PCSS ? ShadowCalculationPCSS(FragPos, N) : ShadowCalculationPCF(FragPos, N) : 0.0;
     
 
     vec3 Lo = vec3(0.0);
@@ -140,50 +137,11 @@ void main()
     FragColor = vec4(color, 1.0);
 }
 
-// // --- 定向光 ---
-// vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 albedo, float spec)
-// {
-//     vec3 lightDir = normalize(-light.direction);
-//     float diff = max(dot(normal, lightDir), 0.0);
-//     vec3 reflectDir = reflect(-lightDir, normal);
-//     float specVal = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-
-//     float ao = ssaoEnabled ? texture(ssao, TexCoords).r : 1.0;
-
-//     vec3 ambient  = light.ambient * albedo * ao;
-//     vec3 diffuse  = light.diffuse * diff * albedo;
-//     vec3 specular = light.specular * specVal * spec;
-
-//     return ambient + diffuse + specular;
-// }
-
-// // --- 点光源 ---
-// vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 albedo, float spec, float shadow)
-// {
-//     vec3 lightDir = normalize(light.position - fragPos);
-//     float diff = max(dot(normal, lightDir), 0.0);
-//     vec3 reflectDir = reflect(-lightDir, normal);
-//     float specVal = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-
-//     float distance = length(light.position - fragPos);
-//     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
-
-//     float ao = ssaoEnabled ? texture(ssao, TexCoords).r : 1.0;
-
-//     vec3 ambient  = light.ambient * albedo * ao;
-//     vec3 diffuse  = light.diffuse * diff * albedo;
-//     vec3 specular = light.specular * specVal * spec;
-
-//     ambient  *= attenuation;
-//     diffuse  *= attenuation;
-//     specular *= attenuation;
-
-//     return ambient + (1.0 - shadow) * (diffuse + specular);
-// }
 
 // --- PCF 阴影 ---
-float ShadowCalculation(vec3 fragPos, vec3 normal)
+float ShadowCalculationPCF(vec3 fragPos, vec3 normal)
 {
+    fragPos += normal * 0.2;   // ← 加这行：小行星，中等值
     vec3 fragToLight = fragPos - lightPos;
     float currentDepth = length(fragToLight);
     float closestDepth = texture(depthMap, fragToLight).r;
@@ -201,7 +159,7 @@ float ShadowCalculation(vec3 fragPos, vec3 normal)
     );
 
     float shadow = 0.0;
-    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 100);
+    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 16);
     float viewDistance = length(viewPos - fragPos);
     float diskRadius = (1.0 + (viewDistance / far_plane)) / 25.0;
 
