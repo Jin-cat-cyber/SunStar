@@ -190,6 +190,8 @@
     <ClCompile Include="src\SpaceShip11.0.cpp" />
     <ClCompile Include="src\SpaceShip12.0.cpp" />
     <ClCompile Include="src\SpaceShip13.0.cpp" />
+    <ClCompile Include="src\SpaceShip14.0.cpp" />
+    <ClCompile Include="src\SpaceShip15.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip5.0_my_method.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip5.0_ds_method.cpp" />
     <ClCompile Include="src\SkyBox\cubeMap_SkyBox.cpp" />
@@ -351,6 +353,10 @@
     <None Include="res\shader\00_SpaceShip\SSAO\defer_light_ver.shader" />
     <None Include="res\shader\00_SpaceShip\SSAO\ssao_Blur_frag.shader" />
     <None Include="res\shader\00_SpaceShip\SSAO\ssao_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Stellar_Ring2.0\ring_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Stellar_Ring2.0\ring_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Stellar_Ring\ring_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Stellar_Ring\ring_ver.shader" />
     <None Include="res\shader\SSAO\ssao_blur_frag.shader" />
     <None Include="res\shader\SSAO\ssao_frag.shader" />
     <None Include="res\shader\SSAO\ssao_geometry_frag.shader" />

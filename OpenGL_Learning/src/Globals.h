@@ -10,7 +10,7 @@ inline constexpr unsigned int SCR_WIDTH = 960;
 inline constexpr unsigned int SCR_HEIGHT = 600;
 inline constexpr unsigned int SHADOW_WIDTH = 4096;
 inline constexpr unsigned int SHADOW_HEIGHT = 4096;
-
+inline constexpr float		  PI = 3.14159265359f;
 
 // ===== 窗口 =====
 inline int windowwidth = SCR_WIDTH;
@@ -65,7 +65,7 @@ inline unsigned int gDepthRBO = 0;
 // ===== 阴影 =====
 inline unsigned int depthCubeMap = 0, depthCubeFBO = 0;
 inline float shadow_near = 1.0f;
-inline float shadow_far = 800.0f;
+inline float shadow_far = 1000.0f;
 inline unsigned int shadowColorMap = 0;
 
 // ===== SSAO =====
@@ -84,3 +84,10 @@ inline float followHeight = 25.0f;		// camera height above the ship
 inline float followSmooth = 2.0f;		// follow damping (higher = snappier, lower = softer)，10质感偏硬，换5有滞后感
 inline float orbitYaw = 0.0f;    // mode-3 look-around: horizontal orbit angle
 inline float orbitPitch = 0.0f;  // mode-3 look-around: vertical orbit angle
+
+// ===== 尘埃星环 =====
+inline unsigned int ringVAO = 0, ringVBO = 0, ringEBO = 0;
+inline unsigned int ringIndexCount = 0;
+inline float ringInner = 150.0f;   // 内半径（占位，待调）
+inline float ringOuter = 260.0f;   // 外半径（占位，待调）
+inline float ringThickness = 15.0f;   // 环的厚度（±15 单位，很扁但可见）

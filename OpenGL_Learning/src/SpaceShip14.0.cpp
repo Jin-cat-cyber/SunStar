@@ -22,7 +22,7 @@
 #include "Procedural.h"
 #include "Spaceship.h"
 
-#ifdef SHIP_12_0
+#ifdef SHIP_14_0
 #include <stb_image.h>
 
 
@@ -45,18 +45,11 @@ void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTrans
 // SSAO相关函数
 void SSAOInit();
 
-
-// 新增多重采样 FBO 句柄
-unsigned int msFBO = 0;
-unsigned int msColorRBO = 0;
-unsigned int msDepthRBO = 0;
-
-
-
 // 后处理四边形顶点数组对象和顶点缓冲对象
 void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO);
 
-
+// 尘埃星环
+void RingGenerate(float innerRadius, float outRadius, int segments);
 
 
 int main()
@@ -175,6 +168,9 @@ int main()
         "res/shader/00_SpaceShip/depth_point/depth_point_frag.shader",
         "res/shader/00_SpaceShip/depth_point/depth_point_geo.shader");
 
+    // Stellar Ring
+    Shader ringShader("res/shader/00_SpaceShip/Stellar_Ring/ring_ver.shader",
+        "res/shader/00_SpaceShip/Stellar_Ring/ring_frag.shader");
 
     Model rock("res/model/rock/rock.obj");
     PbrModel planet("res/model/glb_model/planet/mars_2k.glb");
@@ -238,11 +234,12 @@ int main()
 
     // 生成一个大型的半随机模型变换矩阵列表
     // ------------------------------------------------------------------
-    unsigned int amount = 50000;
+    unsigned int amount = 25000;
     RocksModelMatricesInit(amount, rock);
 
 
     // =======================================================
+    
     // 程序化生成恒星顶点数据
     // 球体顶点数据
     std::vector<float> starVertices;
@@ -276,8 +273,8 @@ int main()
 
     // 天空盒改用 IBL 生成的 envCubemap（SpaceBox 在 IBL 生成之后创建）
 
-
-
+    // 星环生成初始化
+    RingGenerate(ringInner, ringOuter, 128);   // 128 段足够圆滑
 
 
     // pbr: setup framebuffer
@@ -587,26 +584,26 @@ int main()
         if (currentMode == MODE_FOLLOW) {
             glm::vec3 fwd = ship.Forward();
             glm::vec3 target = ship.position - fwd * followDistance + glm::vec3(0.0f, followHeight, 0.0f);
-           
+
             float t = glm::clamp(followSmooth * deltaTime, 0.0f, 1.0f);
             camera.Position = glm::mix(camera.Position, target, t);    // 平滑逼近，不再瞬移
 
             // look at ship, plus orbit look-around offset
             glm::vec3 toShip = glm::normalize(ship.position - camera.Position);
             glm::quat orbitRot = glm::angleAxis(glm::radians(orbitYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
-                                 glm::angleAxis(glm::radians(orbitPitch), glm::vec3(1.0f, 0.0f, 0.0f));
+                glm::angleAxis(glm::radians(orbitPitch), glm::vec3(1.0f, 0.0f, 0.0f));
 
             camera.Front = orbitRot * toShip;
             camera.Right = glm::normalize(glm::cross(camera.Front, glm::vec3(0.0f, 1.0f, 0.0f)));
             camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
         }
-       
+
         // 配置变换矩阵
         int winWidth, winHeight;
         glfwGetFramebufferSize(window, &winWidth, &winHeight);
         float aspect = winWidth / (float)winHeight;
         //glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 2000.0f);
- 
+
         glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), aspect, 0.1f, 2000.0f);
         glm::mat4 view = camera.GetViewMatrix();
 
@@ -821,6 +818,42 @@ int main()
 
         glCullFace(GL_BACK);
         planet.Draw(MarsShader);
+
+
+        // ====== 尘埃星环（半透明，行星之后）======
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDepthMask(GL_FALSE);          // 环带不写深度，避免挡后面的物体
+
+        ringShader.use();
+        glm::mat4 ringModel = glm::mat4(1.0f);
+        ringModel = glm::translate(ringModel, planetPosition);   // 环带中心 = 行星中心
+        ringShader.setMat4("model", ringModel);
+        ringShader.setMat4("view", view);
+        ringShader.setMat4("projection", projection);
+        
+        ringShader.setBool("shadows", shadows);
+        ringShader.setVec3("planetCenter", planetPosition);
+        ringShader.setFloat("ringInner", ringInner);
+        ringShader.setFloat("ringOuter", ringOuter);
+        //ringShader.setVec3("ringColor", glm::vec3(0.8f, 0.6f, 0.4f));
+        ringShader.setVec3("ringColor", glm::vec3(1.6f, 1.2f, 0.8f));   // 先试翻倍
+        ringShader.setVec3("ringColor", glm::vec3(2.5f, 1.8f, 1.2f));
+
+        ringShader.setFloat("time", static_cast<float>(glfwGetTime()));
+
+        ringShader.setVec3("sunPos", pointSunPositions);
+        ringShader.setFloat("far_plane", shadow_far);
+        ringShader.setInt("depthMap", 9);                       // unit9，和火星一致
+        glActiveTexture(GL_TEXTURE9);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);       // 显式绑定阴影贴图
+
+        glBindVertexArray(ringVAO);
+        glDrawElements(GL_TRIANGLES, ringIndexCount, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+
+        glDepthMask(GL_TRUE);
+        glDisable(GL_BLEND);
 
         // ====== 飞船 forward PBR 渲染 ======
         glDepthMask(GL_TRUE);
@@ -1078,7 +1111,7 @@ void processInput(GLFWwindow* window)
             camera.ProcessKeyboardRoll(-1.0f, deltaTime);   // 逆时针
 
     }
-    
+
 
 
     // 限制范围
@@ -1336,10 +1369,6 @@ void rebuildFramebuffers(int width, int height)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     // 删除旧的帧缓冲和纹理
 
-    // 删除 MSAA 资源
-    if (msFBO) { glDeleteFramebuffers(1, &msFBO); msFBO = 0; }
-    if (msColorRBO) { glDeleteRenderbuffers(1, &msColorRBO); msColorRBO = 0; }
-    if (msDepthRBO) { glDeleteRenderbuffers(1, &msDepthRBO); msDepthRBO = 0; }
 
     // 删除原有 HDR / blur 资源
     glDeleteFramebuffers(1, &hdrFBO);
@@ -1592,6 +1621,59 @@ void SSAOInit()
     //if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     //    std::cout << "SSAO Blur Framebuffer not complete!" << std::endl;
     //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void RingGenerate(float innerRadius, float outerRadius, int segments)
+{
+    std::vector<float> vertices;
+    std::vector<unsigned int> indices;
+
+    for (int i = 0; i <= segments; i++)
+    {
+        float theta = (float)i / (float)segments * 2.0f * PI;
+        float c = cos(theta), s = sin(theta);
+
+        vertices.push_back(innerRadius * c);   // 内环
+        vertices.push_back(0.0f);
+        vertices.push_back(innerRadius * s);
+
+        vertices.push_back(outerRadius * c);   // 内环
+        vertices.push_back(0.0f);
+        vertices.push_back(outerRadius * s);
+    }
+
+    for (int i = 0; i < segments; i++)
+    {
+        int inner0 = i * 2;
+        int outer0 = i * 2 + 1;
+        int inner1 = (i + 1) * 2;
+        int outer1 = (i + 1) * 2 + 1;
+
+        indices.push_back(inner0);
+        indices.push_back(outer0);
+        indices.push_back(inner1);
+
+        indices.push_back(inner1);
+        indices.push_back(outer0);
+        indices.push_back(outer1);
+    }
+
+    ringIndexCount = (unsigned int)indices.size();
+
+    glGenVertexArrays(1, &ringVAO);
+    glGenBuffers(1, &ringVBO);
+    glGenBuffers(1, &ringEBO);
+
+    glBindVertexArray(ringVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, ringVBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ringEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glBindVertexArray(0);
 }
 
 

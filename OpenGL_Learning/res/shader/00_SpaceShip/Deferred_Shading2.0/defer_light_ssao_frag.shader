@@ -44,6 +44,7 @@ uniform bool PCSS;
 uniform bool ssaoEnabled;
 
 // --- Shadows Func --- 
+//float ShadowCalculation(vec3 fragPos);
 float ShadowCalculationPCF(vec3 fragPos, vec3 normal);
 float ShadowCalculationPCSS(vec3 fragPos, vec3 normal);
 
@@ -77,7 +78,7 @@ void main()
 
     //float shadow = shadows ? ShadowCalculation(FragPos, norm) : 0.0;
     float shadow = shadows ? PCSS ? ShadowCalculationPCSS(FragPos, N) : ShadowCalculationPCF(FragPos, N) : 0.0;
-    
+    //float shadow = ShadowCalculation(FragPos);
 
     vec3 Lo = vec3(0.0);
     for (int i = 0; i < NR_POINT_LIGHTS; ++i)
@@ -138,6 +139,17 @@ void main()
 }
 
 
+// 原始阴影计算
+float ShadowCalculation(vec3 fragPos)
+{
+    vec3 fragToLight = fragPos - lightPos;
+    float currentDepth = length(fragToLight);
+    float closestDepth = texture(depthMap, fragToLight).r * far_plane;
+    float bias = 21.0;
+    return (currentDepth - bias > closestDepth) ? 1.0 : 0.0;
+}
+
+
 // --- PCF 阴影 ---
 float ShadowCalculationPCF(vec3 fragPos, vec3 normal)
 {
@@ -159,7 +171,7 @@ float ShadowCalculationPCF(vec3 fragPos, vec3 normal)
     );
 
     float shadow = 0.0;
-    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 16);
+    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.15);
     float viewDistance = length(viewPos - fragPos);
     float diskRadius = (1.0 + (viewDistance / far_plane)) / 25.0;
 

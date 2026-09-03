@@ -22,7 +22,7 @@
 #include "Procedural.h"
 #include "Spaceship.h"
 
-#ifdef SHIP_12_0
+//#ifdef SHIP_15_0
 #include <stb_image.h>
 
 
@@ -56,7 +56,8 @@ unsigned int msDepthRBO = 0;
 // 后处理四边形顶点数组对象和顶点缓冲对象
 void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO);
 
-
+// 尘埃星环
+void RingGenerate(float outerRadius, float thickness);
 
 
 int main()
@@ -175,9 +176,21 @@ int main()
         "res/shader/00_SpaceShip/depth_point/depth_point_frag.shader",
         "res/shader/00_SpaceShip/depth_point/depth_point_geo.shader");
 
+    // Stellar Ring
+    Shader ringShader("res/shader/00_SpaceShip/Stellar_Ring2.0/ring_ver.shader",
+        "res/shader/00_SpaceShip/Stellar_Ring2.0/ring_frag.shader");
+
 
     Model rock("res/model/rock/rock.obj");
     PbrModel planet("res/model/glb_model/planet/mars_2k.glb");
+    // 火星半径
+    float planetRadius = 0.0f;
+    for (auto& m : planet.meshes)
+        for (auto& v : m.vertices)
+            planetRadius = std::max(planetRadius, glm::length(v.Position));
+    planetRadius *= 0.8f;   // planetScale = 0.8 均匀缩放
+
+
 
     PbrModel spaceship("res/model/glb_model/homeworld_-_vaygr_battlecruiser_1k.glb");
 
@@ -277,7 +290,8 @@ int main()
     // 天空盒改用 IBL 生成的 envCubemap（SpaceBox 在 IBL 生成之后创建）
 
 
-
+    // 尘埃星环
+	RingGenerate(ringOuter, ringThickness);
 
 
     // pbr: setup framebuffer
@@ -587,26 +601,26 @@ int main()
         if (currentMode == MODE_FOLLOW) {
             glm::vec3 fwd = ship.Forward();
             glm::vec3 target = ship.position - fwd * followDistance + glm::vec3(0.0f, followHeight, 0.0f);
-           
+
             float t = glm::clamp(followSmooth * deltaTime, 0.0f, 1.0f);
             camera.Position = glm::mix(camera.Position, target, t);    // 平滑逼近，不再瞬移
 
             // look at ship, plus orbit look-around offset
             glm::vec3 toShip = glm::normalize(ship.position - camera.Position);
             glm::quat orbitRot = glm::angleAxis(glm::radians(orbitYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
-                                 glm::angleAxis(glm::radians(orbitPitch), glm::vec3(1.0f, 0.0f, 0.0f));
+                glm::angleAxis(glm::radians(orbitPitch), glm::vec3(1.0f, 0.0f, 0.0f));
 
             camera.Front = orbitRot * toShip;
             camera.Right = glm::normalize(glm::cross(camera.Front, glm::vec3(0.0f, 1.0f, 0.0f)));
             camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
         }
-       
+
         // 配置变换矩阵
         int winWidth, winHeight;
         glfwGetFramebufferSize(window, &winWidth, &winHeight);
         float aspect = winWidth / (float)winHeight;
         //glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 2000.0f);
- 
+
         glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), aspect, 0.1f, 2000.0f);
         glm::mat4 view = camera.GetViewMatrix();
 
@@ -821,6 +835,41 @@ int main()
 
         glCullFace(GL_BACK);
         planet.Draw(MarsShader);
+
+        // ====== 尘埃星环：全屏 ray march 体积 ======
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        glDisable(GL_DEPTH_TEST);      // 关键：让 shader 自己用 ray-sphere 做火星遮挡
+        glDepthMask(GL_FALSE);
+        glCullFace(GL_BACK);
+
+        ringShader.use();
+        ringShader.setVec3("camPos", camera.Position);
+        ringShader.setVec3("ringCenter", planetPosition);
+        ringShader.setFloat("ringInner", ringInner);
+        ringShader.setFloat("ringOuter", ringOuter);
+        ringShader.setFloat("ringHalfHeight", ringThickness * 0.5f);
+        ringShader.setFloat("planetRadius", planetRadius);
+        ringShader.setVec3("ringColor", glm::vec3(0.8f, 0.6f, 0.4f));
+        ringShader.setFloat("time", static_cast<float>(glfwGetTime()));
+        ringShader.setVec3("sunPos", pointSunPositions);
+        ringShader.setVec3("sunColor", glm::vec3(1.0f, 0.85f, 0.6f));
+        ringShader.setFloat("far_plane", shadow_far);
+        ringShader.setInt("depthMap", 9);
+        ringShader.setVec2("resolution", glm::vec2((float)windowwidth, (float)windowheight));
+        ringShader.setMat4("invProjView", glm::inverse(projection * view));
+        glActiveTexture(GL_TEXTURE9);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+
+        glBindVertexArray(quadVAO);          // 用全屏 quad，不再用 ringVAO
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+
+        glEnable(GL_DEPTH_TEST);             // 恢复
+        glDepthMask(GL_TRUE);
+        glDisable(GL_BLEND);
+
+
 
         // ====== 飞船 forward PBR 渲染 ======
         glDepthMask(GL_TRUE);
@@ -1078,7 +1127,7 @@ void processInput(GLFWwindow* window)
             camera.ProcessKeyboardRoll(-1.0f, deltaTime);   // 逆时针
 
     }
-    
+
 
 
     // 限制范围
@@ -1594,5 +1643,50 @@ void SSAOInit()
     //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void RingGenerate(float outerRadius, float thickness)
+{
+    float hx = outerRadius;
+    float hy = thickness * 0.5f;
+    float hz = outerRadius;
 
-#endif
+    float vertices[] = {
+        -hx, -hy,  hz,   // 0 前下左
+         hx, -hy,  hz,   // 1 前下右
+         hx,  hy,  hz,   // 2 前上右
+        -hx,  hy,  hz,   // 3 前上左
+        -hx, -hy, -hz,   // 4 后下左
+         hx, -hy, -hz,   // 5 后下右
+         hx,  hy, -hz,   // 6 后上右
+        -hx,  hy, -hz,   // 7 后上左
+    };
+
+    unsigned int indices[] = {
+        0,1,2, 0,2,3,    // 前 +Z
+        5,4,7, 5,7,6,    // 后 -Z
+        1,5,6, 1,6,2,    // 右 +X
+        4,0,3, 4,3,7,    // 左 -X
+        3,2,6, 3,6,7,    // 上 +Y
+        4,5,1, 4,1,0,    // 下 -Y
+    };
+
+    ringIndexCount = 36;
+
+    glGenVertexArrays(1, &ringVAO);
+    glGenBuffers(1, &ringVBO);
+    glGenBuffers(1, &ringEBO);
+
+    glBindVertexArray(ringVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, ringVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ringEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glBindVertexArray(0);
+}
+
+
+
+//#endif
