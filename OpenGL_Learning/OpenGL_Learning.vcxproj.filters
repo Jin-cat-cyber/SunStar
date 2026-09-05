@@ -579,8 +579,12 @@
     <None Include="res\shader\00_SpaceShip\depth_Point2.0\depth_point_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Stellar_Ring\ring_ver.shader" />
     <None Include="res\shader\00_SpaceShip\Stellar_Ring\ring_frag.shader" />
-    <None Include="res\shader\00_SpaceShip\Stellar_Ring2.0\ring_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Stellar_Volumetric\sun_vol_2DN_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Stellar_Volumetric\sun_vol_ver.shader" />
     <None Include="res\shader\00_SpaceShip\Stellar_Ring2.0\ring_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Stellar_Ring2.0\ring_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Stellar_Volumetric\sun_vol_3DN_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Stellar_Volumetric\sun_vol_0DN_frag.shader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\texture\container.jpg">

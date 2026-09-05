@@ -154,6 +154,13 @@ int main()
         "res/shader/StarShader/StarList2.0/corona_quad_frag2.0.shader");
     Shader sunGlowShader("res/shader/StarShader/StarList/star_glow_ver.shader",
         "res/shader/StarShader/StarList/star_glow_frag.shader");
+    Shader sunVolShader("res/shader/00_SpaceShip/Stellar_Volumetric/sun_vol_ver.shader",
+        "res/shader/00_SpaceShip/Stellar_Volumetric/sun_vol_0DN_frag.shader");
+
+    // LensFlare
+    Shader lensFlareShader("res/shader/LensFlareShader/lens_flare_ver.shader",
+        "res/shader/LensFlareShader/lens_flare_frag.shader");
+
 
     // Skybox
     Shader spaceboxShader("res/shader/SkyBoxShader/SkyBox_ver.shader",
@@ -166,10 +173,6 @@ int main()
         "res/shader/BloomShaders/blur_frag.shader");
     Shader compositeShader("res/shader/BloomShaders/composite_ver.shader",
         "res/shader/BloomShaders/composite_frag2.0.shader");
-
-    // LensFlare
-    Shader lensFlareShader("res/shader/LensFlareShader/lens_flare_ver.shader",
-        "res/shader/LensFlareShader/lens_flare_frag.shader");
 
     // Shadow
     Shader simpleDepthShader("res/shader/00_SpaceShip/depth_point/depth_point_ver2.2.shader",
@@ -775,7 +778,7 @@ int main()
         //float starTime = static_cast<float>(glfwGetTime()); // 恒星旋转时间
         //float starPulse = 1.0f + sin(starTime * 1.5f) * 0.0003f; // 计算脉冲效果
 
-        Sun.SunRender(sunCoreShader, sunCoronaShader, CoreCoronaShader, sunGlowShader, camera, projection, view);
+        Sun.SunRenderPlus(sunCoreShader, sunCoronaShader, CoreCoronaShader, sunGlowShader, sunVolShader, camera, projection, view);
 
         // ========================================
         // 恒星渲染部分 - 结束

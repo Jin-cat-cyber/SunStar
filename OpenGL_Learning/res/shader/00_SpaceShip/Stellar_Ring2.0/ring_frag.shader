@@ -146,7 +146,12 @@ void main()
             
             float n = fbm(uv + vec2(time * 0.03, time * 0.02));
             n = smoothstep(0.3, 0.8, n);
+
+            // 光线与环面法线的夹角，grazing 越大，光线越接近平行于环面，散射越弱
+            float grazing = abs(rd.y);
+            float spill = 0.35 + 0.65 * smoothstep(0.0, 0.5, grazing);
             float d = radial * vertical * (0.5 + 0.7 * n);
+            d *= spill;
 
             float shadow = ShadowCalculation(p);
 

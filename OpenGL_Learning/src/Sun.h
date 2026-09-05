@@ -27,6 +27,8 @@ public:
 	unsigned int coronaQuadVBO;
     unsigned int lensQuadVAO;
     unsigned int lensQuadVBO;
+    unsigned int volQuadVAO;
+    unsigned int volQuadVBO;
 
     struct LensFlare
     {
@@ -53,12 +55,18 @@ public:
 	void CoreInit();
 	void CoronaQuadInit();
     void LensQuadInit();
+	void VolQuadInit();
 
-    void SunRender(Shader& sunCoreShader, Shader& sunCoronaShader, Shader& CoreCoronaShader, Shader& sunGlowShader, 
-    const Camera_ver2& camera, const glm::mat4& projection, const glm::mat4& view);
+    void SunRender(Shader& sunCoreShader, Shader& sunCoronaShader, Shader& CoreCoronaShader, Shader& sunGlowShader,
+        const Camera_ver2& camera, const glm::mat4& projection, const glm::mat4& view);
 
 	void LensFlareRender(Shader& lensFlareShader, 
-        const Camera_ver2& camera, const glm::mat4& projection, const glm::mat4& view, const std::vector<LensFlare>& flareTexture);
+        const Camera_ver2& camera, const glm::mat4& projection, const glm::mat4& view, 
+        const std::vector<LensFlare>& flareTexture);
+
+    void SunRenderPlus(Shader& sunCoreShader, Shader& sunCoronaShader, Shader& CoreCoronaShader, 
+        Shader& sunGlowShader, Shader& sunVolShader,
+        const Camera_ver2& camera, const glm::mat4& projection, const glm::mat4& view);
 
     /*void CoreRender(Shader& sunCoreShader);
 	void CoronaQuadRender(Shader& sunCoronaShader);

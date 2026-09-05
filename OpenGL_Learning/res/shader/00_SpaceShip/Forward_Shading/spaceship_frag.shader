@@ -131,6 +131,7 @@ void main()
     // this ambient lighting with environment lighting).
     // ambient lighting (we now use IBL as the ambient term)
 
+    // IBL
 	vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
     vec3 kS = F;
