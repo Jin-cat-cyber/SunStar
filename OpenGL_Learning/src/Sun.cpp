@@ -510,7 +510,7 @@ void Sun::SunRenderPlus(Shader& sunCoreShader, Shader& sunCoronaShader, Shader& 
     sunVolShader.use();
     sunVolShader.setVec3("camPos", camera.Position);
     sunVolShader.setVec3("sunCenter", pointSunPositions);
-    sunVolShader.setFloat("sunRadius", SunScale.x * 5.0f);   // 可调接口：改这个 3.0 系数
+    sunVolShader.setFloat("sunRadius", SunScale.x * 3.0f);   // 可调接口：改这个 3.0 系数
     sunVolShader.setFloat("time", starTime);
     sunVolShader.setVec3("sunColor", starColor);
     sunVolShader.setVec2("resolution", glm::vec2((float)windowwidth, (float)windowheight));

@@ -22,7 +22,7 @@
 #include "Procedural.h"
 #include "Spaceship.h"
 
-#ifdef SHIP_15_0
+//#ifdef SHIP_16_0
 #include <stb_image.h>
 
 
@@ -183,6 +183,11 @@ int main()
     Shader ringShader("res/shader/00_SpaceShip/Stellar_Ring2.0/ring_ver.shader",
         "res/shader/00_SpaceShip/Stellar_Ring2.0/ring_frag.shader");
 
+    // 行星大气散射
+    Shader atmoShader("res/shader/00_SpaceShip/Atmosphere/atmo_ver.shader",
+        "res/shader/00_SpaceShip/Atmosphere/atmo_frag.shader");
+
+
 
     Model rock("res/model/rock/rock.obj");
     PbrModel planet("res/model/glb_model/planet/mars_2k.glb");
@@ -294,7 +299,7 @@ int main()
 
 
     // 尘埃星环
-	RingGenerate(ringOuter, ringThickness);
+    RingGenerate(ringOuter, ringThickness);
 
 
     // pbr: setup framebuffer
@@ -778,7 +783,8 @@ int main()
         //float starTime = static_cast<float>(glfwGetTime()); // 恒星旋转时间
         //float starPulse = 1.0f + sin(starTime * 1.5f) * 0.0003f; // 计算脉冲效果
 
-        Sun.SunRenderPlus(sunCoreShader, sunCoronaShader, CoreCoronaShader, sunGlowShader, sunVolShader, camera, projection, view);
+        Sun.SunRender(sunCoreShader, sunCoronaShader, CoreCoronaShader, sunGlowShader, camera, projection, view);
+        //Sun.SunRenderPlus(sunCoreShader, sunCoronaShader, CoreCoronaShader, sunGlowShader, sunVolShader, camera, projection, view);
 
         // ========================================
         // 恒星渲染部分 - 结束
@@ -839,9 +845,42 @@ int main()
         glCullFace(GL_BACK);
         planet.Draw(MarsShader);
 
+
+        // ====== 行星大气散射（独立大气壳，背光透光晕）======
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
+        glCullFace(GL_BACK);
+
+        atmoShader.use();
+        atmoShader.setVec3("camPos", camera.Position);
+        atmoShader.setVec3("planetCenter", planetPosition);
+        atmoShader.setFloat("planetRadius", planetRadius);
+        atmoShader.setFloat("atmoScale", 1.25f);                    // 大气壳半径倍数
+        glm::vec3 sunDirNorm = glm::normalize(pointSunPositions - planetPosition);
+        atmoShader.setVec3("sunDir", sunDirNorm);                  // 从行星指向太阳
+        atmoShader.setVec3("sunColor", glm::vec3(1.0f, 0.9f, 0.75f));
+        atmoShader.setFloat("density", 1.0f);
+        atmoShader.setFloat("intensity", 0.25f);
+        //atmoShader.setVec3("rayleighCoef", glm::vec3(0.005f, 0.008f, 0.02f));  // 蓝偏
+        atmoShader.setVec3("rayleighCoef", glm::vec3(0.05f, 0.08f, 0.2f));  // ×100 测试，原来 0.005/0.008/0.02
+        atmoShader.setFloat("miecoef", 0.02f);
+        atmoShader.setVec2("resolution", glm::vec2((float)windowwidth, (float)windowheight));
+        atmoShader.setMat4("invProjView", glm::inverse(projection * view));
+
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+
+
         // ====== 尘埃星环：全屏 ray march 体积 ======
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);   // 原 GL_SRC_ALPHA, GL_ONE
         glDisable(GL_DEPTH_TEST);      // 关键：让 shader 自己用 ray-sphere 做火星遮挡
         glDepthMask(GL_FALSE);
         glCullFace(GL_BACK);
@@ -1692,4 +1731,4 @@ void RingGenerate(float outerRadius, float thickness)
 
 
 
-#endif
+//#endif

@@ -171,5 +171,10 @@ void main()
     }
 
     float intensity = clamp(dot(light, vec3(0.2126, 0.7152, 0.0722)), 0.0, 1.0);
-    FragColor = vec4(light, intensity);
+    
+    // Å¨Îí°æ
+    //FragColor = vec4(light, intensity);
+
+    // ³¾°£Ï¡±¡°æ
+    FragColor = vec4(light, 1.0 - transmittance);
 }

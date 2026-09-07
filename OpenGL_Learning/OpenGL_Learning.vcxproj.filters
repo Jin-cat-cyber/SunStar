@@ -180,7 +180,7 @@
     <ClCompile Include="src\Camera_ver2.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\OldVersion\BezierCurve.cpp">
+    <ClCompile Include="src\OldVersion\Bezier\BezierCurve.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\Model.cpp">
@@ -309,6 +309,9 @@
     <ClCompile Include="src\SpaceShip15.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\SpaceShip16.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -323,7 +326,7 @@
     <ClInclude Include="src\Camera_ver2.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\OldVersion\BezierCurve.h">
+    <ClInclude Include="src\OldVersion\Bezier\BezierCurve.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\Model.h">
@@ -364,23 +367,23 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\shader\TheFourShader\TheFirstShader_Basic\vertexShader.shader" />
-    <None Include="res\shader\TheFourShader\TheFirstShader_Basic\fragmentShader.shader" />
+    <None Include="res\shader\Old_Version\04_Shader\TheFirstShader_Basic\vertexShader.shader" />
+    <None Include="res\shader\Old_Version\04_Shader\TheFirstShader_Basic\fragmentShader.shader" />
     <None Include="res\shader\LightShader\ver_color.shader" />
     <None Include="res\shader\LightShader\frag_color.shader" />
     <None Include="res\shader\LightShader\ver_light_cube.shader" />
     <None Include="res\shader\LightShader\frag_light_cube.shader" />
     <None Include="res\shader\LightShader\2.0_frag_color.shader" />
     <None Include="res\shader\LightShader\2.0_ver_color.shader" />
-    <None Include="res\shader\ModelShader\model_frag2.0.shader" />
-    <None Include="res\shader\ModelShader\model_ver2.0.shader" />
-    <None Include="res\shader\TheSecondShader\frag_color.shader" />
-    <None Include="res\shader\TheSecondShader\ver_color.shader" />
+    <None Include="res\shader\Old_Version\03_ModelShader\model_frag2.0.shader" />
+    <None Include="res\shader\Old_Version\03_ModelShader\model_ver2.0.shader" />
+    <None Include="res\shader\Old_Version\02_Shader\frag_color.shader" />
+    <None Include="res\shader\Old_Version\02_Shader\ver_color.shader" />
     <None Include="res\model\backpack\backpack.mtl" />
-    <None Include="res\shader\TheFourShader_depth_stencil\deeptest_frag1.0.shader" />
-    <None Include="res\shader\TheFourShader_depth_stencil\deeptest_ver1.0.shader" />
-    <None Include="res\shader\TheFourShader_depth_stencil\stencil_ver.shader" />
-    <None Include="res\shader\TheFourShader_depth_stencil\stencil_frag.shader" />
+    <None Include="res\shader\Old_Version\04_Shader_depth_stencil\deeptest_frag1.0.shader" />
+    <None Include="res\shader\Old_Version\04_Shader_depth_stencil\deeptest_ver1.0.shader" />
+    <None Include="res\shader\Old_Version\04_Shader_depth_stencil\stencil_ver.shader" />
+    <None Include="res\shader\Old_Version\04_Shader_depth_stencil\stencil_frag.shader" />
     <None Include="res\shader\FrameBuffersShader\framebuffers_screen_ver.shader" />
     <None Include="res\shader\FrameBuffersShader\framebuffers_screen_frag.shader" />
     <None Include="res\shader\CubeMapsShader\cubeMap_ver.shader" />
@@ -389,19 +392,19 @@
     <None Include="res\shader\SkyBoxShader\SkyBox_frag.shader" />
     <None Include="res\shader\DeeptestShader\deeptest_frag1.0.shader" />
     <None Include="res\shader\DeeptestShader\deeptest_ver1.0.shader" />
-    <None Include="res\shader\Advanced_GLSL\redver.shader" />
-    <None Include="res\shader\Advanced_GLSL\redfrag.shader" />
-    <None Include="res\shader\Advanced_GLSL\greenver.shader" />
-    <None Include="res\shader\Advanced_GLSL\greenfrag.shader" />
-    <None Include="res\shader\Advanced_GLSL\bluefrag.shader" />
-    <None Include="res\shader\Advanced_GLSL\bluever.shader" />
-    <None Include="res\shader\Advanced_GLSL\yellowfrag.shader" />
-    <None Include="res\shader\Advanced_GLSL\yellowver.shader" />
+    <None Include="res\shader\Old_Version\05_Advanced_GLSL\redver.shader" />
+    <None Include="res\shader\Old_Version\05_Advanced_GLSL\redfrag.shader" />
+    <None Include="res\shader\Old_Version\05_Advanced_GLSL\greenver.shader" />
+    <None Include="res\shader\Old_Version\05_Advanced_GLSL\greenfrag.shader" />
+    <None Include="res\shader\Old_Version\05_Advanced_GLSL\bluefrag.shader" />
+    <None Include="res\shader\Old_Version\05_Advanced_GLSL\bluever.shader" />
+    <None Include="res\shader\Old_Version\05_Advanced_GLSL\yellowfrag.shader" />
+    <None Include="res\shader\Old_Version\05_Advanced_GLSL\yellowver.shader" />
     <None Include="res\shader\GeometryShader\ver.shader" />
     <None Include="res\shader\GeometryShader\frag.shader" />
     <None Include="res\shader\GeometryShader\geo.shader" />
-    <None Include="res\shader\ModelShader\model_frag1.0.shader" />
-    <None Include="res\shader\ModelShader\model_ver1.0.shader" />
+    <None Include="res\shader\Old_Version\03_ModelShader\model_frag1.0.shader" />
+    <None Include="res\shader\Old_Version\03_ModelShader\model_ver1.0.shader" />
     <None Include="res\shader\InstancingShader\instancingVER.shader" />
     <None Include="res\shader\InstancingShader\instancingFRAG.shader" />
     <None Include="res\model\planet\planet.mtl" />
@@ -422,35 +425,35 @@
     <None Include="res\shader\StarShader\StarList\star_glow_ver.shader" />
     <None Include="res\shader\StarShader\star_frag.shader" />
     <None Include="res\shader\StarShader\star_ver.shader" />
-    <None Include="res\shader\TheFourShader\deeptest_frag1.0.shader" />
-    <None Include="res\shader\TheFourShader\deeptest_ver1.0.shader" />
-    <None Include="res\shader\TheFourShader\stencil_frag.shader" />
-    <None Include="res\shader\TheFourShader\stencil_ver.shader" />
+    <None Include="res\shader\Old_Version\04_Shader\deeptest_frag1.0.shader" />
+    <None Include="res\shader\Old_Version\04_Shader\deeptest_ver1.0.shader" />
+    <None Include="res\shader\Old_Version\04_Shader\stencil_frag.shader" />
+    <None Include="res\shader\Old_Version\04_Shader\stencil_ver.shader" />
     <None Include="res\shader\ShadowShader\point_shadow\point_shadow_ver.shader" />
     <None Include="res\shader\ShadowShader\point_shadow\point_shadow_frag.shader" />
     <None Include="res\shader\ShadowShader\point_shadow\depth_point_ver.shader" />
     <None Include="res\shader\ShadowShader\point_shadow\depth_point_frag.shader" />
     <None Include="res\shader\ShadowShader\point_shadow\depth_point_geo.shader" />
-    <None Include="res\shader\Advanced_lighting\Blinn\advanced_lightingVER1.0.shader" />
-    <None Include="res\shader\Advanced_lighting\Blinn\advanced_lightingFRAG1.0.shader" />
-    <None Include="res\shader\Advanced_lighting\Blinn\advanced_lightingVER2.0.shader" />
-    <None Include="res\shader\Advanced_lighting\Blinn\advanced_lightingFRAG2.0.shader" />
-    <None Include="res\shader\ModelShader\model_frag3.0.shader" />
-    <None Include="res\shader\ModelShader\model_ver3.0.shader" />
-    <None Include="res\shader\Advanced_lighting\Gamma\GammaVER1.0.shader" />
-    <None Include="res\shader\Advanced_lighting\Gamma\GammaFRAG1.0.shader" />
-    <None Include="res\shader\Advanced_lighting\NormalMap\Normal_ver.shader" />
-    <None Include="res\shader\Advanced_lighting\NormalMap\Normal_frag.shader" />
-    <None Include="res\shader\Advanced_lighting\NormalMap\Normal_ver2.0.shader" />
-    <None Include="res\shader\Advanced_lighting\NormalMap\Normal_frag2.0.shader" />
-    <None Include="res\shader\ModelShader\model_frag.shader" />
-    <None Include="res\shader\ModelShader\model_ver.shader" />
-    <None Include="res\shader\Advanced_lighting\Parallax\Parallax_frag.shader" />
-    <None Include="res\shader\Advanced_lighting\Parallax\Parallax_ver.shader" />
-    <None Include="res\shader\Advanced_lighting\Parallax\Parallax_frag2.0.shader" />
-    <None Include="res\shader\Advanced_lighting\Parallax\Parallax_ver2.0.shader" />
-    <None Include="res\shader\test_ver.shader" />
-    <None Include="res\shader\test_frag.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Blinn\advanced_lightingVER1.0.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Blinn\advanced_lightingFRAG1.0.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Blinn\advanced_lightingVER2.0.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Blinn\advanced_lightingFRAG2.0.shader" />
+    <None Include="res\shader\Old_Version\03_ModelShader\model_frag3.0.shader" />
+    <None Include="res\shader\Old_Version\03_ModelShader\model_ver3.0.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Gamma\GammaVER1.0.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Gamma\GammaFRAG1.0.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\NormalMap\Normal_ver.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\NormalMap\Normal_frag.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\NormalMap\Normal_ver2.0.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\NormalMap\Normal_frag2.0.shader" />
+    <None Include="res\shader\Old_Version\03_ModelShader\model_frag.shader" />
+    <None Include="res\shader\Old_Version\03_ModelShader\model_ver.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Parallax\Parallax_frag.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Parallax\Parallax_ver.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Parallax\Parallax_frag2.0.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Parallax\Parallax_ver2.0.shader" />
+    <None Include="res\shader\Old_Version\Bezier\test_ver.shader" />
+    <None Include="res\shader\Old_Version\Bezier\test_frag.shader" />
     <None Include="res\shader\StarShader\StarList2.0\corona_ver.shader" />
     <None Include="res\shader\StarShader\StarList2.0\corona_frag.shader" />
     <None Include="res\shader\StarShader\StarList2.0\glow_ver.shader" />
@@ -467,20 +470,20 @@
     <None Include="res\shader\BloomShaders\blur_ver.shader" />
     <None Include="res\shader\LensFlareShader\lens_flare_ver.shader" />
     <None Include="res\shader\LensFlareShader\lens_flare_frag.shader" />
-    <None Include="res\shader\Advanced_lighting\HDR\hdr_lighting_ver.shader" />
-    <None Include="res\shader\Advanced_lighting\HDR\hdr_lighting_frag.shader" />
-    <None Include="res\shader\Advanced_lighting\HDR\hdr_ver.shader" />
-    <None Include="res\shader\Advanced_lighting\HDR\hdr_frag.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\HDR\hdr_lighting_ver.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\HDR\hdr_lighting_frag.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\HDR\hdr_ver.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\HDR\hdr_frag.shader" />
     <None Include="res\shader\BloomShaders\composite_frag2.0.shader" />
     <None Include="res\shader\StarShader\StarList2.0\core_frag2.0.shader" />
     <None Include="res\shader\StarShader\StarList2.0\corona_frag2.0.shader" />
     <None Include="res\shader\StarShader\StarList2.0\corona_quad_frag2.0.shader" />
     <None Include="res\shader\InstancingShader\aster_frag2.0.shader" />
     <None Include="res\shader\InstancingShader\instancingFRAG2.0.shader" />
-    <None Include="res\shader\00_SpaceShip\aster_frag3.0.shader" />
-    <None Include="res\shader\00_SpaceShip\aster_ver.shader" />
-    <None Include="res\shader\00_SpaceShip\instancingFRAG3.0.shader" />
-    <None Include="res\shader\00_SpaceShip\instancingVER.shader" />
+    <None Include="res\shader\00_SpaceShip\ship8.0\aster_frag3.0.shader" />
+    <None Include="res\shader\00_SpaceShip\ship8.0\aster_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\ship8.0\instancingFRAG3.0.shader" />
+    <None Include="res\shader\00_SpaceShip\ship8.0\instancingVER.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_frag.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_geo.shader" />
     <None Include="res\shader\00_SpaceShip\depth_point\depth_point_ver2.0.shader" />
@@ -506,13 +509,13 @@
     <None Include="res\shader\SSAO\ssao_geometry_ver.shader" />
     <None Include="res\shader\SSAO\ssao_lighting_frag.shader" />
     <None Include="res\shader\SSAO\ssao_ver.shader" />
-    <None Include="res\shader\Advanced_lighting\Bloom\bloom_final_frag.shader" />
-    <None Include="res\shader\Advanced_lighting\Bloom\bloom_final_ver.shader" />
-    <None Include="res\shader\Advanced_lighting\Bloom\bloom_frag.shader" />
-    <None Include="res\shader\Advanced_lighting\Bloom\bloom_ver.shader" />
-    <None Include="res\shader\Advanced_lighting\Bloom\blur_frag.shader" />
-    <None Include="res\shader\Advanced_lighting\Bloom\blur_ver.shader" />
-    <None Include="res\shader\Advanced_lighting\Bloom\light_box_frag.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Bloom\bloom_final_frag.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Bloom\bloom_final_ver.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Bloom\bloom_frag.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Bloom\bloom_ver.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Bloom\blur_frag.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Bloom\blur_ver.shader" />
+    <None Include="res\shader\Old_Version\06_Advanced_lighting\Bloom\light_box_frag.shader" />
     <None Include="res\shader\00_SpaceShip\SSAO\defer_light_frag.shader" />
     <None Include="res\shader\00_SpaceShip\SSAO\defer_light_ver.shader" />
     <None Include="res\shader\00_SpaceShip\SSAO\ssao_frag.shader" />
@@ -585,6 +588,8 @@
     <None Include="res\shader\00_SpaceShip\Stellar_Ring2.0\ring_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Stellar_Volumetric\sun_vol_3DN_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Stellar_Volumetric\sun_vol_0DN_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Atmosphere\atmo_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Atmosphere\atmo_frag.shader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\texture\container.jpg">

@@ -139,8 +139,8 @@ int main()
     setupFramebuffers(windowwidth, windowheight); // 设置离屏渲染帧缓冲
 
     // 创建着色器对象
-    Shader planetshader("res/shader/00_SpaceShip/instancingVER.shader", "res/shader/00_SpaceShip/instancingFRAG3.0.shader");
-    Shader asteroidShader("res/shader/00_SpaceShip/aster_ver.shader", "res/shader/00_SpaceShip/aster_frag3.0.shader");
+    Shader planetshader("res/shader/00_SpaceShip/ship8.0/instancingVER.shader", "res/shader/00_SpaceShip/ship8.0/instancingFRAG3.0.shader");
+    Shader asteroidShader("res/shader/00_SpaceShip/ship8.0/aster_ver.shader", "res/shader/00_SpaceShip/ship8.0/aster_frag3.0.shader");
 
     //Shader sunCoreShader("res/shader/StarShader/StarList/star_core_ver.shader", "res/shader/StarShader/StarList/star_core_frag.shader");
     Shader sunCoreShader("res/shader/StarShader/StarList2.0/core_ver.shader", "res/shader/StarShader/StarList2.0/core_frag2.0.shader");
