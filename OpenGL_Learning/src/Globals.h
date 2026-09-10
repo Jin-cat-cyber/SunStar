@@ -91,3 +91,12 @@ inline unsigned int ringIndexCount = 0;
 inline float ringInner = 150.0f;   // 内半径（占位，待调）
 inline float ringOuter = 260.0f;   // 外半径（占位，待调）
 inline float ringThickness = 15.0f;   // 环的厚度（±15 单位，很扁但可见）
+
+// ===== 小行星视锥剔除（跨版本共用）=====
+inline std::vector<glm::mat4> gRockMatrices;	// 小行星模型矩阵数组(全量矩阵，CPU端)，不再每帧计算
+inline std::vector<glm::vec4> gRockSpheres;		// xyz=球心， w=半径
+inline unsigned int rockInstanceVBO = 0;		// 实例矩阵动态 VBO 句柄
+inline std::vector<glm::mat4> gVisible;			// 本帧可见小行星矩阵数组（CPU端）
+inline unsigned int rockVisibleCount = 0;		// 本帧可见小行星绘制数量（CPU端）
+inline std::vector<glm::mat4> gShadowVisible;	// 阴影 Pass 用（能投影到可见面的）
+inline unsigned int rockShadowVisibleCount = 0; // 阴影 Pass 绘制数量

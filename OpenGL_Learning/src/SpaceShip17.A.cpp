@@ -22,7 +22,7 @@
 #include "Procedural.h"
 #include "Spaceship.h"
 
-#ifdef SHIP_16_0
+//#ifdef SHIP_17_A
 #include <stb_image.h>
 
 
@@ -37,6 +37,7 @@ void rebuildFramebuffers(int width, int height);  //  重建离屏渲染帧缓�
 
 // 星球相关函数
 void RocksModelMatricesInit(unsigned int& amount, Model& rock);
+void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos);
 
 // 阴影相关函数
 void DepthCubeMapInit();
@@ -541,6 +542,26 @@ int main()
         ship.Update(deltaTime);
 
 
+        // 模式3：相机跟随飞船（后方偏上，看向飞船）
+        if (currentMode == MODE_FOLLOW) {
+            glm::vec3 fwd = ship.Forward();
+            glm::vec3 target = ship.position - fwd * followDistance + glm::vec3(0.0f, followHeight, 0.0f);
+
+            float t = glm::clamp(followSmooth * deltaTime, 0.0f, 1.0f);
+            camera.Position = glm::mix(camera.Position, target, t);    // 平滑逼近，不再瞬移
+
+            // look at ship, plus orbit look-around offset
+            glm::vec3 toShip = glm::normalize(ship.position - camera.Position);
+            glm::quat orbitRot = glm::angleAxis(glm::radians(orbitYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
+                glm::angleAxis(glm::radians(orbitPitch), glm::vec3(1.0f, 0.0f, 0.0f));
+
+            camera.Front = orbitRot * toShip;
+            camera.Right = glm::normalize(glm::cross(camera.Front, glm::vec3(0.0f, 1.0f, 0.0f)));
+            camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
+        }
+
+
+        RockViewFrustumCull(window, pointSunPositions);
 
         // ====== 阴影 Pass：渲染深度 CubeMap ======
         std::vector<glm::mat4> shadowTransforms;
@@ -560,12 +581,18 @@ int main()
 
         // --- 小行星带 ---
         simpleDepthShader.setBool("instanced", true);
+        if (!gShadowVisible.empty())
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, rockInstanceVBO);
+            glBufferSubData(GL_ARRAY_BUFFER, 0,
+                gShadowVisible.size() * sizeof(glm::mat4), gShadowVisible.data());
+        }
         for (unsigned int i = 0; i < rock.meshes.size(); i++)
         {
             glBindVertexArray(rock.meshes[i].VAO);
             glDrawElementsInstanced(GL_TRIANGLES,
                 static_cast<unsigned int>(rock.meshes[i].indices.size()),
-                GL_UNSIGNED_INT, 0, amount);
+                GL_UNSIGNED_INT, 0, rockShadowVisibleCount);
             glBindVertexArray(0);
         }
 
@@ -605,23 +632,6 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-        // 模式3：相机跟随飞船（后方偏上，看向飞船）
-        if (currentMode == MODE_FOLLOW) {
-            glm::vec3 fwd = ship.Forward();
-            glm::vec3 target = ship.position - fwd * followDistance + glm::vec3(0.0f, followHeight, 0.0f);
-
-            float t = glm::clamp(followSmooth * deltaTime, 0.0f, 1.0f);
-            camera.Position = glm::mix(camera.Position, target, t);    // 平滑逼近，不再瞬移
-
-            // look at ship, plus orbit look-around offset
-            glm::vec3 toShip = glm::normalize(ship.position - camera.Position);
-            glm::quat orbitRot = glm::angleAxis(glm::radians(orbitYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
-                glm::angleAxis(glm::radians(orbitPitch), glm::vec3(1.0f, 0.0f, 0.0f));
-
-            camera.Front = orbitRot * toShip;
-            camera.Right = glm::normalize(glm::cross(camera.Front, glm::vec3(0.0f, 1.0f, 0.0f)));
-            camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
-        }
 
         // 配置变换矩阵
         int winWidth, winHeight;
@@ -633,6 +643,8 @@ int main()
         glm::mat4 view = camera.GetViewMatrix();
 
 
+		// ===== G-Buffer Pass =====
+        
         // === 几何 Pass: Planet === (火星改前向渲染，不再进 G-Buffer)
         //gBufferPlanetShader.use();
         //gBufferPlanetShader.setMat4("projection", projection);
@@ -643,22 +655,29 @@ int main()
         //gBufferPlanetShader.setMat4("model", model);
         //planet.Draw(gBufferPlanetShader);
 
-        // === 几何 Pass: Asteroids ===
+        // === G-Buffer Pass: Asteroids ===
         gBufferAsteroidShader.use();
         gBufferAsteroidShader.setMat4("projection", projection);
         gBufferAsteroidShader.setMat4("view", view);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id);
         gBufferAsteroidShader.setInt("material_diffuse", 0);
+        if (!gVisible.empty())
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, rockInstanceVBO);
+            glBufferSubData(GL_ARRAY_BUFFER, 0,
+                gVisible.size() * sizeof(glm::mat4), gVisible.data());
+        }
         for (unsigned int i = 0; i < rock.meshes.size(); i++)
         {
             glBindVertexArray(rock.meshes[i].VAO);
             glDrawElementsInstanced(GL_TRIANGLES,
                 static_cast<unsigned int>(rock.meshes[i].indices.size()),
-                GL_UNSIGNED_INT, 0, amount);
+                GL_UNSIGNED_INT, 0, rockVisibleCount);
             glBindVertexArray(0);
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 
         // === 将 G-Buffer 深度传到 hdrFBO ===
         glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
@@ -666,6 +685,7 @@ int main()
         glBlitFramebuffer(0, 0, windowwidth, windowheight,
             0, 0, windowwidth, windowheight,
             GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
 
         // === SSAO Pass ===
         glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
@@ -1464,6 +1484,12 @@ void rebuildFramebuffers(int width, int height)
 // 小行星带初始化
 void RocksModelMatricesInit(unsigned int& amount, Model& rock)
 {
+    float rockMeshBoundR = 0.0f;
+    for (auto& m : rock.meshes)
+        for (auto& v : m.vertices)
+            rockMeshBoundR = std::max(rockMeshBoundR, glm::length(v.Position));
+
+
     glm::mat4* modelMatrices;
     modelMatrices = new glm::mat4[amount];
     srand(static_cast<unsigned int>(glfwGetTime())); // 生成随机种子
@@ -1514,13 +1540,20 @@ void RocksModelMatricesInit(unsigned int& amount, Model& rock)
 
         // 4. 现在添加到矩阵列表中
         modelMatrices[i] = model;
+
+        gRockMatrices.push_back(model);
+        float s = glm::length(glm::vec3(model[0][0], model[1][1], model[2][2]));    // 均匀缩放
+        gRockSpheres.push_back(glm::vec4(glm::vec3(model[3]), rockMeshBoundR * s));
     }
 
     // 设置实例化顶点属性
     unsigned int buffer;
     glGenBuffers(1, &buffer);
+    rockInstanceVBO = buffer;                                   // 存全局供每帧重填
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+    //glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+    //glBufferSubData(GL_ARRAY_BUFFER, 0, amount * sizeof(glm::mat4), gRockMatrices.data());
+    glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), nullptr, GL_DYNAMIC_DRAW);
 
     // 将变换矩阵设置为实例顶点属性（使用除数1）
     // 注意：我们这里有点取巧，直接获取模型网格（多个网格时）现在公开声明的VAO，并添加新的vertexAttribPointers
@@ -1547,6 +1580,9 @@ void RocksModelMatricesInit(unsigned int& amount, Model& rock)
 
         glBindVertexArray(0);
     }
+
+    // 删除
+    delete[] modelMatrices;
 }
 
 // 帧缓冲四边形初始化
@@ -1729,6 +1765,46 @@ void RingGenerate(float outerRadius, float thickness)
     glBindVertexArray(0);
 }
 
+void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos)
+{
+    // ---- 小行星视锥剔除（Option A，单一相机视锥）----
+    int cw, ch; glfwGetFramebufferSize(window, &cw, &ch);
+    float cAspect = (float)cw / (float)ch;
+    glm::mat4 cullProj = glm::perspective(glm::radians(camera.Fov), cAspect, 0.1f, 2000.0f);
+    glm::mat4 cullView = camera.GetViewMatrix();
+    FrustumPlanes fp = ExtractFrustum(cullProj * cullView);
+
+    gVisible.clear();
+    gShadowVisible.clear();
+    for (size_t i = 0; i < gRockSpheres.size(); ++i)
+    {
+        glm::vec3 c = glm::vec3(gRockSpheres[i]);
+		float r = gRockSpheres[i].w;
+        if (SphereInFrustum(fp, c, r))
+        {
+            gVisible.push_back(gRockMatrices[i]);
+        }
+        if (CanCastVisibleShadow(fp, lightPos, c))
+        {
+            gShadowVisible.push_back(gRockMatrices[i]);
+        }
+
+    }
+    rockVisibleCount       = (unsigned int)gVisible.size();
+    rockShadowVisibleCount = (unsigned int)gShadowVisible.size();  
 
 
-#endif
+    // ---- 自测校验（临时，跑前几帧打印；确认后删除或包 #ifdef DEBUG_CULL）----
+    static int dbgCullFrame = 0;
+    if (++dbgCullFrame <= 3) {
+        glm::vec3 fwd = glm::normalize(camera.Front);
+        glm::vec3 cIn = glm::vec3(camera.Position) + fwd * 10.0f;
+        glm::vec3 cOut = glm::vec3(camera.Position) - fwd * 1000.0f;
+        std::cout << "[cull] center-in=" << SphereInFrustum(fp, cIn, 1.0f)
+            << " behind-out=" << (!SphereInFrustum(fp, cOut, 1.0f))
+            << " visibleCount=" << rockVisibleCount << " / " << gRockSpheres.size() << "\n";
+    }
+}
+
+
+//#endif

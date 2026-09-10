@@ -312,6 +312,12 @@
     <ClCompile Include="src\SpaceShip16.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\SpaceShip17.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip17.A.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
