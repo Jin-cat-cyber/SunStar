@@ -22,7 +22,7 @@
 #include "Procedural.h"
 #include "Spaceship.h"
 
-#ifdef SHIP_17_A
+#ifdef SHIP_19_0
 #include <stb_image.h>
 
 
@@ -42,6 +42,10 @@ void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos);
 // 阴影相关函数
 void DepthCubeMapInit();
 void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTransforms, const glm::vec3& pointSunPositions);
+int StaticShadowFace(const glm::vec3& lightPos, const glm::vec3& center);
+void ShadowPassBegin(unsigned int fbo, int res, glm::mat4& shadowProj,
+    std::vector<glm::mat4>& shadowTransforms, const glm::vec3& lightPos);
+
 
 // SSAO相关函数
 void SSAOInit();
@@ -118,16 +122,16 @@ int main()
     Shader gBufferAsteroidShader("res/shader/00_SpaceShip/G_buffer/gBuffer_asteroid_ver.shader",
         "res/shader/00_SpaceShip/G_buffer/gBuffer_asteroid_frag.shader");
 
-    // 延迟光照
+    // 延迟着色
     Shader deferredLightingShader("res/shader/00_SpaceShip/Deferred_Shading2.0/deferred_lighting_ver.shader",
-        "res/shader/00_SpaceShip/Deferred_Shading2.0/defer_light_ssao_frag.shader");
+        "res/shader/00_SpaceShip/Deferred_Shading2.0/defer_light_ssao_frag2.0.shader");
 
     // Spaceship
     Shader spaceshipShader("res/shader/00_SpaceShip/Forward_Shading/spaceship_ver.shader",
-        "res/shader/00_SpaceShip/Forward_Shading/spaceship_frag.shader");
+        "res/shader/00_SpaceShip/Forward_Shading/spaceship_frag2.0.shader");
     // 火星
     Shader MarsShader("res/shader/00_SpaceShip/Forward_Shading/planet_ver.shader",
-        "res/shader/00_SpaceShip/Forward_Shading/planet_frag.shader");
+        "res/shader/00_SpaceShip/Forward_Shading/planet_frag2.0.shader");
 
     // IBL
     Shader equirectangularToCubemapShader("res/shader/#PBR/IBL3.0/cubemap_ver3.0.shader",
@@ -176,13 +180,13 @@ int main()
         "res/shader/BloomShaders/composite_frag2.0.shader");
 
     // Shadow
-    Shader simpleDepthShader("res/shader/00_SpaceShip/depth_point/depth_point_ver2.2.shader",
-        "res/shader/00_SpaceShip/depth_point/depth_point_frag.shader",
-        "res/shader/00_SpaceShip/depth_point/depth_point_geo.shader");
+    Shader simpleDepthShader("res/shader/00_SpaceShip/depth_point3.0/depth_point_ver2.2.shader",
+        "res/shader/00_SpaceShip/depth_point3.0/depth_point_frag.shader",
+        "res/shader/00_SpaceShip/depth_point3.0/depth_point_geo.shader");
 
     // Stellar Ring
     Shader ringShader("res/shader/00_SpaceShip/Stellar_Ring2.0/ring_ver.shader",
-        "res/shader/00_SpaceShip/Stellar_Ring2.0/ring_frag.shader");
+        "res/shader/00_SpaceShip/Stellar_Ring2.0/ring_frag2.0.shader");
 
     // 行星大气散射
     Shader atmoShader("res/shader/00_SpaceShip/Atmosphere/atmo_ver.shader",
@@ -216,6 +220,7 @@ int main()
     spaceshipShader.setInt("aoMap", 7);
     spaceshipShader.setInt("emissionMap", 8);
     spaceshipShader.setInt("depthMap", 9);   // 阴影 cubemap 用 unit9，避开 IBL/材质
+    spaceshipShader.setInt("depthDynMap", 10);
 
     MarsShader.use();
     MarsShader.setInt("irradianceMap", 0);
@@ -228,6 +233,7 @@ int main()
     MarsShader.setInt("aoMap", 7);
     MarsShader.setInt("emissionMap", 8);
     MarsShader.setInt("depthMap", 9);   // 阴影 cubemap 用 unit9，避开 IBL/材质
+    MarsShader.setInt("depthDynMap", 10);
     // 着色器初始化（个人风格问题，我更喜欢在循环体中去写
     //brightPassShader.use();
     //brightPassShader.setInt("hdrImage", 0);
@@ -563,30 +569,31 @@ int main()
 
         RockViewFrustumCull(window, pointSunPositions);
 
-        // ====== 阴影 Pass：渲染深度 CubeMap ======
-        std::vector<glm::mat4> shadowTransforms;
+        // ====== 阴影 Pass ======
         glm::mat4 shadowProj = glm::perspective(
             glm::radians(90.0f),
             (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT,
             shadow_near, shadow_far);
 
-        ShadowPassRender(shadowProj, shadowTransforms, pointSunPositions);
 
+        std::vector<glm::mat4> shadowTransforms;
+        ShadowPassBegin(depthCubeFBO, SHADOW_WIDTH, shadowProj, shadowTransforms, pointSunPositions);
 
         simpleDepthShader.use();
+        simpleDepthShader.setInt("faceIndex", StaticShadowFace(pointSunPositions, planetPosition));
         for (unsigned int i = 0; i < 6; ++i)
             simpleDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
         simpleDepthShader.setFloat("far_plane", shadow_far);
         simpleDepthShader.setVec3("lightPos", pointSunPositions);
 
-        // --- 小行星带 ---
-        simpleDepthShader.setBool("instanced", true);
+        // --- 小行星：C 判据剔除（gShadowVisible）---
         if (!gShadowVisible.empty())
         {
             glBindBuffer(GL_ARRAY_BUFFER, rockInstanceVBO);
             glBufferSubData(GL_ARRAY_BUFFER, 0,
                 gShadowVisible.size() * sizeof(glm::mat4), gShadowVisible.data());
         }
+        simpleDepthShader.setBool("instanced", true);
         for (unsigned int i = 0; i < rock.meshes.size(); i++)
         {
             glBindVertexArray(rock.meshes[i].VAO);
@@ -596,29 +603,21 @@ int main()
             glBindVertexArray(0);
         }
 
-
-        // --- 星球 ---
+        // --- 行星 ---
         simpleDepthShader.setBool("instanced", false);
         glm::mat4 sdModel = glm::mat4(1.0f);
         sdModel = glm::translate(sdModel, planetPosition);
         sdModel = glm::scale(sdModel, planetScale);
         simpleDepthShader.setMat4("model", sdModel);
-        //glCullFace(GL_FRONT);   // 火星画背面进阴影贴图，避免自遮挡
         planet.Draw(simpleDepthShader);
-        //glCullFace(GL_BACK);    // 恢复
 
-
-        // --- 飞船（向深度 Cubemap 投影）---
-        glm::mat4 spaceshipModel = ship.GetModelMatrix();
-        simpleDepthShader.setBool("instanced", false);
-        simpleDepthShader.setMat4("model", spaceshipModel);
+        // --- 飞船 ---
+        simpleDepthShader.setMat4("model", ship.GetModelMatrix());
         spaceship.Draw(simpleDepthShader);
-
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glCullFace(GL_BACK);
         // ====== 阴影 Pass 结束 ======
-
 
 
         // ====== 几何pass开头
@@ -643,8 +642,8 @@ int main()
         glm::mat4 view = camera.GetViewMatrix();
 
 
-		// ===== G-Buffer Pass =====
-        
+        // ===== G-Buffer Pass =====
+
         // === 几何 Pass: Planet === (火星改前向渲染，不再进 G-Buffer)
         //gBufferPlanetShader.use();
         //gBufferPlanetShader.setMat4("projection", projection);
@@ -748,6 +747,9 @@ int main()
         glActiveTexture(GL_TEXTURE8);
         glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
         deferredLightingShader.setInt("brdfLUT", 8);
+        glActiveTexture(GL_TEXTURE10);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, depthDynMap);
+        deferredLightingShader.setInt("depthDynMap", 10);
 
 
         deferredLightingShader.setVec3("lightPos", pointSunPositions);
@@ -861,6 +863,7 @@ int main()
         glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
         glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
         glActiveTexture(GL_TEXTURE9); glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+        glActiveTexture(GL_TEXTURE10); glBindTexture(GL_TEXTURE_CUBE_MAP, depthDynMap);
 
         glCullFace(GL_BACK);
         planet.Draw(MarsShader);
@@ -917,11 +920,17 @@ int main()
         ringShader.setVec3("sunPos", pointSunPositions);
         ringShader.setVec3("sunColor", glm::vec3(1.0f, 0.85f, 0.6f));
         ringShader.setFloat("far_plane", shadow_far);
-        ringShader.setInt("depthMap", 9);
+        
         ringShader.setVec2("resolution", glm::vec2((float)windowwidth, (float)windowheight));
         ringShader.setMat4("invProjView", glm::inverse(projection * view));
+        
+        ringShader.setInt("depthMap", 9);
         glActiveTexture(GL_TEXTURE9);
         glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+
+        ringShader.setInt("depthDynMap", 10);
+        glActiveTexture(GL_TEXTURE10);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, depthDynMap);
 
         glBindVertexArray(quadVAO);          // 用全屏 quad，不再用 ringVAO
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -936,6 +945,7 @@ int main()
         // ====== 飞船 forward PBR 渲染 ======
         glDepthMask(GL_TRUE);
 
+		glm::mat4 spaceshipModel = ship.GetModelMatrix();
         spaceshipShader.use();
         spaceshipShader.setMat4("projection", projection);
         spaceshipShader.setMat4("view", view);
@@ -970,6 +980,7 @@ int main()
         glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
         glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
         glActiveTexture(GL_TEXTURE9); glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+        glActiveTexture(GL_TEXTURE10); glBindTexture(GL_TEXTURE_CUBE_MAP, depthDynMap);
 
         glCullFace(GL_BACK);
         spaceship.Draw(spaceshipShader);
@@ -1631,6 +1642,23 @@ void DepthCubeMapInit()
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // ---- 动态层 cubemap (只装会动的物体：飞船) ----
+    glGenFramebuffers(1, &depthDynFBO);
+    glGenTextures(1, &depthDynMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, depthDynMap);
+    for (unsigned int i = 0; i < 6; i++)
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT,
+            DYN_SHADOW_SIZE, DYN_SHADOW_SIZE, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthDynFBO);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthDynMap, 0);  // 分层附件
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
 }
 
 // 阴影PASS渲染
@@ -1654,6 +1682,37 @@ void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTrans
     glClear(GL_DEPTH_BUFFER_BIT);
     glCullFace(GL_BACK);
 }
+
+// 几何所在的那个立方体面 (0=+X,1=-X,2=+Y,3=-Y,4=+Z,5=-Z)
+int StaticShadowFace(const glm::vec3& lightPos, const glm::vec3& center)
+{
+    glm::vec3 d = glm::normalize(center - lightPos);
+    glm::vec3 a = glm::abs(d);
+    if (a.x >= a.y && a.x >= a.z) return (d.x > 0.0f) ? 0 : 1;
+    if (a.y >= a.z)               return (d.y > 0.0f) ? 2 : 3;
+    return (d.z > 0.0f) ? 4 : 5;
+}
+
+// 开始一次阴影渲染：建 6 个面矩阵 + 绑 FBO + 清空(分层附件一次清 6 面)
+void ShadowPassBegin(unsigned int fbo, int res, glm::mat4& shadowProj,
+    std::vector<glm::mat4>& shadowTransforms, const glm::vec3& lightPos)
+{
+    shadowTransforms.clear();
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+
+    glViewport(0, 0, res, res);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glDepthMask(GL_TRUE);
+    glClearDepth(1.0);
+    glClear(GL_DEPTH_BUFFER_BIT);   // 分层附件 → 一次清掉全部 6 面（未用面 = 最远 = 无遮挡）
+    glCullFace(GL_BACK);
+}
+
 
 // SSAO初始化
 void SSAOInit()
@@ -1779,7 +1838,7 @@ void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos)
     for (size_t i = 0; i < gRockSpheres.size(); ++i)
     {
         glm::vec3 c = glm::vec3(gRockSpheres[i]);
-		float r = gRockSpheres[i].w;
+        float r = gRockSpheres[i].w;
         if (SphereInFrustum(fp, c, r))
         {
             gVisible.push_back(gRockMatrices[i]);
@@ -1790,8 +1849,8 @@ void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos)
         }
 
     }
-    rockVisibleCount       = (unsigned int)gVisible.size();
-    rockShadowVisibleCount = (unsigned int)gShadowVisible.size();  
+    rockVisibleCount = (unsigned int)gVisible.size();
+    rockShadowVisibleCount = (unsigned int)gShadowVisible.size();
 
 
     // ---- 自测校验（临时，跑前几帧打印；确认后删除或包 #ifdef DEBUG_CULL）----

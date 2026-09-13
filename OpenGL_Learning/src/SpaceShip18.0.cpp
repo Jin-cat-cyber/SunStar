@@ -22,7 +22,7 @@
 #include "Procedural.h"
 #include "Spaceship.h"
 
-#ifdef SHIP_17_A
+#ifdef SHIP_18_0
 #include <stb_image.h>
 
 
@@ -103,20 +103,23 @@ int main()
 
     //加载深度缓冲
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_MULTISAMPLE); // 启用多重采样抗锯齿
-    setupFramebuffers(windowwidth, windowheight); // 设置离屏渲染帧缓冲
+    // 启用多重采样抗锯齿
+    glEnable(GL_MULTISAMPLE);
+    // 启用程序点大小
+    glEnable(GL_PROGRAM_POINT_SIZE);
+    // 设置离屏渲染帧缓冲
+    setupFramebuffers(windowwidth, windowheight);
 
     // 创建着色器对象
-   /* Shader planetshader("res/shader/00_SpaceShip/instancingVER.shader",
-        "res/shader/00_SpaceShip/instancingFRAG3.0.shader");
-    Shader asteroidShader("res/shader/00_SpaceShip/aster_ver.shader",
-        "res/shader/00_SpaceShip/aster_frag3.0.shader");*/
 
-        // G-buffer
-        //Shader gBufferPlanetShader("res/shader/00_SpaceShip/G_buffer/gBuffer_planet_ver.shader",
-        //    "res/shader/00_SpaceShip/G_buffer/gBuffer_planet_frag.shader");
+
+    // G-Buffer
     Shader gBufferAsteroidShader("res/shader/00_SpaceShip/G_buffer/gBuffer_asteroid_ver.shader",
         "res/shader/00_SpaceShip/G_buffer/gBuffer_asteroid_frag.shader");
+
+    // 小行星 LOD
+    Shader rockPointShader("res/shader/00_SpaceShip/RockPoint/rock_point_ver.shader",
+        "res/shader/00_SpaceShip/RockPoint/rock_point_frag.shader");
 
     // 延迟光照
     Shader deferredLightingShader("res/shader/00_SpaceShip/Deferred_Shading2.0/deferred_lighting_ver.shader",
@@ -643,39 +646,72 @@ int main()
         glm::mat4 view = camera.GetViewMatrix();
 
 
-		// ===== G-Buffer Pass =====
-        
-        // === 几何 Pass: Planet === (火星改前向渲染，不再进 G-Buffer)
-        //gBufferPlanetShader.use();
-        //gBufferPlanetShader.setMat4("projection", projection);
-        //gBufferPlanetShader.setMat4("view", view);
-        //glm::mat4 model = glm::mat4(1.0f);
-        //model = glm::translate(model, planetPosition);
-        //model = glm::scale(model, planetScale);
-        //gBufferPlanetShader.setMat4("model", model);
-        //planet.Draw(gBufferPlanetShader);
+        // ===== G-Buffer Pass =====
 
         // === G-Buffer Pass: Asteroids ===
+        //gBufferAsteroidShader.use();
+        //gBufferAsteroidShader.setMat4("projection", projection);
+        //gBufferAsteroidShader.setMat4("view", view);
+        //glActiveTexture(GL_TEXTURE0);
+        //glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id);
+        //gBufferAsteroidShader.setInt("material_diffuse", 0);
+        //if (!gVisible.empty())
+        //{
+        //    glBindBuffer(GL_ARRAY_BUFFER, rockInstanceVBO);
+        //    glBufferSubData(GL_ARRAY_BUFFER, 0,
+        //        gVisible.size() * sizeof(glm::mat4), gVisible.data());
+        //}
+        //for (unsigned int i = 0; i < rock.meshes.size(); i++)
+        //{
+        //    glBindVertexArray(rock.meshes[i].VAO);
+        //    glDrawElementsInstanced(GL_TRIANGLES,
+        //        static_cast<unsigned int>(rock.meshes[i].indices.size()),
+        //        GL_UNSIGNED_INT, 0, rockVisibleCount);
+        //    glBindVertexArray(0);
+        //}
+        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+                // === G-Buffer Pass: Asteroids ===
+        // --- LOD0 近桶：全模 mesh ---
         gBufferAsteroidShader.use();
         gBufferAsteroidShader.setMat4("projection", projection);
         gBufferAsteroidShader.setMat4("view", view);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id);
         gBufferAsteroidShader.setInt("material_diffuse", 0);
-        if (!gVisible.empty())
+        if (!gNear.empty())
         {
             glBindBuffer(GL_ARRAY_BUFFER, rockInstanceVBO);
             glBufferSubData(GL_ARRAY_BUFFER, 0,
-                gVisible.size() * sizeof(glm::mat4), gVisible.data());
+                gNear.size() * sizeof(glm::mat4), gNear.data());
         }
         for (unsigned int i = 0; i < rock.meshes.size(); i++)
         {
             glBindVertexArray(rock.meshes[i].VAO);
             glDrawElementsInstanced(GL_TRIANGLES,
                 static_cast<unsigned int>(rock.meshes[i].indices.size()),
-                GL_UNSIGNED_INT, 0, rockVisibleCount);
+                GL_UNSIGNED_INT, 0, rockNearCount);
             glBindVertexArray(0);
         }
+
+        // --- LOD1 远桶：点精灵（同样写进 gBuffer，由延迟光照统一着色）---
+        if (rockFarCount > 0)
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, rockPointVBO);
+            glBufferData(GL_ARRAY_BUFFER, rockFarCount * sizeof(glm::vec4),
+                gFarPos.data(), GL_DYNAMIC_DRAW);
+
+            rockPointShader.use();
+            rockPointShader.setMat4("projection", projection);
+            rockPointShader.setMat4("view", view);
+            rockPointShader.setVec3("camPos", camera.Position);
+            rockPointShader.setVec3("albedo", glm::vec3(0.62f, 0.55f, 0.45f));
+
+            glBindVertexArray(rockPointVAO);
+            glDrawArrays(GL_POINTS, 0, (GLsizei)rockFarCount);
+            glBindVertexArray(0);
+        }
+
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
@@ -1581,6 +1617,15 @@ void RocksModelMatricesInit(unsigned int& amount, Model& rock)
         glBindVertexArray(0);
     }
 
+    glGenVertexArrays(1, &rockPointVAO);
+    glGenBuffers(1, &rockPointVBO);
+    glBindVertexArray(rockPointVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, rockPointVBO);
+    glBufferData(GL_ARRAY_BUFFER, 0, nullptr, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (void*)0);
+    glBindVertexArray(0);
+
     // 删除
     delete[] modelMatrices;
 }
@@ -1774,24 +1819,56 @@ void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos)
     glm::mat4 cullView = camera.GetViewMatrix();
     FrustumPlanes fp = ExtractFrustum(cullProj * cullView);
 
-    gVisible.clear();
+    // 阴影：保持 C 判据不变（全集，不做 LOD）
     gShadowVisible.clear();
+    // 渲染：LOD 分桶（屏幕占比 + 迟滞）
+    gNear.clear();
+    gFarPos.clear();
+
+    if (gLodLevel.size() != gRockSpheres.size())
+        gLodLevel.assign(gRockSpheres.size(), 0);
+
+    const float fovRad = glm::radians(camera.Fov);
+    const float vpH = (float)windowheight;
+
     for (size_t i = 0; i < gRockSpheres.size(); ++i)
     {
         glm::vec3 c = glm::vec3(gRockSpheres[i]);
-		float r = gRockSpheres[i].w;
-        if (SphereInFrustum(fp, c, r))
-        {
-            gVisible.push_back(gRockMatrices[i]);
-        }
+        float r = gRockSpheres[i].w;
+
+        // --- 阴影：C 判据，全模不变 ---
         if (CanCastVisibleShadow(fp, lightPos, c))
-        {
             gShadowVisible.push_back(gRockMatrices[i]);
+
+        // --- 渲染：LOD 分桶 ---
+        unsigned char lv = gLodLevel[i];
+        float px = 0.0f;
+
+        if (lodEnabled)
+        {
+            float dist = glm::length(c - camera.Position);
+            px = ScreenSizePx(r, dist, vpH, fovRad);
+
+            if (px < 3.0f)      lv = 1;     // 太小 → 远档(点)
+            else if (px > 6.0f) lv = 0;     // 够大 → 近档(全模)
+            gLodLevel[i] = lv;              // 3~6px 之间维持上一帧(迟滞)
+            // TODO(将来开 LOD 时): 建议再加"每实例阈值错开"以软化 pop
+            
+        }
+        else
+        {
+            lv = 0;      // 关：全部近档(全模)，等同 17.A
         }
 
+        if (SphereInFrustum(fp, c, r))
+        {
+            if (lv == 1) gFarPos.push_back(glm::vec4(c, glm::clamp(px * 1.5f, 2.0f, 6.0f)));
+            else         gNear.push_back(gRockMatrices[i]);
+        }
     }
-    rockVisibleCount       = (unsigned int)gVisible.size();
-    rockShadowVisibleCount = (unsigned int)gShadowVisible.size();  
+    rockNearCount = (unsigned int)gNear.size();
+    rockFarCount = (unsigned int)gFarPos.size();
+    rockShadowVisibleCount = (unsigned int)gShadowVisible.size();
 
 
     // ---- 自测校验（临时，跑前几帧打印；确认后删除或包 #ifdef DEBUG_CULL）----
@@ -1800,9 +1877,15 @@ void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos)
         glm::vec3 fwd = glm::normalize(camera.Front);
         glm::vec3 cIn = glm::vec3(camera.Position) + fwd * 10.0f;
         glm::vec3 cOut = glm::vec3(camera.Position) - fwd * 1000.0f;
+        //std::cout << "[cull] center-in=" << SphereInFrustum(fp, cIn, 1.0f)
+        //    << " behind-out=" << (!SphereInFrustum(fp, cOut, 1.0f))
+        //    << " visibleCount=" << rockVisibleCount << " / " << gRockSpheres.size() << "\n";
+
         std::cout << "[cull] center-in=" << SphereInFrustum(fp, cIn, 1.0f)
             << " behind-out=" << (!SphereInFrustum(fp, cOut, 1.0f))
-            << " visibleCount=" << rockVisibleCount << " / " << gRockSpheres.size() << "\n";
+            << " near=" << rockNearCount << " far=" << rockFarCount
+            << " shadow=" << rockShadowVisibleCount
+            << " / " << gRockSpheres.size() << "\n";
     }
 }
 

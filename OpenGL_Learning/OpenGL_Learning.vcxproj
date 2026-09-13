@@ -195,6 +195,9 @@
     <ClCompile Include="src\SpaceShip16.0.cpp" />
     <ClCompile Include="src\SpaceShip17.0.cpp" />
     <ClCompile Include="src\SpaceShip17.A.cpp" />
+    <ClCompile Include="src\SpaceShip18.0.cpp" />
+    <ClCompile Include="src\SpaceShip19.0.cpp" />
+    <ClCompile Include="src\SpaceShip19.A.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip5.0_my_method.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip5.0_ds_method.cpp" />
     <ClCompile Include="src\SkyBox\cubeMap_SkyBox.cpp" />
@@ -321,6 +324,14 @@
     <None Include="res\shader\#PBR\test\prefilter_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Atmosphere\atmo_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Atmosphere\atmo_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Deferred_Shading2.0\defer_light_ssao_frag2.0.shader" />
+    <None Include="res\shader\00_SpaceShip\depth_point3.0\depth_point_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\depth_point3.0\depth_point_geo.shader" />
+    <None Include="res\shader\00_SpaceShip\depth_point3.0\depth_point_ver2.2.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_frag2.0.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\planet_frag2.0.shader" />
+    <None Include="res\shader\00_SpaceShip\RockPoint\rock_point_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\RockPoint\rock_point_ver.shader" />
     <None Include="res\shader\00_SpaceShip\ship8.0\aster_frag3.0.shader" />
     <None Include="res\shader\00_SpaceShip\ship8.0\aster_ver.shader" />
     <None Include="res\shader\00_SpaceShip\Deferred_Shading2.0\deferred_lighting_frag.shader" />
@@ -359,6 +370,7 @@
     <None Include="res\shader\00_SpaceShip\SSAO\ssao_Blur_frag.shader" />
     <None Include="res\shader\00_SpaceShip\SSAO\ssao_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Stellar_Ring2.0\ring_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Stellar_Ring2.0\ring_frag2.0.shader" />
     <None Include="res\shader\00_SpaceShip\Stellar_Ring2.0\ring_ver.shader" />
     <None Include="res\shader\00_SpaceShip\Stellar_Volumetric\sun_vol_3DN_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Stellar_Volumetric\sun_vol_2DN_frag.shader" />

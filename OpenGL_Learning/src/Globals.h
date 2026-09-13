@@ -62,11 +62,23 @@ inline unsigned int	gAlbedo = 0;
 inline unsigned int	gPBR = 0;
 inline unsigned int gDepthRBO = 0;
 
+
 // ===== 阴影 =====
 inline unsigned int depthCubeMap = 0, depthCubeFBO = 0;
 inline float shadow_near = 1.0f;
 inline float shadow_far = 1000.0f;
 inline unsigned int shadowColorMap = 0;
+
+// ===== 阴影：静态烘焙 + 动态层 =====
+inline bool shadowStaticDirty = true;               // 置真 → 下帧重烘焙静态层
+inline unsigned int depthDynFBO = 0;                // 动态层 FBO
+inline unsigned int depthDynMap = 0;                // 动态层 cubemap (1024, 6面)
+inline constexpr unsigned int DYN_SHADOW_SIZE = 1024;
+
+// ===== 阴影：逐面剔除 =====
+inline std::vector<glm::mat4> gFaceCasters[6];		      // 每个面自己的投射体
+inline unsigned int			  gFaceCount[6] = { 0,0,0,0,0,0 };
+
 
 // ===== SSAO =====
 inline unsigned int ssaoFBO = 0, ssaoBlurFBO = 0;
@@ -100,3 +112,13 @@ inline std::vector<glm::mat4> gVisible;			// 本帧可见小行星矩阵数组（CPU端）
 inline unsigned int rockVisibleCount = 0;		// 本帧可见小行星绘制数量（CPU端）
 inline std::vector<glm::mat4> gShadowVisible;	// 阴影 Pass 用（能投影到可见面的）
 inline unsigned int rockShadowVisibleCount = 0; // 阴影 Pass 绘制数量
+
+// ===== 小行星 LOD =====
+inline std::vector<glm::mat4> gNear;		  // LOD0 近桶矩阵（全模）
+inline std::vector<glm::vec4> gFarPos;		  // LOD1 远桶：xyz=位置, w=点径像素
+inline unsigned int rockNearCount = 0;
+inline unsigned int rockFarCount = 0;
+inline std::vector<unsigned char> gLodLevel;  // 每实例当前档(0近/1远)，迟滞记忆
+inline unsigned int rockPointVAO = 0;         // 点精灵 VAO
+inline unsigned int rockPointVBO = 0;         // 点精灵 VBO
+inline bool lodEnabled = false;				  // LOD 总开关：false = 全部走全模(画面等同 17.A)

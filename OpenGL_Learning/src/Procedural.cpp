@@ -73,6 +73,44 @@ bool CanCastVisibleShadow(const FrustumPlanes& fp, const glm::vec3& lightPos, co
     return Lp < tExit;                      // 进入点在越过 p 之后 → p 能投影到可见面
 }
 
+// 把包围球(center, radius)分配到它覆盖的立方体面；返回面数，faces[] 写索引
+int AssignCasterFaces(const glm::vec3& lightPos, const glm::vec3& center,
+    float radius, int faces[6])
+{
+    static const glm::vec3 AXIS[6] = {
+        { 1.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f},
+        { 0.0f, 1.0f, 0.0f}, { 0.0f,-1.0f, 0.0f},
+        { 0.0f, 0.0f, 1.0f}, { 0.0f, 0.0f,-1.0f}
+    };
+    glm::vec3 d = center - lightPos;
+    float L = glm::length(d);
+    if (L < 1e-6f) 
+    {
+        faces[0] = 0;
+        return 1;
+    }
+    glm::vec3 dir = d / L;
+
+    // 球张开的角半径
+    float alphaDeg = glm::degrees(std::asin(glm::clamp(radius / L, 0.0f, 1.0f)));
+    // 45° + 角半径 + 1.5° 边界余量
+    float cosLimit = std::cos(glm::radians(45.0f + alphaDeg + 1.5f));
+
+    int n = 0;
+    for (int i = 0; i < 6; ++i)
+    {
+        if (glm::dot(dir, AXIS[i]) >= cosLimit)
+            faces[n++] = i;
+    }
+    return n;
+}
+
+// ===== 屏幕占比函数 =====
+float ScreenSizePx(float worldRadius, float dist, float viewportH, float fovRad)
+{
+    return (worldRadius / dist) * (viewportH / (2.0f * std::tan(fovRad * 0.5f)));
+}
+
 
 // 加载纹理函数
 unsigned int loadTexture(char const* path)
