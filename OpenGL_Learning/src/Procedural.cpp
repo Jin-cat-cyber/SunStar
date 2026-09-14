@@ -73,6 +73,38 @@ bool CanCastVisibleShadow(const FrustumPlanes& fp, const glm::vec3& lightPos, co
     return Lp < tExit;                      // 进入点在越过 p 之后 → p 能投影到可见面
 }
 
+// 阴影裁剪
+bool CanCastVisibleShadow(const FrustumPlanes& fp, const glm::vec3& lightPos, const glm::vec3& p, float r)
+{
+    glm::vec3 dir = glm::normalize(p - lightPos);
+    float Lp = glm::length(p - lightPos);
+
+    float tEnter = -1e30f, tExit = 1e30f;
+    for (int i = 0; i < 6; ++i)
+    {
+        const glm::vec4& pl = fp.p[i];
+        glm::vec3 n(pl.x, pl.y, pl.z);
+        // 内部点满足 dot(n,x)+w >= 0；x(t)=lightPos+t*dir
+        // => t*dot(n,dir) >= -w - dot(n, lightPos)
+        float denom = glm::dot(n, dir);
+        float num = -pl.w - glm::dot(n, lightPos) - r;  // 补充r半径
+        if (std::abs(denom) < 1e-6f)
+        {
+            if (num > 0.0f) return false;   // 平行且起点在外侧 → 整条光线在外
+        }
+        else
+        {
+            float t = num / denom;
+            if (denom > 0.0f) tEnter = std::max(tEnter, t);
+            else              tExit = std::min(tExit, t);
+        }
+    }
+    if (tEnter > tExit) return false;       // 射线没穿过视锥
+    return Lp < tExit;                      // 进入点在越过 p 之后 → p 能投影到可见面
+}
+
+
+
 // 把包围球(center, radius)分配到它覆盖的立方体面；返回面数，faces[] 写索引
 int AssignCasterFaces(const glm::vec3& lightPos, const glm::vec3& center,
     float radius, int faces[6])
@@ -105,11 +137,14 @@ int AssignCasterFaces(const glm::vec3& lightPos, const glm::vec3& center,
     return n;
 }
 
+
+
 // ===== 屏幕占比函数 =====
 float ScreenSizePx(float worldRadius, float dist, float viewportH, float fovRad)
 {
     return (worldRadius / dist) * (viewportH / (2.0f * std::tan(fovRad * 0.5f)));
 }
+
 
 
 // 加载纹理函数

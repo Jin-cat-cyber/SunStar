@@ -11,6 +11,7 @@ struct FrustumPlanes { glm::vec4 p[6]; };       // xyz=∑®œﬂ£¨w=æ‡¿Î
 FrustumPlanes ExtractFrustum(const glm::mat4& m);
 bool SphereInFrustum(const FrustumPlanes& fp, const glm::vec3& c, float r);
 bool CanCastVisibleShadow(const FrustumPlanes& fp, const glm::vec3& lightPos, const glm::vec3& p);
+bool CanCastVisibleShadow(const FrustumPlanes& fp, const glm::vec3& lightPos, const glm::vec3& p, float r);
 
 int AssignCasterFaces(const glm::vec3& lightPos, const glm::vec3& center, float radius, int faces[6]);
 

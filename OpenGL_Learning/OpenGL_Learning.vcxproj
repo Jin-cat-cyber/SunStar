@@ -145,6 +145,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\PostProcess.cpp" />
     <ClCompile Include="src\InitPBR.cpp" />
     <ClCompile Include="src\ForwardPbr.cpp" />
     <ClCompile Include="src\OldVersion\07_PBR\PBR.cpp" />
@@ -188,6 +189,7 @@
     <ClCompile Include="src\OldVersion\05_AdvancedLighting\NormalMap\NormalMap_Model2.0.cpp" />
     <ClCompile Include="src\Shadow4.0.cpp" />
     <ClCompile Include="src\SpaceShip20.0.cpp" />
+    <ClCompile Include="src\SpaceShip21.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip10.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip11.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip12.0.cpp" />
@@ -253,6 +255,7 @@
     <ClCompile Include="src\Sun.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\PostProcess.h" />
     <ClInclude Include="src\InitPBR.h" />
     <ClInclude Include="src\ForwardPbr.h" />
     <ClInclude Include="src\Globals.h" />
