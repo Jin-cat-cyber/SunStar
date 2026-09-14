@@ -145,20 +145,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\InitPBR.cpp" />
     <ClCompile Include="src\ForwardPbr.cpp" />
-    <ClCompile Include="src\PBR_6.0.cpp" />
+    <ClCompile Include="src\OldVersion\07_PBR\PBR.cpp" />
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_5.0.cpp" />
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_6.0.cpp" />
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_IBL1.0.cpp" />
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_IBL1.A.cpp" />
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_IBL2.0.cpp" />
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_IBL4.0.cpp" />
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_IBL_3.0.cpp" />
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_test_luzi.cpp" />
     <ClCompile Include="src\PbrMesh.cpp" />
     <ClCompile Include="src\PbrModel.cpp" />
     <ClCompile Include="src\OldVersion\05_AdvancedLighting\Bloom.cpp" />
     <ClCompile Include="src\DeferredShading.cpp" />
-    <ClCompile Include="src\PBR.cpp" />
-    <ClCompile Include="src\PBR_5.0.cpp" />
-    <ClCompile Include="src\PBR_IBL1.0.cpp" />
-    <ClCompile Include="src\PBR_IBL1.A.cpp" />
-    <ClCompile Include="src\PBR_IBL2.0.cpp" />
-    <ClCompile Include="src\PBR_IBL4.0.cpp" />
-    <ClCompile Include="src\PBR_IBL_3.0.cpp" />
-    <ClCompile Include="src\PBR_test_luzi.cpp" />
     <ClCompile Include="src\Procedural.cpp" />
     <ClCompile Include="src\Skybox.cpp" />
     <ClCompile Include="src\Debug_Shader.cpp" />
@@ -186,12 +187,13 @@
     <ClCompile Include="src\OldVersion\05_AdvancedLighting\Shadow\Shadow3.0.cpp" />
     <ClCompile Include="src\OldVersion\05_AdvancedLighting\NormalMap\NormalMap_Model2.0.cpp" />
     <ClCompile Include="src\Shadow4.0.cpp" />
-    <ClCompile Include="src\SpaceShip10.0.cpp" />
-    <ClCompile Include="src\SpaceShip11.0.cpp" />
-    <ClCompile Include="src\SpaceShip12.0.cpp" />
-    <ClCompile Include="src\SpaceShip13.0.cpp" />
-    <ClCompile Include="src\SpaceShip14.0.cpp" />
-    <ClCompile Include="src\SpaceShip15.0.cpp" />
+    <ClCompile Include="src\SpaceShip20.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip10.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip11.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip12.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip13.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip14.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip15.0.cpp" />
     <ClCompile Include="src\SpaceShip16.0.cpp" />
     <ClCompile Include="src\SpaceShip17.0.cpp" />
     <ClCompile Include="src\SpaceShip17.A.cpp" />
@@ -240,9 +242,9 @@
     <ClCompile Include="src\SpaceShip\SpaceShip4.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip6.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip7.0.cpp" />
-    <ClCompile Include="src\SpaceShip8.0.cpp" />
-    <ClCompile Include="src\SpaceShip9.0.cpp" />
-    <ClCompile Include="src\SpaceShip9.A.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip8.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip9.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip9.A.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip3.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip2.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip.cpp" />
@@ -251,6 +253,7 @@
     <ClCompile Include="src\Sun.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\InitPBR.h" />
     <ClInclude Include="src\ForwardPbr.h" />
     <ClInclude Include="src\Globals.h" />
     <ClInclude Include="src\MeshTypes.h" />

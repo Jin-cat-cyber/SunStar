@@ -22,7 +22,7 @@
 #include "Procedural.h"
 #include "Spaceship.h"
 
-//#ifdef SHIP_19_A
+#ifdef SHIP_19_A
 #include <stb_image.h>
 
 
@@ -1923,4 +1923,4 @@ void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos)
 
 
 
-//#endif
+#endif

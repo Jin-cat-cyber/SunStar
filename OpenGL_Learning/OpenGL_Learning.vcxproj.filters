@@ -234,16 +234,16 @@
     <ClCompile Include="src\Skybox.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip8.0.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip8.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\DeferredShading.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip9.0.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip9.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip9.A.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip9.A.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\SSAO.cpp">
@@ -252,31 +252,7 @@
     <ClCompile Include="src\OldVersion\05_AdvancedLighting\Bloom.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip10.0.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\PBR.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\PBR_IBL1.0.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\PBR_IBL1.A.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\PBR_IBL2.0.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\PBR_IBL_3.0.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\PBR_IBL4.0.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\PBR_test_luzi.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\PBR_5.0.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip10.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\PbrModel.cpp">
@@ -285,10 +261,7 @@
     <ClCompile Include="src\PbrMesh.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\PBR_6.0.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\SpaceShip11.0.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip11.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\ForwardPbr.cpp">
@@ -297,16 +270,16 @@
     <ClCompile Include="src\Procedural.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip12.0.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip12.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip13.0.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip13.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip14.0.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip14.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip15.0.cpp">
+    <ClCompile Include="src\SpaceShip\SpaceShip15.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\SpaceShip16.0.cpp">
@@ -325,6 +298,39 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\SpaceShip19.A.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OldVersion\07_PBR\PBR.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_5.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_6.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_IBL_3.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_IBL1.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_IBL1.A.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_IBL2.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_IBL4.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OldVersion\07_PBR\PBR_test_luzi.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\InitPBR.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip20.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -378,6 +384,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\Spaceship.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\InitPBR.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -62,6 +62,29 @@ inline unsigned int	gAlbedo = 0;
 inline unsigned int	gPBR = 0;
 inline unsigned int gDepthRBO = 0;
 
+// ===== PBR 离屏资源（inline：跨 TU 单实例）=====
+inline unsigned int captureFBO = 0;
+inline unsigned int captureRBO = 0;
+
+// HDR 环境贴图
+inline unsigned int hdrTexture = 0;
+inline unsigned int envCubemap = 0;
+// 辐照度
+inline unsigned int irradianceMap = 0;
+//
+inline unsigned int prefilterMap = 0;
+inline unsigned int brdfLUTTexture = 0;
+
+inline glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+inline glm::mat4 captureViews[6] =
+{
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, 1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,-1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+};
 
 // ===== 阴影 =====
 inline unsigned int depthCubeMap = 0, depthCubeFBO = 0;
