@@ -24,7 +24,7 @@
 #include "InitPBR.h"
 #include "PostProcess.h"
 
-#ifdef SHIP_21_0
+//#ifdef SHIP_22_0
 #include <stb_image.h>
 
 
@@ -352,6 +352,11 @@ int main()
 
 
 
+    // ===== 定步长累加器 =====
+    float physAccum = 0.0f;
+    constexpr float MAX_ACCUM = 0.25f;
+
+
     // 主循环
     while (!glfwWindowShouldClose(window))
     {
@@ -362,19 +367,31 @@ int main()
         // 输入管理
         processInput(window);
 
-        ship.Update(deltaTime);
+        // ---- 固定步长物理：把真实帧时间切成若干个 FIXED_DT ----
+        physAccum += deltaTime;
+        if (physAccum > MAX_ACCUM) physAccum = MAX_ACCUM;
+        while (physAccum >= Spaceship::FIXED_DT)
+        {
+            ship.FixedUpdate(Spaceship::FIXED_DT);
+            physAccum -= Spaceship::FIXED_DT;
+        }
+        const float alpha = physAccum / Spaceship::FIXED_DT;
+        const glm::mat4 shipModel = ship.GetModelMatrix(alpha);
 
 
         // 模式3：相机跟随飞船（后方偏上，看向飞船）
         if (currentMode == MODE_FOLLOW) {
-            glm::vec3 fwd = ship.Forward();
-            glm::vec3 target = ship.position - fwd * followDistance + glm::vec3(0.0f, followHeight, 0.0f);
+            //glm::vec3 fwd = ship.Forward();
+            glm::vec3 fwd = ship.RenderForward(alpha);
+            //glm::vec3 target = ship.position - fwd * followDistance + glm::vec3(0.0f, followHeight, 0.0f);
+            glm::vec3 target = ship.RenderPosition(alpha) - fwd * followDistance + glm::vec3(0.0f, followHeight, 0.0f);
 
             float t = glm::clamp(followSmooth * deltaTime, 0.0f, 1.0f);
             camera.Position = glm::mix(camera.Position, target, t);    // 平滑逼近，不再瞬移
 
             // look at ship, plus orbit look-around offset
-            glm::vec3 toShip = glm::normalize(ship.position - camera.Position);
+            //glm::vec3 toShip = glm::normalize(ship.position - camera.Position);
+            glm::vec3 toShip = glm::normalize(ship.RenderPosition(alpha) - camera.Position);
             glm::quat orbitRot = glm::angleAxis(glm::radians(orbitYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
                 glm::angleAxis(glm::radians(orbitPitch), glm::vec3(1.0f, 0.0f, 0.0f));
 
@@ -446,9 +463,11 @@ int main()
 
 
         // --- 飞船 ---
-        simpleDepthShader.setMat4("model", ship.GetModelMatrix());
+        //simpleDepthShader.setMat4("model", ship.GetModelMatrix());
+        simpleDepthShader.setMat4("model", shipModel);
 
-        int sf[6]; int sn = AssignCasterFaces(pointSunPositions, ship.position, shipBoundR, sf);
+        //int sf[6]; int sn = AssignCasterFaces(pointSunPositions, ship.position, shipBoundR, sf);
+        int sf[6]; int sn = AssignCasterFaces(pointSunPositions, ship.RenderPosition(alpha), shipBoundR, sf);
         for (int k = 0; k < sn; ++k)
         {
             simpleDepthShader.setInt("faceIndex", sf[k]);
@@ -785,7 +804,8 @@ int main()
         // ====== 飞船 forward PBR 渲染 ======
         glDepthMask(GL_TRUE);
 
-        glm::mat4 spaceshipModel = ship.GetModelMatrix();
+        //glm::mat4 spaceshipModel = ship.GetModelMatrix();
+        glm::mat4 spaceshipModel = shipModel;
         spaceshipShader.use();
         spaceshipShader.setMat4("projection", projection);
         spaceshipShader.setMat4("view", view);
@@ -1676,4 +1696,4 @@ void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos)
 
 
 
-#endif
+//#endif

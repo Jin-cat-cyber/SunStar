@@ -339,6 +339,9 @@
     <ClCompile Include="src\PostProcess.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\SpaceShip22.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
