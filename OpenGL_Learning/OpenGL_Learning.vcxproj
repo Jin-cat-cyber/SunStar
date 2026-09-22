@@ -118,7 +118,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);DEBUG_PHYS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -190,6 +190,8 @@
     <ClCompile Include="src\Shadow4.0.cpp" />
     <ClCompile Include="src\SpaceShip20.0.cpp" />
     <ClCompile Include="src\SpaceShip21.0.cpp" />
+    <ClCompile Include="src\SpaceShip22.A.cpp" />
+    <ClCompile Include="src\SpaceShip23.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip10.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip11.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip12.0.cpp" />
@@ -256,6 +258,7 @@
     <ClCompile Include="src\Sun.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\PhysicsSelfTest.h" />
     <ClInclude Include="src\PostProcess.h" />
     <ClInclude Include="src\InitPBR.h" />
     <ClInclude Include="src\ForwardPbr.h" />

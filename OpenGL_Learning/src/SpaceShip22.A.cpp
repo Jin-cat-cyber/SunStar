@@ -23,8 +23,9 @@
 #include "Spaceship.h"
 #include "InitPBR.h"
 #include "PostProcess.h"
+#include "PhysicsSelfTest.h"
 
-#ifdef SHIP_22_0
+#ifdef SHIP_22_A_DEBUG
 #include <stb_image.h>
 
 
@@ -66,9 +67,9 @@ void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO);
 // 尘埃星环
 void RingGenerate(float outerRadius, float thickness);
 
-
 int main()
 {
+    phys_test::Run();
     glfwInit(); // 初始化GLFW库
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);  // 设置OpenGL版本：主版本号
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);  // 设置OpenGL版本：次版本号
@@ -354,7 +355,7 @@ int main()
 
     // ===== 定步长累加器 =====
     float physAccum = 0.0f;
-    constexpr float MAX_ACCUM = 0.25f;
+    //constexpr float MAX_ACCUM = 0.25f;
 
 
     // 主循环
@@ -368,14 +369,18 @@ int main()
         processInput(window);
 
         // ---- 固定步长物理：把真实帧时间切成若干个 FIXED_DT ----
-        physAccum += deltaTime;
-        if (physAccum > MAX_ACCUM) physAccum = MAX_ACCUM;
-        while (physAccum >= Spaceship::FIXED_DT)
-        {
-            ship.FixedUpdate(Spaceship::FIXED_DT);
-            physAccum -= Spaceship::FIXED_DT;
-        }
-        const float alpha = physAccum / Spaceship::FIXED_DT;
+        //physAccum += deltaTime;
+        //if (physAccum > MAX_ACCUM) physAccum = MAX_ACCUM;
+        //while (physAccum >= Spaceship::FIXED_DT)
+        //{
+        //    ship.FixedUpdate(Spaceship::FIXED_DT);
+        //    physAccum -= Spaceship::FIXED_DT;
+        //}
+        //const float alpha = physAccum / Spaceship::FIXED_DT;
+        //const glm::mat4 shipModel = ship.GetModelMatrix(alpha);
+        float alpha = 0.0f;
+        const int stepCount = ship.AdvanceFixed(physAccum, deltaTime, alpha);
+        (void)stepCount;                                  // DEBUG_PHYS 关闭时避免"未使用"警告
         const glm::mat4 shipModel = ship.GetModelMatrix(alpha);
 
 
