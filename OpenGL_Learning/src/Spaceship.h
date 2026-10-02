@@ -64,7 +64,7 @@ struct Spaceship
     // 局部上方向在世界空间的表示
     glm::vec3 Up() const { return heading * glm::vec3(0.0f, 0.0f, -1.0f); }
 
-    // 矩阵获取
+    // ===== 矩阵获取 =====
     glm::mat4 GetModelMatrix() const
     {
         glm::mat4 m = glm::mat4(1.0f);
@@ -79,8 +79,9 @@ struct Spaceship
     glm::quat RenderHeading(float a) const { return glm::slerp(prevHeading, heading, a); }
     glm::vec3 RenderForward(float a) const { return RenderHeading(a) * glm::vec3(0.0f, -1.0f, 0.0f); }
 
+
+    // ===== 矩阵获取 =====    
     // 渲染用模型矩阵：姿态取插值后的，其余与无参版本完全一致
-    // 矩阵获取
     glm::mat4 GetModelMatrix(float a) const
     {
         glm::mat4 m = glm::mat4(1.0f);
@@ -102,8 +103,32 @@ struct Spaceship
 
     // 物理固定步长（秒）。纯解析积分，多跑几步不花钱
     static constexpr float FIXED_DT = 1.0f / 120.0f;
+    static constexpr float MAX_ACCUM = 0.25f;
+    
+    // ===== 累加器 =====
+    // 定步长推进一帧：把真实帧时间切成整数个 FIXED_DT
+    // accum 由调用方持有（跨帧保留）；alpha 输出渲染插值因子 ∈ [0,1)
+    // 返回本帧实际执行的物理步数
+    int AdvanceFixed(float& accum, float frameDt, float& alpha)
+    {
+        accum += frameDt;
+        if (accum > MAX_ACCUM)
+        {
+            accum = MAX_ACCUM;
+        }
+        int steps = 0;
+        while (accum >= FIXED_DT)
+        {
+            FixedUpdate(FIXED_DT);
+            accum -= FIXED_DT;
+            ++steps;
+        }
+        alpha = accum / FIXED_DT;
+        return steps;
+    }
 
-    // 定步长驱动入口：只允许从固定步长循环里调用
+    // ===== 定步长驱动入口 =====
+    // ：只允许从固定步长循环里调用
     // 先存快照再积分，于是 [prev, cur] 正好夹住一个 FIXED_DT，插值因子 a∈[0,1) 有效
     void FixedUpdate(float dt)
     {
@@ -112,7 +137,24 @@ struct Spaceship
         Update(dt);
     }
 
-    // 每帧更新：平滑速度、旋转并移动
+    // ===== 战术折跃：瞬时重定位，且不可被插值 =====
+    // 同时写 position 与 prevPosition。当 prevPosition == position 时，
+    // 渲染插值  prev + a * (cur - prev)  对任意 a ∈ [0,1) 都退化为精确值，
+    // 于是传送不可能被涂抹。只写 position 的后果是按 §5.1 的推导：偏差为
+    // (1-a)*D，上确界正好是 D = 100 单位，屏幕上表现为舰体在一帧内被拉过
+    // 整个折跃距离。
+    // 折跃不改变 heading；prevHeading 一并同步，是为了让这个不变量在后续
+    // 改动下依然成立。
+    void WarpTo(const glm::vec3& target)
+    {
+        position = target;
+        prevPosition = target;
+        prevHeading = heading;
+    }
+
+
+    // ===== 每帧更新 =====
+    // ：平滑速度、旋转并移动
     void Update(float dt)
     {
         // 平移：前后

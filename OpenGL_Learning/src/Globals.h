@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include "camera_ver2.h"
 #include "Spaceship.h"
+#include "WarpDebris.h"
 
 // ===== 常量 =====
 inline constexpr unsigned int SCR_WIDTH = 960;
@@ -114,11 +115,44 @@ inline Spaceship ship;
 inline ViewMode currentMode = MODE_FREE;
 
 // ===== third-person follow params =====
-inline float followDistance = 80.0f;	// camera distance behind the ship
-inline float followHeight = 25.0f;		// camera height above the ship
-inline float followSmooth = 2.0f;		// follow damping (higher = snappier, lower = softer)，10质感偏硬，换5有滞后感
-inline float orbitYaw = 0.0f;    // mode-3 look-around: horizontal orbit angle
-inline float orbitPitch = 0.0f;  // mode-3 look-around: vertical orbit angle
+inline float followDistance = 80.0f;	// 相机在飞船后方的距离
+inline float followHeight = 25.0f;		// 相机在飞船上方的高度
+inline float followSmooth = 2.0f;		// 跟随阻尼（值越大跟随越紧，值越小越柔和），10 的感觉偏硬，换 5 会有滞后感
+inline float orbitYaw = 0.0f;    // 模式-3 环视：水平环绕角
+inline float orbitPitch = 0.0f;  // 模式-3 环视：垂直环绕角
+
+
+
+// ===== 战术折跃（warp）状态 =====
+
+//      纯视觉状态。它唯一落在物理侧的动作是那一次传送，且只在闪现权重恰为 1
+//      的那一帧执行（见 Warp.h 的 advance 与计划书 §4）。
+//      之所以不放进 Spaceship：物理侧只需要 WarpTo 一个方法，而相机与后处理
+//      （FOV 冲击）都要读这里。
+struct WarpState
+{
+    bool      active = false;               // 时间线正在运行
+    //bool      teleported = false;               // 本帧执行传送
+    // 理由：传送是单帧事件，标志由 warp::Step::teleport 返回，不放进跨帧状态。
+    float     tau = 0.0f;                   // 自按键起算的秒数
+    float     cooldown = 0.0f;              // 距下次可用还剩的秒数
+    float     reject = 0.0f;                // 拒绝反馈红闪的剩余时间；与时间线无关
+    // glm::vec3 delta = glm::vec3(0.0f);      // 折跃位移向量 D_eff * f_hat
+    glm::vec3 target = glm::vec3(0.0f);     // 冻结的落点：按键帧定死，传送那一帧直接用它
+};
+inline WarpState gWarp;
+
+inline float WARP_DISTANCE = 100.0f;
+inline float WARP_COOLDOWN = 6.0f;
+inline float WARP_MIN_DIST = 10.0f;
+inline bool tKeyPressed    = false;
+// 行星位置与世界半径：折跃落点合法性要用，而 T 键处理在 processInput 里、
+// 拿不到 main 的局部量，所以在 main 里算完半径后回填一次。
+inline glm::vec3 gPlanetPos = glm::vec3(0.0f, -3.0f, 0.0f);
+inline float gPlanetRadius = 0.0f;
+inline float gShipBowOffset = 0.0f;      // 舰首到模型原点的距离；折跃落点合法性要用
+inline float WARP_REJECT_FLASH = 0.30f;   // 拒绝反馈红闪时长（秒）
+
 
 // ===== 尘埃星环 =====
 inline unsigned int ringVAO = 0, ringVBO = 0, ringEBO = 0;

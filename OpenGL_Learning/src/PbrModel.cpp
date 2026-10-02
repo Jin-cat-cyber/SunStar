@@ -38,7 +38,20 @@ void PbrModel::loadMode(string const& path)
 	if (ext == ".obj")                       // 只有 OBJ 需要翻（UV 原点在左下）
 		flags |= aiProcess_FlipUVs;
 
-	const aiScene* scene = importer.ReadFile(path, flags);
+	//const aiScene* scene = importer.ReadFile(path, flags);
+
+	// assimp 在探测导入器、读取内嵌贴图时会抛 DeadlyImportError 并自己接住，那种是噪音。
+	// 但异常若真的逃到这一层，没有兜底就是未处理异常直接终止、且什么都不打印，
+	// 所以这里接住并打出原因，然后照旧走下面的失败分支（scene 仍是 nullptr）。
+	const aiScene* scene = nullptr;
+	try
+	{
+		scene = importer.ReadFile(path, flags);
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "IMPORT EXCEPTION::" << path << " :: " << e.what() << std::endl;
+	}
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{

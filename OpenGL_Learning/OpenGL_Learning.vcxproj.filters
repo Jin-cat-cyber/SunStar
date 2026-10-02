@@ -282,24 +282,6 @@
     <ClCompile Include="src\SpaceShip\SpaceShip15.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\SpaceShip16.0.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\SpaceShip17.0.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\SpaceShip17.A.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\SpaceShip18.0.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\SpaceShip19.0.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\SpaceShip19.A.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="src\OldVersion\07_PBR\PBR.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -346,6 +328,36 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\SpaceShip23.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip23.A.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip24.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip\SpaceShip16.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip\SpaceShip17.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip\SpaceShip17.A.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip\SpaceShip18.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip\SpaceShip19.0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip\SpaceShip19.A.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WarpDebris.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip24.A.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -408,6 +420,27 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\PhysicsSelfTest.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Warp.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WarpSelfTest.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WarpSC.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WarpSCSelfTest.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WarpTuning.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WarpPillar.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WarpDebris.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -644,6 +677,26 @@
     <None Include="res\shader\00_SpaceShip\Forward_Shading\planet_frag2.0.shader" />
     <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_frag2.0.shader" />
     <None Include="res\shader\00_SpaceShip\Stellar_Ring2.0\ring_frag2.0.shader" />
+    <None Include="res\shader\00_SpaceShip\Warp\warp_flash_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Warp\warp_flash_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Warp\warp_shell_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Warp\warp_shell_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_ver3.0.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_frag3.0.shader" />
+    <None Include="res\shader\00_SpaceShip\Warp\warp_wire_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Warp\warp_wire_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Warp\warp_wire_geo.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\WarpSC\spaceship_frag4.0.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\WarpSC\spaceship_ver4.0.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_wire_frag2.0.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_wire_geo.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_wire_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_ghost_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_ghost_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_debris_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_debris_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_shell_frag2.0.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_shell_ver.shader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\texture\container.jpg">

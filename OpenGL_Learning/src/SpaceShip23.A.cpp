@@ -21,8 +21,13 @@
 #include "Skybox.h"
 #include "Procedural.h"
 #include "Spaceship.h"
+#include "InitPBR.h"
+#include "PostProcess.h"
+#include "PhysicsSelfTest.h"
+#include "Warp.h"
+#include "WarpSelfTest.h"
 
-#ifdef SHIP_17_0
+#ifdef SHIP_23_A
 #include <stb_image.h>
 
 
@@ -37,11 +42,15 @@ void rebuildFramebuffers(int width, int height);  //  重建离屏渲染帧缓�
 
 // 星球相关函数
 void RocksModelMatricesInit(unsigned int& amount, Model& rock);
-void RockViewFrustumCull(GLFWwindow* window);
+void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos);
 
 // 阴影相关函数
 void DepthCubeMapInit();
 void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTransforms, const glm::vec3& pointSunPositions);
+int StaticShadowFace(const glm::vec3& lightPos, const glm::vec3& center);
+void ShadowPassBegin(unsigned int fbo, int res, glm::mat4& shadowProj,
+    std::vector<glm::mat4>& shadowTransforms, const glm::vec3& lightPos);
+
 
 // SSAO相关函数
 void SSAOInit();
@@ -60,9 +69,11 @@ void FrameQuadInit(unsigned int& quadVAO, unsigned int& quadVBO);
 // 尘埃星环
 void RingGenerate(float outerRadius, float thickness);
 
-
 int main()
 {
+    phys_test::Run();
+    warp_test::Run();
+
     glfwInit(); // 初始化GLFW库
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);  // 设置OpenGL版本：主版本号
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);  // 设置OpenGL版本：次版本号
@@ -118,16 +129,28 @@ int main()
     Shader gBufferAsteroidShader("res/shader/00_SpaceShip/G_buffer/gBuffer_asteroid_ver.shader",
         "res/shader/00_SpaceShip/G_buffer/gBuffer_asteroid_frag.shader");
 
-    // 延迟光照
+    // 延迟着色
     Shader deferredLightingShader("res/shader/00_SpaceShip/Deferred_Shading2.0/deferred_lighting_ver.shader",
-        "res/shader/00_SpaceShip/Deferred_Shading2.0/defer_light_ssao_frag.shader");
+        "res/shader/00_SpaceShip/Deferred_Shading2.0/defer_light_ssao_frag2.0.shader");
 
-    // Spaceship
-    Shader spaceshipShader("res/shader/00_SpaceShip/Forward_Shading/spaceship_ver.shader",
-        "res/shader/00_SpaceShip/Forward_Shading/spaceship_frag.shader");
+    // 飞船 Spaceship
+    Shader spaceshipShader("res/shader/00_SpaceShip/Forward_Shading/spaceship_ver3.0.shader",
+        "res/shader/00_SpaceShip/Forward_Shading/spaceship_frag3.0.shader");
     // 火星
     Shader MarsShader("res/shader/00_SpaceShip/Forward_Shading/planet_ver.shader",
-        "res/shader/00_SpaceShip/Forward_Shading/planet_frag.shader");
+        "res/shader/00_SpaceShip/Forward_Shading/planet_frag2.0.shader");
+
+    // 折跃：全屏闪现（阶段 0 占位为整屏常量白）
+    Shader warpFlashShader("res/shader/00_SpaceShip/Warp/warp_flash_ver.shader",
+        "res/shader/00_SpaceShip/Warp/warp_flash_frag.shader");
+    // 折跃：电流外壳（同一套 mesh 沿法线外扩一点，加法混合再画一遍）
+    Shader warpShellShader("res/shader/00_SpaceShip/Warp/warp_shell_ver.shader",
+        "res/shader/00_SpaceShip/Warp/warp_shell_frag.shader");
+    // 折跃：线框（几何着色器打重心坐标，片元里只留三条边）
+    Shader warpWireShader("res/shader/00_SpaceShip/Warp/warp_wire_ver.shader",
+        "res/shader/00_SpaceShip/Warp/warp_wire_frag.shader",
+        "res/shader/00_SpaceShip/Warp/warp_wire_geo.shader");
+
 
     // IBL
     Shader equirectangularToCubemapShader("res/shader/#PBR/IBL3.0/cubemap_ver3.0.shader",
@@ -176,22 +199,29 @@ int main()
         "res/shader/BloomShaders/composite_frag2.0.shader");
 
     // Shadow
-    Shader simpleDepthShader("res/shader/00_SpaceShip/depth_point/depth_point_ver2.2.shader",
-        "res/shader/00_SpaceShip/depth_point/depth_point_frag.shader",
-        "res/shader/00_SpaceShip/depth_point/depth_point_geo.shader");
+    Shader simpleDepthShader("res/shader/00_SpaceShip/depth_point3.0/depth_point_ver2.2.shader",
+        "res/shader/00_SpaceShip/depth_point3.0/depth_point_frag.shader",
+        "res/shader/00_SpaceShip/depth_point3.0/depth_point_geo.shader");
 
     // Stellar Ring
     Shader ringShader("res/shader/00_SpaceShip/Stellar_Ring2.0/ring_ver.shader",
-        "res/shader/00_SpaceShip/Stellar_Ring2.0/ring_frag.shader");
+        "res/shader/00_SpaceShip/Stellar_Ring2.0/ring_frag2.0.shader");
 
     // 行星大气散射
     Shader atmoShader("res/shader/00_SpaceShip/Atmosphere/atmo_ver.shader",
         "res/shader/00_SpaceShip/Atmosphere/atmo_frag.shader");
 
 
-
+    // 小行星模型
     Model rock("res/model/rock/rock.obj");
+
+    // 火星模型
     PbrModel planet("res/model/glb_model/planet/mars_2k.glb");
+
+    // 飞船模型
+    PbrModel spaceship("res/model/glb_model/homeworld_-_vaygr_battlecruiser_1k.glb");
+
+
     // 火星半径
     float planetRadius = 0.0f;
     for (auto& m : planet.meshes)
@@ -199,10 +229,29 @@ int main()
             planetRadius = std::max(planetRadius, glm::length(v.Position));
     planetRadius *= 0.8f;   // planetScale = 0.8 均匀缩放
 
+    //// 飞船包围半径
+    //float shipBoundR = 0.0f;
+    //for (auto& m : spaceship.meshes)
+    //    for (auto& v : m.vertices)
+    //        shipBoundR = std::max(shipBoundR, glm::length(v.Position));
+    //shipBoundR *= 0.0005f;      // Spaceship::GetModelMatrix() 里的缩放
 
+    // 飞船包围半径，以及轴向极值（计划书 §3.5 的溶解前沿要用）
+    float shipBoundR = 0.0f;
+    float shipAxisMinY = 1e30f;    // 局部 Y 的最小值：机头在这一端
+    float shipAxisMaxY = -1e30f;
+    for (auto& m : spaceship.meshes)
+        for (auto& v : m.vertices)
+        {
+            shipBoundR = std::max(shipBoundR, glm::length(v.Position));
+            shipAxisMinY = std::min(shipAxisMinY, v.Position.y);
+            shipAxisMaxY = std::max(shipAxisMaxY, v.Position.y);
+        }
+    shipBoundR *= 0.0005f;      // Spaceship::GetModelMatrix() 里的缩放
 
-    PbrModel spaceship("res/model/glb_model/homeworld_-_vaygr_battlecruiser_1k.glb");
-
+    // ⚠ 注意：shipAxisMinY / shipAxisMaxY 【不乘 0.0005】。
+    // 它们要在着色器里与 aPos 同空间比较，而 aPos 是原始局部坐标。乘了的话
+    // 前沿会缩到 1/2000，整艘舰永远停在"全剥完"状态。
 
 
     spaceshipShader.use();
@@ -216,6 +265,7 @@ int main()
     spaceshipShader.setInt("aoMap", 7);
     spaceshipShader.setInt("emissionMap", 8);
     spaceshipShader.setInt("depthMap", 9);   // 阴影 cubemap 用 unit9，避开 IBL/材质
+    spaceshipShader.setInt("depthDynMap", 10);
 
     MarsShader.use();
     MarsShader.setInt("irradianceMap", 0);
@@ -228,6 +278,7 @@ int main()
     MarsShader.setInt("aoMap", 7);
     MarsShader.setInt("emissionMap", 8);
     MarsShader.setInt("depthMap", 9);   // 阴影 cubemap 用 unit9，避开 IBL/材质
+    MarsShader.setInt("depthDynMap", 10);
     // 着色器初始化（个人风格问题，我更喜欢在循环体中去写
     //brightPassShader.use();
     //brightPassShader.setInt("hdrImage", 0);
@@ -303,209 +354,15 @@ int main()
     RingGenerate(ringOuter, ringThickness);
 
 
-    // pbr: setup framebuffer
-    // ----------------------
-    unsigned int captureFBO;
-    unsigned int captureRBO;
-    glGenFramebuffers(1, &captureFBO);
-    glGenRenderbuffers(1, &captureRBO);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 2048, 2048);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
-
-
-    // pbr: load the HDR environment map
-    // ---------------------------------
-    stbi_set_flip_vertically_on_load(true);
+    // PBR流程
+    stbi_set_flip_vertically_on_load(true); // 
     int width, height, nrComponents;
     //float* data = stbi_loadf("res/texture/hdr/newport_loft.hdr", &width, &height, &nrComponents, 0);
-    float* data = stbi_loadf("res/texture/hdr/space_fox.hdr", &width, &height, &nrComponents, 0);
+    float* data = stbi_loadf("res/texture/hdr/space_fox.hdr", &width, &height, &nrComponents, 0);   // 获取HDR贴图信息
+    // PBR初始化
+    InitPBR(data, width, height, equirectangularToCubemapShader, irradianceShader, prefilterShader, brdfShader);
 
-    unsigned int hdrTexture;
-    if (data)
-    {
-        glGenTextures(1, &hdrTexture);
-        glBindTexture(GL_TEXTURE_2D, hdrTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        stbi_image_free(data);
-    }
-    else
-    {
-        std::cout << "Failed to load HDR image." << std::endl;
-    }
-
-    // pbr: setup cubemap to render to and attach to framebuffer
-    // ---------------------------------------------------------
-    unsigned int envCubemap;
-    glGenTextures(1, &envCubemap);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
-    for (unsigned int i = 0; i < 6; ++i)
-    {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 2048, 2048, 0, GL_RGB, GL_FLOAT, nullptr);
-    }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    // pbr: set up projection and view matrices for capturing data onto the 6 cubemap face directions
-    // ----------------------------------------------------------------------------------------------
-    glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-    glm::mat4 captureViews[] =
-    {
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-    };
-
-    // pbr: convert HDR equirectangular environment map to cubemap equivalent
-    // ----------------------------------------------------------------------
-    equirectangularToCubemapShader.use();
-    equirectangularToCubemapShader.setInt("equirectangularMap", 0);
-    equirectangularToCubemapShader.setMat4("projection", captureProjection);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, hdrTexture);
-
-    glViewport(0, 0, 2048, 2048); // don't forget to configure the viewport to the capture dimensions.
-    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-    for (unsigned int i = 0; i < 6; ++i)
-    {
-        equirectangularToCubemapShader.setMat4("view", captureViews[i]);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, envCubemap, 0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        renderCube();
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    // then let OpenGL generate mipmaps from first mip face (combatting visible dots artifact)
-    glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
-    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-
-    // pbr: create an irradiance cubemap, and re-scale capture FBO to irradiance scale.
-    // --------------------------------------------------------------------------------
-    unsigned int irradianceMap;
-    glGenTextures(1, &irradianceMap);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
-    for (unsigned int i = 0; i < 6; ++i)
-    {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 32, 32, 0, GL_RGB, GL_FLOAT, nullptr);
-    }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 32, 32);
-
-    //*** pbr: solve diffuse integral by convolution to create an irradiance (cube)map.
-    // -----------------------------------------------------------------------------
-    irradianceShader.use();
-    irradianceShader.setInt("environmentMap", 0);
-    irradianceShader.setMat4("projection", captureProjection);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
-
-    glViewport(0, 0, 32, 32); // don't forget to configure the viewport to the capture dimensions.
-    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-    for (unsigned int i = 0; i < 6; ++i)
-    {
-        irradianceShader.setMat4("view", captureViews[i]);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradianceMap, 0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        renderCube();
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    //*** pbr: create a pre-filter cubemap, and re-scale capture FBO to pre-filter scale.
-   // --------------------------------------------------------------------------------
-    unsigned int prefilterMap;
-    glGenTextures(1, &prefilterMap);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
-    for (unsigned int i = 0; i < 6; ++i)
-    {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 128, 128, 0, GL_RGB, GL_FLOAT, nullptr);
-    }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // be sure to set minification filter to mip_linear 
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // generate mipmaps for the cubemap so OpenGL automatically allocates the required memory.
-    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-
-    //*** pbr: run a quasi monte-carlo simulation on the environment lighting to create a prefilter (cube)map.
-    // ----------------------------------------------------------------------------------------------------
-    prefilterShader.use();
-    prefilterShader.setInt("environmentMap", 0);
-    prefilterShader.setMat4("projection", captureProjection);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-    unsigned int maxMipLevels = 5;
-    for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
-    {
-        // reisze framebuffer according to mip-level size.
-        unsigned int mipWidth = static_cast<unsigned int>(128 * std::pow(0.5, mip));
-        unsigned int mipHeight = static_cast<unsigned int>(128 * std::pow(0.5, mip));
-        glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
-        glViewport(0, 0, mipWidth, mipHeight);
-
-        float roughness = (float)mip / (float)(maxMipLevels - 1);
-        prefilterShader.setFloat("roughness", roughness);
-        for (unsigned int i = 0; i < 6; ++i)
-        {
-            prefilterShader.setMat4("view", captureViews[i]);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilterMap, mip);
-
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            renderCube();
-        }
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    //*** pbr: generate a 2D LUT from the BRDF equations used.
-    // ----------------------------------------------------
-    unsigned int brdfLUTTexture;
-    glGenTextures(1, &brdfLUTTexture);
-
-    // pre-allocate enough memory for the LUT texture.
-    glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, 0, GL_RG, GL_FLOAT, 0);
-    // be sure to set wrapping mode to GL_CLAMP_TO_EDGE
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    // then re-configure capture framebuffer object and render screen-space quad with BRDF shader.
-    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0);
-
-    glViewport(0, 0, 512, 512);
-    brdfShader.use();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    renderQuad();
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -523,10 +380,18 @@ int main()
     glm::vec3 pointSunPositions = glm::vec3(-50.0f, 50.0f, -600.0f);
     //glm::vec3 SunScale = glm::vec3(120.0f);
     glm::vec3 planetPosition = glm::vec3(0.0f, -3.0f, 0.0f);
+    gPlanetPos = planetPosition;        // 发布给 processInput（折跃落点合法性）
+    gPlanetRadius = planetRadius;
+    gShipBowOffset = shipBoundR;   // 包围球由 Y 向极值取到，所以它正好是舰首的偏移
     glm::vec3 planetScale = glm::vec3(0.8f);
     // 飞船位置
     //Spaceship ship;
 
+
+
+    // ===== 定步长累加器 =====
+    float physAccum = 0.0f;
+    //constexpr float MAX_ACCUM = 0.25f;
 
 
     // 主循环
@@ -539,19 +404,130 @@ int main()
         // 输入管理
         processInput(window);
 
-        ship.Update(deltaTime);
+        // ---- 固定步长物理：把真实帧时间切成若干个 FIXED_DT ----
+        float alpha = 0.0f;
+        const int stepCount = ship.AdvanceFixed(physAccum, deltaTime, alpha);
+        (void)stepCount;                                  // DEBUG_PHYS 关闭时避免"未使用"警告
 
+        // ===== 折跃：时间线推进与传送 =====
+        // 计时用真实 deltaTime，钳制在 Warp.h 内部做（1/30 s，计划书 §5.4）。
+        // advance() 会在跨越 TAU_STAR 的那一帧把 tau 精确钉在峰值上并返回
+        // teleport = true —— 传送必须且只能在这一帧执行（计划书 §4.4 命题 3）。
+        if (gWarp.cooldown > 0.0f)
+        {
+            gWarp.cooldown -= deltaTime;
+            if (gWarp.cooldown < 0.0f) gWarp.cooldown = 0.0f;
+        }
+
+        if (gWarp.active)
+        {
+            const warp::Step wstep = warp::advance(gWarp.tau, deltaTime);
+
+            if (wstep.teleport)
+            {
+                // 舰体位移 delta。相机要不要跟着位移只看模式：只有跟随模式的
+                // 相机锚在舰身上（下面那个相机块自身就被 if (currentMode ==
+                // MODE_FOLLOW) 包着），另外两种模式的相机是玩家自己的
+                // （MODE_REMOTE 固定、MODE_FREE 由 WASD 驱动），推它 100 单位
+                // 是纯粹的错。
+                //ship.WarpTo(ship.position + gWarp.delta);
+
+                //if (currentMode == MODE_FOLLOW)
+                //{
+                //    camera.Position += gWarp.delta;
+                //    // 阻尼 mix 不跳过：目标锚点 K* 同时也移动了同一个 delta，
+                //    // 误差 e = K* - K 不变，递推原样继续（计划书 §5.2）。
+                //}
+
+                // 实际位移向量 = 冻结落点 - 当前位姿。舰体与相机必须用【同一个】向量，
+                // 命题 2（舰体屏幕姿态不变、只有背景在跳）才继续精确成立。
+                const glm::vec3 jump = gWarp.target - ship.position;
+                ship.WarpTo(gWarp.target);
+
+                if (currentMode == MODE_FOLLOW)
+                {
+                    camera.Position += jump;
+                    // 阻尼 mix 不跳过：目标锚点 K* 同时也移动了同一个 jump，
+                    // 误差 e = K* - K 不变，递推原样继续（计划书 §5.2）。
+                }
+
+                gWarp.cooldown = WARP_COOLDOWN;   // 冷却自 TAU_STAR 起算
+            }
+
+            if (wstep.finished)
+            {
+                gWarp.active = false;
+                gWarp.tau = 0.0f;
+            }
+        }
+
+        // 五个通道的权重。非活跃期 tau = 0，除 solid 外全为 0，就是常规舰体。
+        const warp::Channels wch = warp::sample(gWarp.tau);
+        // 实体度还要乘上"船身还在的比例"。真实溶解是逐像素 discard，u_v 与 u_w
+        // 都不知道前沿在哪；不乘这一项会出现"影子已经是一整艘船、舰体还看不见"
+        // （计划书 §5.3 的抵达侧那一例）。
+        const float solidNow = wch.solid * (1.0f - warp::geoFront(gWarp.tau));
+
+        // 三种"相机侧"效果的共同门控：只有跟随模式的相机才随舰体平移。
+        // 闪白要遮的背景视差跳变、FOV 冲击与抖动要卖的位移感，都只在这个模式下成立；
+        // 模式 1/2 的相机是玩家自己的（固定 / 由 WASD 驱动），动它就是错的。
+        const float camGate = (currentMode == MODE_FOLLOW) ? 1.0f : 0.0f;
+
+        glm::mat4 shipModel = ship.GetModelMatrix(alpha);
+        // 线框用的"真实姿态"：不含预备退距、不含拉伸。折跃时线框是蓝图，
+        // 蓝图必须是舰体的最终形状，拉长的骨架读起来像另一艘船。
+        const glm::mat4 shipWireModel = shipModel;
+
+        // 蓄能期的预备动作：沿 -f_hat 反向退 kappa*D。只加在模型矩阵上，
+        // 绝不写回 ship.position —— 一旦进入物理，传送的位移不变式就破了。
+        // 相机不跟这 1.5 单位（它锚在 ship.RenderPosition 上），正是想要的。
+        const float backAmount = warp::KAPPA_BACK * WARP_DISTANCE * warp::anticipation(gWarp.tau);
+        if (backAmount > 0.0f)
+        {
+            shipModel = glm::translate(glm::mat4(1.0f),
+                -ship.RenderForward(alpha) * backAmount) * shipModel;
+        }
+
+        //// 阶段 0 占位：用整体缩放代替隐没段的白化（阶段 3 换成
+        //// mix(pbr, 白热, u_v)）。目的只是让"隐没段确实在跑"这件事在三种视角
+        //// 下都看得见 —— 尤其模式 1/2 关掉了全屏白之后，没它就完全看不出隐没段。
+        //// scale 是后乘，绕模型自身原点缩放，舰体位置不动。
+        //const float shrink = 1.0f - 0.6f * warp::quintic01(wch.v);
+        //if (shrink < 1.0f)
+        //{
+        //    shipModel = glm::scale(shipModel, glm::vec3(shrink));
+        //}
+
+        // 阶段 3：沿局部 -Y 的拉伸，取代阶段 0 的整体缩放占位。
+
+        // 拉伸：去程由 0.50 升到 τ*、保持线框段、与实体化同期收回（见 Warp.h）。
+        // 锚点决定"哪一端先动"：+Y 是艉，锚在 MaxY 时艉钉住、艏被拉出去（去程）；
+        // 锚在 MinY 时艏停在最终位置、只有艉收回（抵达）。切换点 τ*：
+        // 那一帧舰体被完全剥除、外壳通道已归零，而线框与蓝图用的是不含拉伸的
+        // shipWireModel，与锚点无关 —— 三种绘制都不受这次切换影响。
+        const float stretch = warp::stretchFactor(warp::stretchAmount(gWarp.tau));
+        if (stretch > 1.0f)
+        {
+            const float yAnchor = (gWarp.tau <= warp::TAU_STAR) ? shipAxisMaxY : shipAxisMinY;
+            shipModel = shipModel
+                * glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, yAnchor, 0.0f))
+                * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, stretch, 1.0f))
+                * glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -yAnchor, 0.0f));
+        }
 
         // 模式3：相机跟随飞船（后方偏上，看向飞船）
         if (currentMode == MODE_FOLLOW) {
-            glm::vec3 fwd = ship.Forward();
-            glm::vec3 target = ship.position - fwd * followDistance + glm::vec3(0.0f, followHeight, 0.0f);
+            //glm::vec3 fwd = ship.Forward();
+            glm::vec3 fwd = ship.RenderForward(alpha);
+            //glm::vec3 target = ship.position - fwd * followDistance + glm::vec3(0.0f, followHeight, 0.0f);
+            glm::vec3 target = ship.RenderPosition(alpha) - fwd * followDistance + glm::vec3(0.0f, followHeight, 0.0f);
 
             float t = glm::clamp(followSmooth * deltaTime, 0.0f, 1.0f);
             camera.Position = glm::mix(camera.Position, target, t);    // 平滑逼近，不再瞬移
 
             // look at ship, plus orbit look-around offset
-            glm::vec3 toShip = glm::normalize(ship.position - camera.Position);
+            //glm::vec3 toShip = glm::normalize(ship.position - camera.Position);
+            glm::vec3 toShip = glm::normalize(ship.RenderPosition(alpha) - camera.Position);
             glm::quat orbitRot = glm::angleAxis(glm::radians(orbitYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
                 glm::angleAxis(glm::radians(orbitPitch), glm::vec3(1.0f, 0.0f, 0.0f));
 
@@ -561,58 +537,88 @@ int main()
         }
 
 
-        RockViewFrustumCull(window);
+        RockViewFrustumCull(window, pointSunPositions);
 
-        // ====== 阴影 Pass：渲染深度 CubeMap ======
-        std::vector<glm::mat4> shadowTransforms;
+        // ====== 阴影 Pass ======
         glm::mat4 shadowProj = glm::perspective(
             glm::radians(90.0f),
             (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT,
             shadow_near, shadow_far);
 
-        ShadowPassRender(shadowProj, shadowTransforms, pointSunPositions);
+        // 1) 6 面矩阵 + 绑 FBO + 只清一次（分层附件 → 一次清 6 面）
+        std::vector<glm::mat4> shadowTransforms;
+        ShadowPassBegin(depthCubeFBO, SHADOW_WIDTH, shadowProj, shadowTransforms, pointSunPositions);
 
-
+        // 2) 公共 uniform
         simpleDepthShader.use();
+        //simpleDepthShader.setInt("faceIndex", StaticShadowFace(pointSunPositions, planetPosition));
         for (unsigned int i = 0; i < 6; ++i)
             simpleDepthShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
         simpleDepthShader.setFloat("far_plane", shadow_far);
         simpleDepthShader.setVec3("lightPos", pointSunPositions);
 
-        // --- 小行星带 ---
+        // 3) 逐面画小行星（空面跳过，每面只画分到它的那批
         simpleDepthShader.setBool("instanced", true);
-        for (unsigned int i = 0; i < rock.meshes.size(); i++)
+        for (int f = 0; f < 6; ++f)
         {
-            glBindVertexArray(rock.meshes[i].VAO);
-            glDrawElementsInstanced(GL_TRIANGLES,
-                static_cast<unsigned int>(rock.meshes[i].indices.size()),
-                GL_UNSIGNED_INT, 0, rockVisibleCount);
-            glBindVertexArray(0);
+            if (gFaceCount[f] == 0) continue;
+            simpleDepthShader.setInt("faceIndex", f);
+
+            glBindBuffer(GL_ARRAY_BUFFER, rockInstanceVBO);
+            glBufferSubData(GL_ARRAY_BUFFER, 0,
+                gFaceCasters[f].size() * sizeof(glm::mat4), gFaceCasters[f].data());
+
+            for (unsigned int i = 0; i < rock.meshes.size(); i++)
+            {
+                glBindVertexArray(rock.meshes[i].VAO);
+                glDrawElementsInstanced(GL_TRIANGLES,
+                    static_cast<unsigned int>(rock.meshes[i].indices.size()),
+                    GL_UNSIGNED_INT, 0, gFaceCount[f]);
+                glBindVertexArray(0);
+            }
         }
 
 
-        // --- 星球 ---
+
+        // 4) 行星 / 飞船：同样分面，只画进各自所在的面
         simpleDepthShader.setBool("instanced", false);
+
         glm::mat4 sdModel = glm::mat4(1.0f);
         sdModel = glm::translate(sdModel, planetPosition);
         sdModel = glm::scale(sdModel, planetScale);
         simpleDepthShader.setMat4("model", sdModel);
-        //glCullFace(GL_FRONT);   // 火星画背面进阴影贴图，避免自遮挡
-        planet.Draw(simpleDepthShader);
-        //glCullFace(GL_BACK);    // 恢复
+
+        // --- 行星 ---
+        int pf[6];
+        int pn = AssignCasterFaces(pointSunPositions, planetPosition, planetRadius, pf);
+        for (int k = 0; k < pn; ++k)
+        {
+            simpleDepthShader.setInt("faceIndex", pf[k]);
+            planet.Draw(simpleDepthShader);
+        }
 
 
-        // --- 飞船（向深度 Cubemap 投影）---
-        glm::mat4 spaceshipModel = ship.GetModelMatrix();
-        simpleDepthShader.setBool("instanced", false);
-        simpleDepthShader.setMat4("model", spaceshipModel);
-        spaceship.Draw(simpleDepthShader);
+        // --- 飞船 ---
+        // 折跃期间"舰体实体度"过半就停止投射：舰体已经看不见而影还留在星环上，
+        // 一眼露馅（计划书 §5.3）。深度 pass 做不了半透明，所以是二值判据。
+        if (solidNow > 0.5f)
+        {
+            //simpleDepthShader.setMat4("model", ship.GetModelMatrix());
+            simpleDepthShader.setMat4("model", shipModel);
+
+            //int sf[6]; int sn = AssignCasterFaces(pointSunPositions, ship.position, shipBoundR, sf);
+            int sf[6]; int sn = AssignCasterFaces(pointSunPositions, ship.RenderPosition(alpha), shipBoundR, sf);
+            for (int k = 0; k < sn; ++k)
+            {
+                simpleDepthShader.setInt("faceIndex", sf[k]);
+                spaceship.Draw(simpleDepthShader);
+            }
+        }
 
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glCullFace(GL_BACK);
         // ====== 阴影 Pass 结束 ======
-
 
 
         // ====== 几何pass开头
@@ -633,9 +639,25 @@ int main()
         float aspect = winWidth / (float)winHeight;
         //glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 2000.0f);
 
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), aspect, 0.1f, 2000.0f);
-        glm::mat4 view = camera.GetViewMatrix();
+        //glm::mat4 projection = glm::perspective(glm::radians(camera.Fov), aspect, 0.1f, 2000.0f);
+        //glm::mat4 view = camera.GetViewMatrix();
 
+                // FOV 冲击：闪现前后把视场角收紧 Φ，再放回来，读作一次推镜。
+        glm::mat4 projection = glm::perspective(
+            glm::radians(camera.Fov - warp::FOV_KICK * (WARP_DISTANCE / 100.0f) * warp::fovKick(gWarp.tau) * camGate),
+            aspect, 0.1f, 2000.0f);
+
+        // 短促抖动：沿 heading 的一个位移脉冲。**只在本帧的 view 上生效，用完立刻还原。**
+        // 绝不能把它留在 camera.Position 里 —— 跟随阻尼下一帧会从"被抖过的位置"起步，
+        // 抖动就被记住了，而且会污染距离不变式的验收。
+        const glm::vec3 camShake =
+            ship.RenderForward(alpha) * (warp::SHAKE_AMT * (WARP_DISTANCE / 100.0f) * warp::shakeEnvelope(gWarp.tau) * camGate);
+        camera.Position += camShake;
+        glm::mat4 view = camera.GetViewMatrix();
+        camera.Position -= camShake;
+
+
+        // ===== G-Buffer Pass =====
 
         // === 几何 Pass: Planet === (火星改前向渲染，不再进 G-Buffer)
         //gBufferPlanetShader.use();
@@ -647,13 +669,19 @@ int main()
         //gBufferPlanetShader.setMat4("model", model);
         //planet.Draw(gBufferPlanetShader);
 
-        // === 几何 Pass: Asteroids ===
+        // === G-Buffer Pass: Asteroids ===
         gBufferAsteroidShader.use();
         gBufferAsteroidShader.setMat4("projection", projection);
         gBufferAsteroidShader.setMat4("view", view);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id);
         gBufferAsteroidShader.setInt("material_diffuse", 0);
+        if (!gVisible.empty())
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, rockInstanceVBO);
+            glBufferSubData(GL_ARRAY_BUFFER, 0,
+                gVisible.size() * sizeof(glm::mat4), gVisible.data());
+        }
         for (unsigned int i = 0; i < rock.meshes.size(); i++)
         {
             glBindVertexArray(rock.meshes[i].VAO);
@@ -664,12 +692,14 @@ int main()
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+
         // === 将 G-Buffer 深度传到 hdrFBO ===
         glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdrFBO);
         glBlitFramebuffer(0, 0, windowwidth, windowheight,
             0, 0, windowwidth, windowheight,
             GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
 
         // === SSAO Pass ===
         glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
@@ -732,6 +762,9 @@ int main()
         glActiveTexture(GL_TEXTURE8);
         glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
         deferredLightingShader.setInt("brdfLUT", 8);
+        glActiveTexture(GL_TEXTURE10);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, depthDynMap);
+        deferredLightingShader.setInt("depthDynMap", 10);
 
 
         deferredLightingShader.setVec3("lightPos", pointSunPositions);
@@ -845,6 +878,7 @@ int main()
         glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
         glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
         glActiveTexture(GL_TEXTURE9); glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+        glActiveTexture(GL_TEXTURE10); glBindTexture(GL_TEXTURE_CUBE_MAP, depthDynMap);
 
         glCullFace(GL_BACK);
         planet.Draw(MarsShader);
@@ -901,11 +935,17 @@ int main()
         ringShader.setVec3("sunPos", pointSunPositions);
         ringShader.setVec3("sunColor", glm::vec3(1.0f, 0.85f, 0.6f));
         ringShader.setFloat("far_plane", shadow_far);
-        ringShader.setInt("depthMap", 9);
+
         ringShader.setVec2("resolution", glm::vec2((float)windowwidth, (float)windowheight));
         ringShader.setMat4("invProjView", glm::inverse(projection * view));
+
+        ringShader.setInt("depthMap", 9);
         glActiveTexture(GL_TEXTURE9);
         glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+
+        ringShader.setInt("depthDynMap", 10);
+        glActiveTexture(GL_TEXTURE10);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, depthDynMap);
 
         glBindVertexArray(quadVAO);          // 用全屏 quad，不再用 ringVAO
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -920,6 +960,8 @@ int main()
         // ====== 飞船 forward PBR 渲染 ======
         glDepthMask(GL_TRUE);
 
+        //glm::mat4 spaceshipModel = ship.GetModelMatrix();
+        glm::mat4 spaceshipModel = shipModel;
         spaceshipShader.use();
         spaceshipShader.setMat4("projection", projection);
         spaceshipShader.setMat4("view", view);
@@ -944,7 +986,28 @@ int main()
         // 菲涅尔
         spaceshipShader.setVec3("rimColor", glm::vec3(0.4f, 0.6f, 1.0f));  // 淡蓝 ( > 1.0 时会参与到Bloom)
         spaceshipShader.setFloat("rimPower", 3.0f);                        // 越大边缘越锐利
-        spaceshipShader.setFloat("rimStrength", 0.6f);                     // 强度 
+        //spaceshipShader.setFloat("rimStrength", 0.6f);                     // 强度 
+
+        // 折跃占位：电流通道 u_c 放大现有边缘光，先不新增绘制（计划书 §8 阶段 0）
+        spaceshipShader.setFloat("rimStrength", 0.6f * (1.0f + 4.0f * wch.c));
+        // 折跃：两级轴向溶解（计划书 §3.5）
+        spaceshipShader.setFloat("uVanish", wch.v);
+        spaceshipShader.setFloat("uWhiteK", 6.0f);
+
+
+        const float frontGeo = warp::geoFront(gWarp.tau);
+        // 去程剥 g 小的一侧（艏先没）；返程镜像坐标，艏先长回来。
+        spaceshipShader.setFloat("uFrontRev", (gWarp.tau > warp::T_WIRE_END) ? 1.0f : 0.0f);
+        spaceshipShader.setFloat("uFrontMat", warp::matFront(gWarp.tau));
+        spaceshipShader.setFloat("uFrontGeo", frontGeo);
+
+        spaceshipShader.setFloat("uAxisMinY", shipAxisMinY);
+        spaceshipShader.setFloat("uAxisMaxY", shipAxisMaxY);
+        spaceshipShader.setFloat("uObjRadius", shipBoundR / 0.0005f);
+        spaceshipShader.setFloat("uNoiseW", warp::NOISE_W);
+        spaceshipShader.setFloat("uNoiseFreq", 9.0f);
+        spaceshipShader.setFloat("uEdge", 0.06f);
+        spaceshipShader.setVec3("uDissolveColor", glm::vec3(0.25f, 0.95f, 0.80f));
 
         spaceshipShader.setBool("shadows", true);
         spaceshipShader.setBool("PCSS", false);
@@ -954,87 +1017,178 @@ int main()
         glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
         glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
         glActiveTexture(GL_TEXTURE9); glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+        glActiveTexture(GL_TEXTURE10); glBindTexture(GL_TEXTURE_CUBE_MAP, depthDynMap);
 
         glCullFace(GL_BACK);
         spaceship.Draw(spaceshipShader);
 
 
-        //==========================================
-        // 渲染到屏幕
-        glDisable(GL_DEPTH_TEST);
-        glDisable(GL_BLEND);
-
-        // 1. 亮度提取：从hdrColorBuffer中提取亮度信息到blurFBO1
-        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[0]);
-        glClear(GL_COLOR_BUFFER_BIT); // 这个为什么只清理颜色缓冲?
-        brightPassShader.use();
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
-        brightPassShader.setInt("hdrImage", 0);
-        brightPassShader.setFloat("threshold", 1.2f); // 设置亮度阈值 1.2f
-        glBindVertexArray(quadVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        // 2. 乒乓高斯模糊
-        int blurPasses = 10;         // 6~10 越大越柔和
-        bool horizontal = true;
-        blurShader.use();
-        for (int i = 0; i < blurPasses; i++)
+        // ===== 折跃：电流外壳 =====
+        // 只有电流通道非零时才画，常态零开销。
+        // PbrMesh::Draw 只会顺手设几个材质贴图 uniform（本程序里不存在，
+        // glUniform1i(-1, ...) 是空操作），所以可以安全地复用同一套 mesh。
+        if (wch.c > 0.001f)
         {
-            glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
-            blurShader.setBool("horizontal", horizontal);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
-            blurShader.setInt("image", 0);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE);      // 加法混合
+            glDepthMask(GL_FALSE);            // 不写深度，别挡住后面要画的东西
+            glCullFace(GL_FRONT);             // 只画背面：读起来才是"裹住"而不是"镀一层"
+
+            warpShellShader.use();
+            warpShellShader.setMat4("projection", projection);
+            warpShellShader.setMat4("view", view);
+            warpShellShader.setMat4("model", spaceshipModel);   // 与 PBR pass 同一份
+            warpShellShader.setVec3("camPos", camera.Position);
+            warpShellShader.setVec3("uShellColor", glm::vec3(0.35f, 0.75f, 1.0f));
+            warpShellShader.setFloat("uShellStrength", wch.c * 2.0f);
+            warpShellShader.setFloat("uShellWorld", shipBoundR * 0.03f);
+            warpShellShader.setFloat("uObjRadius", shipBoundR / 0.0005f);
+            warpShellShader.setFloat("uTime", currentFrame);
+            spaceship.Draw(warpShellShader);
+
+            glCullFace(GL_BACK);
+            glDepthMask(GL_TRUE);
+            glDisable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        }
+
+        // ===== 折跃：目的地蓝图 =====
+        // 蓄能期就在落点用同一套线框把骨架投影出来。矩阵取 T(delta) 之后的姿态，
+        // 所以在 τ* 传送完成那一帧它与真正的那份线框完全重合，不存在跳变。
+        // 强度用自己的包络（升到 1 后保持到 τ*），生长位置与传送后的线框共用
+        // 同一根 wireGrow 曲线，所以形状与亮度都在 τ* 处接得上轨。
+        // 它是世界几何，不受 camGate 影响。
+        //if (wch.c > 0.001f && gWarp.tau < warp::TAU_STAR)
+        /*if (warp::wireAlpha(gWarp.tau) > 0.001f && gWarp.tau >= warp::TAU_STAR)*/
+        if (gWarp.active && gWarp.tau < warp::TAU_STAR)
+        {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE);        // 加法混合，与线框一致
+            glDepthMask(GL_FALSE);              // 只读深度、不写深度
+
+            warpWireShader.use();
+            warpWireShader.setMat4("projection", projection);
+            warpWireShader.setMat4("view", view);
+            /*warpWireShader.setMat4("model",
+                glm::translate(glm::mat4(1.0f), gWarp.delta) * shipWireModel);*/
+            warpWireShader.setMat4("model",
+                glm::translate(glm::mat4(1.0f), gWarp.target - ship.RenderPosition(alpha)) * shipWireModel);
+            warpWireShader.setVec3("uWireColor", glm::vec3(0.35f, 0.90f, 1.00f));
+            warpWireShader.setFloat("uWireAlpha", warp::wireAlpha(gWarp.tau));
+            warpWireShader.setFloat("uWireGrow", warp::wireGrow(gWarp.tau));   // 与传送后同一根曲线
+            warpWireShader.setFloat("uWireWidth", 1.5f);
+            warpWireShader.setFloat("uAxisMinY", shipAxisMinY);
+            warpWireShader.setFloat("uAxisMaxY", shipAxisMaxY);
+            spaceship.Draw(warpWireShader);
+
+            glDepthMask(GL_TRUE);
+            glDisable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        }
+
+
+        // ===== 折跃：线框 =====
+        // 启用条件是"传送已经发生"（tau >= TAU_STAR），不是"u_w 非零"：
+        // u_w 从 0.62 就起来了，而 tau* = 0.65 —— 只判 u_w 的话，那段里线框会
+        // 画在**起点**（它用的是同一个 shipModel），违反"去程不产生线框"。
+        if (wch.w > 0.001f && gWarp.tau >= warp::TAU_STAR)
+        {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE);        // 加法混合
+            glDepthMask(GL_FALSE);              // 只读深度、不写深度
+            //glDisable(GL_CULL_FACE);            // 两面都画：读起来才是"全息透视线框"
+
+            warpWireShader.use();
+            warpWireShader.setMat4("projection", projection);
+            warpWireShader.setMat4("view", view);
+            // 线框
+            //warpWireShader.setMat4("model", spaceshipModel);   // 与 PBR pass 同一份
+
+            // 线框故意用"不拉伸"的那一份：它是舰体的最终形状（蓝图），
+            // 拉伸只属于被拽出去的实体。外壳 pass 仍用拉伸后的矩阵，
+            // 因为它贴在舰体表面上，必须跟着形变走。
+            warpWireShader.setMat4("model", shipWireModel);
+
+            warpWireShader.setVec3("uWireColor", glm::vec3(0.35f, 0.90f, 1.00f));
+            //warpWireShader.setFloat("uWireAlpha", wch.w);
+            warpWireShader.setFloat("uWireAlpha", warp::wireAlpha(gWarp.tau));   // 与蓝图同一条包络
+            warpWireShader.setFloat("uWireGrow", warp::wireGrow(gWarp.tau));
+            warpWireShader.setFloat("uWireWidth", 1.5f);
+            warpWireShader.setFloat("uAxisMinY", shipAxisMinY);
+            warpWireShader.setFloat("uAxisMaxY", shipAxisMaxY);
+            spaceship.Draw(warpWireShader);
+
+            //glEnable(GL_CULL_FACE);
+            glDepthMask(GL_TRUE);
+            glDisable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        }
+
+        // 拒绝反馈红闪：逐帧衰减，与折跃时间线无关。刻意不乘 camGate —— 它是给玩家的
+        // 反馈，三种模式都要看见；模式 1/2 关掉的只是"遮背景"的那一下白闪。
+        if (gWarp.reject > 0.0f) gWarp.reject -= deltaTime;
+        const float rejectFlash = warp::quintic01(gWarp.reject / WARP_REJECT_FLASH);
+
+        // ===== 折跃：全屏闪现 =====
+        // 它的唯一职责是遮住"背景视差跳变"，而背景跳不跳只看相机有没有跟着平移。
+        //  MODE_FOLLOW：相机随舰体平移 100 单位，行星角位移可达数十度
+        //               （计划书 §4.2 推论 2），必须整屏覆盖，否则画面边缘会
+        //               露出背景的跳变。
+        //  模式 1/2：相机不动，世界固定物的投影逐像素完全不变，没有跳变要遮；
+        //            而且这两种视角恰恰是"想看清舰体折跃"的视角，一整屏白
+        //            反而把要看的东西盖住了。所以直接关掉。
+        // 模式 1/2 下舰体自己在屏幕上换位置那一下，由 u_v 白化负责（阶段 3）。
+        const float flashAmount = wch.g * camGate;
+
+        if (flashAmount > 0.0f || rejectFlash > 0.0f)
+        {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE);        // 加法混合
+            glDisable(GL_DEPTH_TEST);           // 全屏 quad 不需要深度
+            glDepthMask(GL_FALSE);
+
+            // 舰体的屏幕位置（NDC），作为 bloom 的圆心。直接投影舰体位置，
+            // 比用 gl_FragCoord 反算省一个分辨率 uniform；clip.w 太小时（点在
+            // 相机后面）保持 (0,0)，宁可圆心偏掉也不要除出 NaN。
+            glm::vec2 flashCenter(0.0f);
+            const glm::vec4 clip = projection * view * glm::vec4(ship.RenderPosition(alpha), 1.0f);
+            if (clip.w > 1e-4f) flashCenter = glm::vec2(clip.x / clip.w, clip.y / clip.w);
+
+            //warpFlashShader.use();
+            //warpFlashShader.setFloat("uFlash", flashAmount);
+            //warpFlashShader.setFloat("uFlashBase", 6.0f);
+            //warpFlashShader.setFloat("uFlashCore", 10.0f);
+            //warpFlashShader.setVec2("uFlashCenter", flashCenter);
+            // 两者互斥：拒绝只发生在"不在折跃、不在冷却"时，白闪只在折跃期间。
+            const bool red = (rejectFlash > 0.0f);
+            warpFlashShader.use();
+            warpFlashShader.setFloat("uFlash", red ? rejectFlash : flashAmount);
+            warpFlashShader.setFloat("uFlashBase", red ? 1.0f : 6.0f);
+            warpFlashShader.setFloat("uFlashCore", red ? 0.8f : 10.0f);
+            warpFlashShader.setVec3("uFlashColor", red ? glm::vec3(1.0f, 0.10f, 0.08f)
+                : glm::vec3(1.0f));
+            warpFlashShader.setVec2("uFlashCenter", flashCenter);
+
+
             glBindVertexArray(quadVAO);
             glDrawArrays(GL_TRIANGLES, 0, 6);
-            horizontal = !horizontal;
+            glBindVertexArray(0);
+
+            glEnable(GL_DEPTH_TEST);
+            glDepthMask(GL_TRUE);
+            glDisable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         }
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        //// MSAA帧缓冲到HDR帧缓冲的blit操作
-        //glBindFramebuffer(GL_READ_FRAMEBUFFER, msFBO);
-        //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hdrFBO);
-        //glBlitFramebuffer(0, 0, windowwidth, windowheight,
-        //    0, 0, windowwidth, windowheight,
-        //    GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        //==========================================
+        // 渲染到屏幕
+        // ===== 后处理 =====
+        PostProcessing(brightPassShader, blurShader, compositeShader, quadVAO);
 
-        //// 【新增】把深度从 msFBO 复制到默认帧缓冲，供后面的光晕使用
-        //glBindFramebuffer(GL_READ_FRAMEBUFFER, msFBO);
-        //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        //glBlitFramebuffer(0, 0, windowwidth, windowheight,
-        //    0, 0, windowwidth, windowheight,
-        //    GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-
-        //// 恢复为默认帧缓冲或绑定 hdrFBO 以便后续读取 hdrColorBuffer
-        //glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-
-        // ------- 合成到屏幕 -------
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);   // 回到默认帧缓冲
-        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // 老版本
-        // 只清理颜色缓冲，不清理深度缓冲，以此来保留深度信息，确保后续渲染的物体不会被清除
-        glClear(GL_COLOR_BUFFER_BIT);
-        compositeShader.use();
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
-        compositeShader.setInt("sceneTexture", 0);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]); // 最终模糊结果在 blurFBO1 的颜色附件
-        compositeShader.setInt("bloomTexture", 1);
-        compositeShader.setFloat("exposure", 1.0f); // 曝光值
-        compositeShader.setFloat("bloomStrength", 0.6f); // Bloom强度
-        compositeShader.setVec3("colorTint", glm::vec3(1.0f, 0.95f, 0.6f)); // Bloom颜色
-        glBindVertexArray(quadVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        // blit hdrFBO depth to default FB for lens flare
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, hdrFBO);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBlitFramebuffer(0, 0, windowwidth, windowheight,
-            0, 0, windowwidth, windowheight,
-            GL_DEPTH_BUFFER_BIT, GL_NEAREST);
         // 5. 渲染镜头光晕
         Sun.LensFlareRender(lensFlareShader, camera, projection, view, flareTextures);
+        // --------------------------------------------------
+
 
         // 恢复深度测试和混合状态
         glEnable(GL_DEPTH_TEST);
@@ -1097,6 +1251,66 @@ void processInput(GLFWwindow* window)
         currentMode = MODE_REMOTE;
     if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
         currentMode = MODE_FOLLOW;
+    // ===== 折跃：T 键触发（一次性，照抄 TAB 那套上升沿写法）=====
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS && !tKeyPressed)
+    {
+        tKeyPressed = true;
+
+        // 三种拒绝：正在折跃、在冷却中、落点不合法（阶段 6）。前两种静默，
+        // 第三种播一次红闪——那是玩家唯一能拿到的反馈。
+        const bool busy = gWarp.active;
+        const bool cooling = (gWarp.cooldown > 0.0f);
+
+        if (!busy && !cooling)
+        {
+            glm::vec3 fhat = ship.Forward();
+            const float flen = glm::length(fhat);
+            if (flen > 1e-6f)
+            {
+                fhat /= flen;                       // 单位化，delta 才等于距离
+
+                // 阶段 6：落点合法性。航向射线与火星球求交：|m + t d|^2 = R^2，
+                // m = 起点 - 球心，近根 t_in 就是撞球的位置，落点最多贴到球面前
+                // 5% 半径处。三种情形要分清：球在背后（两根都负）不钳；起点已在球内
+                // （t_in < 0 < t_exit）钳到 0，必然被拒；其余按 t_in 钳。
+                // 射线起点取【舰首】而不是舰体中心：中心在球外不等于舰体在球外，
+                // 舰首还在中心前方 gShipBowOffset（约 26.8 世界单位）。
+                const glm::vec3 m = ship.position + fhat * gShipBowOffset - gPlanetPos;
+                const float b = glm::dot(m, fhat);
+                const float cQ = glm::dot(m, m) - gPlanetRadius * gPlanetRadius;
+                const float disc = b * b - cQ;
+                float dist = WARP_DISTANCE;
+                if (disc > 0.0f)
+                {
+                    const float sq = std::sqrt(disc);
+                    if (sq - b > 0.0f)              // 只有球在射线正前方才钳
+                        dist = std::min(WARP_DISTANCE,
+                            std::max(0.0f, -b - sq - 0.05f * gPlanetRadius));
+                }
+
+                if (dist < WARP_MIN_DIST)
+                {
+                    // 落点非法：唯一反馈是一趟红闪，不消耗冷却、不启动时间线。
+                    gWarp.reject = WARP_REJECT_FLASH;
+                }
+                else
+                {
+                    //gWarp.delta = fhat * dist;
+                    
+                    // 落点在按键帧一次定死。传送那一帧直接用这个点，于是"从按键那一刻
+                    // 算起的总位移"精确等于 dist —— 蓄能期的惯性前飘不再改变落点，
+                    // 落点合法性判定与最终落点也从此是同一个量。
+                    gWarp.target = ship.position + fhat * dist;
+                    gWarp.tau = 0.0f;
+                    gWarp.active = true;
+                }
+            }
+        }
+    }
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_RELEASE)
+    {
+        tKeyPressed = false;
+    }
 
     // 3种模式
     if (currentMode == MODE_FREE) {
@@ -1139,8 +1353,21 @@ void processInput(GLFWwindow* window)
             ship.targetRollAV = ship.turnRate;
         if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
             ship.targetRollAV = -ship.turnRate;
-    }
 
+
+    }
+    // 折跃期间冻结舰体控制。必须在三个模式分支之后独立判断，不能写成分支里的
+    // else if —— MODE_FREE 下舰体本来就不受操控，那五个目标量没有任何一处会
+    // 重置，会一直保留上一次在模式 2/3 里设的角速度，舰体在折跃过程中继续转，
+    // heading 就漂了，落点方向与视觉方向脱钩。
+    if (gWarp.active)
+    {
+        ship.targetSpeed = 0.0f;
+        ship.targetVerticalSpeed = 0.0f;
+        ship.targetYawAV = 0.0f;
+        ship.targetPitchAV = 0.0f;
+        ship.targetRollAV = 0.0f;
+    }
 
 
     // 相机旋转
@@ -1526,7 +1753,19 @@ void RocksModelMatricesInit(unsigned int& amount, Model& rock)
         modelMatrices[i] = model;
 
         gRockMatrices.push_back(model);
-        float s = glm::length(glm::vec3(model[0][0], model[1][1], model[2][2]));    // 均匀缩放
+        //float s = glm::length(glm::vec3(model[0][0], model[1][1], model[2][2]));    // 均匀缩放
+        // 改成：取任一列向量的长度
+        //float s = glm::length(glm::vec3(model[0]));
+        // 对以后可能出现的非均匀缩放也安全，就取三列最大值
+        float s = glm::max(glm::length(glm::vec3(model[0])),
+            glm::max(glm::length(glm::vec3(model[1])), glm::length(glm::vec3(model[2]))));
+        // 测试边角易出现剔除问题的小行星
+        static int badR = 0; static float fMin = 9e9f;
+        float f = s / scale;                 // scale 是 L1313 那个真实缩放
+        fMin = glm::min(fMin, f);
+        if (f < 0.6f) { badR++; std::cout << "[radius] i=" << i << " rot=" << rotAngle << " f=" << f << "\n"; }
+        // 循环外打印一次 fMin / badR
+
         gRockSpheres.push_back(glm::vec4(glm::vec3(model[3]), rockMeshBoundR * s));
     }
 
@@ -1564,7 +1803,7 @@ void RocksModelMatricesInit(unsigned int& amount, Model& rock)
 
         glBindVertexArray(0);
     }
-    
+
     // 删除
     delete[] modelMatrices;
 }
@@ -1615,6 +1854,23 @@ void DepthCubeMapInit()
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // ---- 动态层 cubemap (只装会动的物体：飞船) ----
+    glGenFramebuffers(1, &depthDynFBO);
+    glGenTextures(1, &depthDynMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, depthDynMap);
+    for (unsigned int i = 0; i < 6; i++)
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT,
+            DYN_SHADOW_SIZE, DYN_SHADOW_SIZE, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthDynFBO);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthDynMap, 0);  // 分层附件
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
 }
 
 // 阴影PASS渲染
@@ -1638,6 +1894,37 @@ void ShadowPassRender(glm::mat4& shadowProj, std::vector<glm::mat4>& shadowTrans
     glClear(GL_DEPTH_BUFFER_BIT);
     glCullFace(GL_BACK);
 }
+
+// 几何所在的那个立方体面 (0=+X,1=-X,2=+Y,3=-Y,4=+Z,5=-Z)
+int StaticShadowFace(const glm::vec3& lightPos, const glm::vec3& center)
+{
+    glm::vec3 d = glm::normalize(center - lightPos);
+    glm::vec3 a = glm::abs(d);
+    if (a.x >= a.y && a.x >= a.z) return (d.x > 0.0f) ? 0 : 1;
+    if (a.y >= a.z)               return (d.y > 0.0f) ? 2 : 3;
+    return (d.z > 0.0f) ? 4 : 5;
+}
+
+// 开始一次阴影渲染：建 6 个面矩阵 + 绑 FBO + 清空(分层附件一次清 6 面)
+void ShadowPassBegin(unsigned int fbo, int res, glm::mat4& shadowProj,
+    std::vector<glm::mat4>& shadowTransforms, const glm::vec3& lightPos)
+{
+    shadowTransforms.clear();
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+
+    glViewport(0, 0, res, res);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glDepthMask(GL_TRUE);
+    glClearDepth(1.0);
+    glClear(GL_DEPTH_BUFFER_BIT);   // 分层附件 → 一次清掉全部 6 面（未用面 = 最远 = 无遮挡）
+    glCullFace(GL_BACK);
+}
+
 
 // SSAO初始化
 void SSAOInit()
@@ -1749,26 +2036,51 @@ void RingGenerate(float outerRadius, float thickness)
     glBindVertexArray(0);
 }
 
-void RockViewFrustumCull(GLFWwindow* window)
+void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos)
 {
     // ---- 小行星视锥剔除（Option A，单一相机视锥）----
-    int cw, ch; glfwGetFramebufferSize(window, &cw, &ch);
+    int cw, ch;
+    glfwGetFramebufferSize(window, &cw, &ch);
     float cAspect = (float)cw / (float)ch;
     glm::mat4 cullProj = glm::perspective(glm::radians(camera.Fov), cAspect, 0.1f, 2000.0f);
     glm::mat4 cullView = camera.GetViewMatrix();
     FrustumPlanes fp = ExtractFrustum(cullProj * cullView);
 
     gVisible.clear();
-    for (size_t i = 0; i < gRockSpheres.size(); ++i)
-        if (SphereInFrustum(fp, glm::vec3(gRockSpheres[i]), gRockSpheres[i].w))
-            gVisible.push_back(gRockMatrices[i]);
-    rockVisibleCount = (unsigned int)gVisible.size();
+    gShadowVisible.clear();
+    // 新增
+    for (int f = 0; f < 6; ++f) { gFaceCasters[f].clear(); gFaceCount[f] = 0; }
 
-    if (!gVisible.empty()) {
-        glBindBuffer(GL_ARRAY_BUFFER, rockInstanceVBO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0,
-            gVisible.size() * sizeof(glm::mat4), gVisible.data());
+
+    for (size_t i = 0; i < gRockSpheres.size(); ++i)
+    {
+        glm::vec3 c = glm::vec3(gRockSpheres[i]);
+        float r = gRockSpheres[i].w;        // 半径（vec4 的 w 分量）
+
+        // A: G-Buffer 用
+        if (SphereInFrustum(fp, c, r))              // 如果包围球和视锥相交       
+        {
+            gVisible.push_back(gRockMatrices[i]);   // 将该实例的变换矩阵添加到可见列表（用于实例化绘制到 G-Buffer）
+        }
+
+        // C：阴影候选
+        if (CanCastVisibleShadow(fp, lightPos, c, r))  // 如果该对象可能对当前光源产生可见阴影（阴影候选）
+        {
+            gShadowVisible.push_back(gRockMatrices[i]); // 将其添加到阴影候选列表
+
+            int faces[6];
+            int n = AssignCasterFaces(lightPos, c, r, faces); // 计算该球体影响到的深度立方体面（返回面数量并写入 faces）
+            for (int k = 0; k < n; ++k)
+                gFaceCasters[faces[k]].push_back(gRockMatrices[i]); // 将该矩阵加入对应面的投射列表（便于按面渲染阴影）
+        }
+
     }
+    for (int f = 0; f < 6; ++f)
+        gFaceCount[f] = (unsigned int)gFaceCasters[f].size(); // 更新每个面的投射体计数
+
+    rockVisibleCount = (unsigned int)gVisible.size();           // 可见小行星实例总数（用于绘制实例计数）
+    rockShadowVisibleCount = (unsigned int)gShadowVisible.size(); // 阴影候选总数
+
 
     // ---- 自测校验（临时，跑前几帧打印；确认后删除或包 #ifdef DEBUG_CULL）----
     static int dbgCullFrame = 0;
@@ -1776,11 +2088,18 @@ void RockViewFrustumCull(GLFWwindow* window)
         glm::vec3 fwd = glm::normalize(camera.Front);
         glm::vec3 cIn = glm::vec3(camera.Position) + fwd * 10.0f;
         glm::vec3 cOut = glm::vec3(camera.Position) - fwd * 1000.0f;
+
         std::cout << "[cull] center-in=" << SphereInFrustum(fp, cIn, 1.0f)
             << " behind-out=" << (!SphereInFrustum(fp, cOut, 1.0f))
             << " visibleCount=" << rockVisibleCount << " / " << gRockSpheres.size() << "\n";
+
+        std::cout << "[shadow] f0=" << gFaceCount[0] << " f1=" << gFaceCount[1]
+            << " f2=" << gFaceCount[2] << " f3=" << gFaceCount[3]
+            << " f4=" << gFaceCount[4] << " f5=" << gFaceCount[5]
+            << " total=" << rockShadowVisibleCount << "\n";
     }
 }
+
 
 
 #endif

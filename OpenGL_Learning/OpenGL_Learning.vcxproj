@@ -192,18 +192,21 @@
     <ClCompile Include="src\SpaceShip21.0.cpp" />
     <ClCompile Include="src\SpaceShip22.A.cpp" />
     <ClCompile Include="src\SpaceShip23.0.cpp" />
+    <ClCompile Include="src\SpaceShip23.A.cpp" />
+    <ClCompile Include="src\SpaceShip24.0.cpp" />
+    <ClCompile Include="src\SpaceShip24.A.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip10.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip11.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip12.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip13.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip14.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip15.0.cpp" />
-    <ClCompile Include="src\SpaceShip16.0.cpp" />
-    <ClCompile Include="src\SpaceShip17.0.cpp" />
-    <ClCompile Include="src\SpaceShip17.A.cpp" />
-    <ClCompile Include="src\SpaceShip18.0.cpp" />
-    <ClCompile Include="src\SpaceShip19.0.cpp" />
-    <ClCompile Include="src\SpaceShip19.A.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip16.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip17.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip17.A.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip18.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip19.0.cpp" />
+    <ClCompile Include="src\SpaceShip\SpaceShip19.A.cpp" />
     <ClCompile Include="src\SpaceShip22.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip5.0_my_method.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip5.0_ds_method.cpp" />
@@ -256,6 +259,7 @@
     <ClCompile Include="src\SpaceShip\SpaceShip5.0.cpp" />
     <ClCompile Include="src\SSAO.cpp" />
     <ClCompile Include="src\Sun.cpp" />
+    <ClCompile Include="src\WarpDebris.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\PhysicsSelfTest.h" />
@@ -278,6 +282,13 @@
     <ClInclude Include="src\Spaceship.h" />
     <ClInclude Include="src\Spaceship_last1.0.h" />
     <ClInclude Include="src\Sun.h" />
+    <ClInclude Include="src\Warp.h" />
+    <ClInclude Include="src\WarpDebris.h" />
+    <ClInclude Include="src\WarpPillar.h" />
+    <ClInclude Include="src\WarpSC.h" />
+    <ClInclude Include="src\WarpSCSelfTest.h" />
+    <ClInclude Include="src\WarpSelfTest.h" />
+    <ClInclude Include="src\WarpTuning.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="res\model\backpack\backpack.mtl" />
@@ -340,6 +351,10 @@
     <None Include="res\shader\00_SpaceShip\depth_point3.0\depth_point_ver2.2.shader" />
     <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_frag2.0.shader" />
     <None Include="res\shader\00_SpaceShip\Forward_Shading\planet_frag2.0.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_frag3.0.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\spaceship_ver3.0.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\WarpSC\spaceship_frag4.0.shader" />
+    <None Include="res\shader\00_SpaceShip\Forward_Shading\WarpSC\spaceship_ver4.0.shader" />
     <None Include="res\shader\00_SpaceShip\RockPoint\rock_point_frag.shader" />
     <None Include="res\shader\00_SpaceShip\RockPoint\rock_point_ver.shader" />
     <None Include="res\shader\00_SpaceShip\ship8.0\aster_frag3.0.shader" />
@@ -388,6 +403,20 @@
     <None Include="res\shader\00_SpaceShip\Stellar_Volumetric\sun_vol_ver.shader" />
     <None Include="res\shader\00_SpaceShip\Stellar_Ring\ring_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Stellar_Ring\ring_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_debris_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_debris_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_ghost_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_ghost_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_shell_frag2.0.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_shell_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_wire_frag2.0.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_wire_geo.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_wire_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Warp\warp_shell_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Warp\warp_shell_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\Warp\warp_wire_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Warp\warp_wire_geo.shader" />
+    <None Include="res\shader\00_SpaceShip\Warp\warp_wire_ver.shader" />
     <None Include="res\shader\SSAO\ssao_blur_frag.shader" />
     <None Include="res\shader\SSAO\ssao_frag.shader" />
     <None Include="res\shader\SSAO\ssao_geometry_frag.shader" />
@@ -512,6 +541,8 @@
     <None Include="res\shader\Old_Version\02_Shader\ver_color.shader" />
     <None Include="res\shader\LightShader\ver_color.shader" />
     <None Include="res\shader\LightShader\ver_light_cube.shader" />
+    <None Include="res\shader\00_SpaceShip\Warp\warp_flash_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\Warp\warp_flash_ver.shader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\model\backpack\ao.jpg" />

@@ -1700,5 +1700,4 @@ void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos)
 
 
 
-
 #endif
