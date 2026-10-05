@@ -53,6 +53,7 @@ inline float lastFrame = 0.0f;
 
 // ===== 帧缓冲 =====
 inline unsigned int hdrFBO = 0, hdrColorBuffer = 0, hdrDepthRBO = 0;
+inline unsigned int hdrDepthTex = 0;   // hdrFBO 的深度附件（纹理版）：可采样，供冲击波扭曲 pass 反算世界坐标
 inline unsigned int pingpongFBO[2] = { 0, 0 };
 inline unsigned int pingpongColorbuffers[2] = { 0, 0 };
 	/*G - buffer*/ 

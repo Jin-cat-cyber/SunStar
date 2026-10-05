@@ -195,6 +195,7 @@
     <ClCompile Include="src\SpaceShip23.A.cpp" />
     <ClCompile Include="src\SpaceShip24.0.cpp" />
     <ClCompile Include="src\SpaceShip24.A.cpp" />
+    <ClCompile Include="src\SpaceShip24.B.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip10.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip11.0.cpp" />
     <ClCompile Include="src\SpaceShip\SpaceShip12.0.cpp" />
@@ -288,6 +289,7 @@
     <ClInclude Include="src\WarpSC.h" />
     <ClInclude Include="src\WarpSCSelfTest.h" />
     <ClInclude Include="src\WarpSelfTest.h" />
+    <ClInclude Include="src\WarpShock.h" />
     <ClInclude Include="src\WarpTuning.h" />
   </ItemGroup>
   <ItemGroup>
@@ -409,9 +411,13 @@
     <None Include="res\shader\00_SpaceShip\WarpSC\warp_ghost_ver.shader" />
     <None Include="res\shader\00_SpaceShip\WarpSC\warp_shell_frag2.0.shader" />
     <None Include="res\shader\00_SpaceShip\WarpSC\warp_shell_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_shock_distort_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_shock_distort_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_shock_ver.shader" />
     <None Include="res\shader\00_SpaceShip\WarpSC\warp_wire_frag2.0.shader" />
     <None Include="res\shader\00_SpaceShip\WarpSC\warp_wire_geo.shader" />
     <None Include="res\shader\00_SpaceShip\WarpSC\warp_wire_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\warp_shock_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Warp\warp_shell_frag.shader" />
     <None Include="res\shader\00_SpaceShip\Warp\warp_shell_ver.shader" />
     <None Include="res\shader\00_SpaceShip\Warp\warp_wire_frag.shader" />

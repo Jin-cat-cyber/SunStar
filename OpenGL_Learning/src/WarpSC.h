@@ -89,7 +89,7 @@ namespace warp_sc
     // 慢放开关（计划书 §10.3）。1.0 为实时；置 0.1 则整段折跃放慢 10 倍，
     // 用来逐帧确认遮盖与生长过程。因为一切由 tau 驱动，慢放不改变任何
     // 几何关系，只是把同一条参数化曲线拉长。
-    inline constexpr float TIME_SCALE = 0.5f;   // 1.0 = 真实速度；看片时可临时设小值慢放，交版前必须改回 1.0。
+    inline constexpr float TIME_SCALE = 1.0f;   // 1.0 = 真实速度；看片时可临时设小值慢放，交版前必须改回 1.0。
 
     // ===== 五个通道的梯形参数（计划书 §3.2）===============================
     //        r0     r1     f0     f1
@@ -160,6 +160,20 @@ namespace warp_sc
         x = clamp01(x);
         return x * x * x * (x * (x * 6.0f - 15.0f) + 10.0f);
     }
+
+    // 二次 ease-out：起步最快、到点速度归零。
+    // 给抵达段的滑入用 —— 参考画面里舰体冒出来时就带着速度、一路减速到落点停住。
+    // 五次缓动起点速度为零，滑入走到 1/3 时间点时只走了 21% 行程；而参考那一刻
+    // 舰体已经走过约六成（进框约 44%），差距全在起步这一段。
+    // 起点速度不为零是有意的：4.99 那一刻画面上只有舰首刚露出来的一条，突变看不见；
+    // 而且原版本来就是"飞进来"的。
+    inline float easeOutQuad(float x)
+    {
+        x = clamp01(x);
+        const float u = 1.0f - x;
+        return 1.0f - u * u;
+    }
+
 
     // ===== 梯形权重 ========================================================
     //  trap(tau) = 上升因子 * (1 - 下降因子)，峰值等于 1 当且仅当 r1 <= f0。
@@ -309,7 +323,8 @@ namespace warp_sc
         // 钉在 -1 期间也不影响别的 pass：骨架段舰体既不画也不投影（solidNow 为负）。
         if (tau <= SLIDE_HOLD_END) return -1.0f;
         if (tau >= SLIDE_HOLD_END + SLIDE_FALL) return 0.0f;
-        return -1.0f + quintic01((tau - SLIDE_HOLD_END) / SLIDE_FALL);
+        //return -1.0f + quintic01((tau - SLIDE_HOLD_END) / SLIDE_FALL);
+        return -1.0f + easeOutQuad((tau - SLIDE_HOLD_END) / SLIDE_FALL);
     }
 
 

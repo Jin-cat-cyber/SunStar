@@ -30,8 +30,9 @@
 #include "WarpSCSelfTest.h"
 #include "WarpTuning.h"
 #include "WarpPillar.h"
+#include "WarpShock.h"
 
-#ifdef SHIP_24_A
+//#ifdef SHIP_24_B
 #include <stb_image.h>
 
 
@@ -163,6 +164,12 @@ int main()
     // 折跃：起飞段碎屑（同一份立方体实例化）
     Shader warpDebrisShader("res/shader/00_SpaceShip/WarpSC/warp_debris_ver.shader",
         "res/shader/00_SpaceShip/WarpSC/warp_debris_frag.shader");
+    // 折跃：冲击波（顶点着色器是自己的，片元复用碎屑那份 —— 四个 varying 语义相同）
+    Shader warpShockShader("res/shader/00_SpaceShip/WarpSC/warp_shock_ver.shader",
+        "res/shader/00_SpaceShip/WarpSC/warp_shock_frag.shader");
+    // 折跃：冲击波的屏幕空间扭曲（全屏 pass，吃 quadVAO）
+    Shader warpShockDistortShader("res/shader/00_SpaceShip/WarpSC/warp_shock_distort_ver.shader",
+        "res/shader/00_SpaceShip/WarpSC/warp_shock_distort_frag.shader");
 
     // IBL
     Shader equirectangularToCubemapShader("res/shader/#PBR/IBL3.0/cubemap_ver3.0.shader",
@@ -433,6 +440,9 @@ int main()
         (void)stepCount;                                  // DEBUG_PHYS 关闭时避免"未使用"警告
 
         // ===== 折跃：时间线推进与传送 =====
+        //  【现行】这里的 DT_MAX 与 advance 都在 WarpSC.h（24.x 走 SC 分支），不在 Warp.h。
+        //  以下那行是 24.x 由 23.x 顺延时带过来的旧措辞（23.x 确实用 Warp.h，所以那两份是对的），
+        //  留档对比：
         // 计时用真实 deltaTime，钳制在 Warp.h 内部做（1/30 s，计划书 §5.4）。
         // advance() 会在跨越 TAU_STAR 的那一帧把 tau 精确钉在峰值上并返回
         // teleport = true —— 传送必须且只能在这一帧执行（计划书 §4.4 命题 3）。
@@ -569,6 +579,10 @@ int main()
             camera.Front = orbitRot * toShip;
             camera.Right = glm::normalize(glm::cross(camera.Front, glm::vec3(0.0f, 1.0f, 0.0f)));
             camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
+
+            // 把跟随相机算出来的朝向同步回 Orient —— 否则模式 3 里鼠标会往 Orient 上偷偷
+            // 累积旋转（看不见），一切回模式 1/2，第一次鼠标事件就用它重算向量，镜头会跳。
+            camera.SyncOrientFromVectors();
         }
 
 
@@ -1116,7 +1130,7 @@ int main()
 
         // ===== 折跃：起飞段碎屑（实现在 WarpDebris.cpp）=====
         //WarpDebrisDraw(warpDebrisShader, projection, view, camera.Position, shipBoundR);
-                
+
         // ===== 折跃：光柱（实现在 WarpDebris.cpp）=====
         // 锚点 = 带上"抵达滑入起点"偏移的逻辑位姿，也就是【带材质的舰船出现的那张面】：
         // 离落点 SLIDE_ARRIVAL_K 个半舰长（约 67.7）处。
@@ -1130,6 +1144,17 @@ int main()
         const glm::mat4 pillarPlane =
             glm::translate(glm::mat4(1.0f), ship.RenderForward(alpha) * pillarSlide) * shipWireModel;
         WarpPillarDraw(warpDebrisShader, projection, view, camera.Position, shipBoundR, pillarPlane);
+
+
+        // ===== 折跃：冲击波（实现在 WarpDebris.cpp）=====
+        //  两道波绕舰体纵轴、共用同一支绘制，区别只在锚点：
+        //    去程收束波 → 逻辑位姿（波跟着船收拢）
+        //    抵达发散波 → 光柱那张面（波从材质出生的地方散开）
+        {
+            const bool shockOut = warp_sc::shockOutLive(gWarp.tau);
+            WarpShockDraw(warpShockShader, projection, view, camera.Position, shipBoundR,
+                shockOut ? shipWireModel : pillarPlane);
+        }
 
         // ===== 折跃：幽灵舰体（落点半透明舰体）=====
         // SC2 的抵达里，落点先出现一层半透明的舰体轮廓，随后材质才自艉向艏补上。
@@ -1265,6 +1290,16 @@ int main()
 
         //==========================================
         // 渲染到屏幕
+        
+        // ===== 折跃：冲击波扭曲（实现在 WarpDebris.cpp）=====
+        //  必须在 PostProcessing 之前：它把扭曲后的画面写回 hdrColorBuffer，
+        //  于是后面的亮度提取（bloom）与最终合成都从扭曲后的图像走。
+        {
+            const bool shockOut = warp_sc::shockOutLive(gWarp.tau);
+            WarpShockDistort(warpShockDistortShader, projection, view,
+                shockOut ? shipWireModel : pillarPlane, windowwidth, windowheight, quadVAO);
+        }
+        
         // ===== 后处理 =====
         PostProcessing(brightPassShader, blurShader, compositeShader, quadVAO);
 
@@ -1615,7 +1650,12 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     lastX = xpos;
     lastY = ypos;
 
-    camera.ProcessMouseMovement(xoffset, yoffset);
+    //  模式 3 的相机不看 Orient（跟随块直接写 Front/Right/Up），所以鼠标在这里只做无用功，
+    //  而且会给"切回模式 1/2 的那一帧"留下竞态。直接跳过旋转。
+    //  **!!  必须放在 lastX/lastY 更新【之后】：若在回调开头就 return，锚点会停止刷新，
+    //        切回来时第一帧的 xoffset 会是从模式 3 前的旧坐标算起的一大跳。
+    if (currentMode != MODE_FOLLOW)
+        camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
 // 滚轮回调函数
@@ -1690,10 +1730,22 @@ void setupFramebuffers(int width, int height)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrColorBuffer, 0);
 
-    glGenRenderbuffers(1, &hdrDepthRBO);
+    /*glGenRenderbuffers(1, &hdrDepthRBO);
     glBindRenderbuffer(GL_RENDERBUFFER, hdrDepthRBO);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, hdrDepthRBO);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, hdrDepthRBO);*/
+    
+    //  深度改用【纹理】而不是 renderbuffer：后面冲击波的扭曲 pass 要在片元里反算世界坐标，
+    //  而 renderbuffer 在着色器里采样不到。前面那段深度 blit 对纹理附件同样有效。
+    glGenTextures(1, &hdrDepthTex);
+    glBindTexture(GL_TEXTURE_2D, hdrDepthTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);   // 当普通纹理采样，不做阴影比较
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, hdrDepthTex, 0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "HDR FBO incomplete!" << std::endl;
 
@@ -1757,6 +1809,7 @@ void rebuildFramebuffers(int width, int height)
     glDeleteFramebuffers(1, &hdrFBO);
     glDeleteTextures(1, &hdrColorBuffer);
     glDeleteRenderbuffers(1, &hdrDepthRBO);
+    if (hdrDepthTex) { glDeleteTextures(1, &hdrDepthTex); hdrDepthTex = 0; }
 
     // 删除 ping-pong 资源
     if (pingpongFBO[0]) { glDeleteFramebuffers(1, &pingpongFBO[0]);     pingpongFBO[0] = 0; }
@@ -2193,4 +2246,4 @@ void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos)
 
 
 
-#endif
+//#endif

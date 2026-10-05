@@ -55,6 +55,12 @@ public:
 	// rotate camera around its view axis (-Z) by keyboard (KP 7/9), roll, angleDeg signed
 	void ProcessKeyboardRoll(float angleDeg, float deltaTime);
 
+	// 由当前的 Front/Right/Up 反解出 Orient —— 供"直接写向量"的调用方做朝向交接。
+	// 依据：updateCameraVectors() 定义了 Orient*(0,0,-1)=Front、(1,0,0)=Right、(0,1,0)=Up，
+	// 因此以 (Right, Up, -Front) 为三列的矩阵就是 mat3(Orient)。
+	// 调用前这三个向量必须已归一化且两两正交（跟随块正是这么构造的）。
+	void SyncOrientFromVectors();
+
 private:
 	// 根据四元数重新计算 Front/Up/Right 向量
 	void updateCameraVectors();

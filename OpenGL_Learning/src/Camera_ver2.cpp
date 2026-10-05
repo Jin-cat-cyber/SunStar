@@ -104,6 +104,14 @@ void Camera_ver2::ProcessKeyboardRoll(float angleDeg, float deltaTime)
 	updateCameraVectors();
 }
 
+// 由当前的 Front/Right/Up 反解 Orient（朝向交接：谁直接写了向量，就要负责把源头同步回来）
+void Camera_ver2::SyncOrientFromVectors()
+{
+	const glm::mat3 m(Right, Up, -Front);
+	Orient = glm::normalize(glm::quat_cast(m));
+}
+
+
 // 更新相机方向向量
 void Camera_ver2::updateCameraVectors()
 {

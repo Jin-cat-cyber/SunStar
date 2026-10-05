@@ -31,9 +31,21 @@ namespace warp_tune
     inline const glm::vec3 U_DISSOLVE_COLOR = glm::vec3(0.25f, 0.95f, 0.80f);   // 剥离区与切口颜色
 
     // ===== 光柱（复用碎屑的着色器，但常量分开：白带是要的效果，别为"避免糊"压低）==
-    inline constexpr float U_PILLAR_GAIN = 0.90f;
-    inline constexpr float U_PILLAR_EDGE = 0.10f;
+    inline constexpr float U_PILLAR_GAIN = 1.20f;
+    inline constexpr float U_PILLAR_EDGE = 0.15f;
     inline const glm::vec3 U_PILLAR_COLOR = glm::vec3(0.45f, 0.82f, 1.00f);
+
+
+    // ===== 冲击波（垂直纵轴的平圆环，两道）====================================
+    //  亮度 = U_SHOCK_GAIN × 能量律(1/r)，所以这里给的是"最宽处"的强度；
+    //  聚合到轴心时会被能量律放大到 8 倍（上限已在 WarpShock.h 里钳住）。
+    inline constexpr float U_SHOCK_GAIN = 0.20f;
+    inline const glm::vec3 U_SHOCK_TINT = glm::vec3(0.80f, 0.92f, 1.00f);
+    //  行进色：色相由半径决定，于是"色"和"波峰"共用同一个驱动量。
+    //  这两个是【相对色】—— 最终颜色 = U_PILLAR_COLOR × 相对色（乘法链上已经有一个颜色项了）。
+    //  分量写 1.0 表示"不变"；想还原基准色就把两个都写 (1,1,1)。
+    inline const glm::vec3 U_SHOCK_TINT_NEAR = glm::vec3(2.10f, 1.15f, 0.95f);   // r 小：推向白热
+    inline const glm::vec3 U_SHOCK_TINT_FAR = glm::vec3(0.80f, 0.92f, 1.00f);   // r 大：推向冷蓝
 
     // ===== 电流外壳（含多边形能量网格）=====================================
     inline constexpr float U_SHELL_GAIN = 0.01f;   // 整体强度（乘 shellAlpha）；0.01 经 gamma 约 22% 的灰，调到 0.5 会盖住舰体细节

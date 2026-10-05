@@ -113,7 +113,41 @@
 > 两行**要一起粘**（或先粘第一行回车、再粘第二行）：它们必须在**同一个 PowerShell 窗口**里才连贯。
 > 为了不怕窗口换掉，每段命令都**自带** `$dst = ...` 那一行，重复执行也无害。
 
-### 步骤 1 · 清理上次跑歪的副本（如果有）
+### 本手册执行进度（2026-10-02 17:36 更新）
+
+| 步骤 | 内容 | 状态 |
+|---|---|---|
+| 1 | 清理跑歪的旧副本 | ✅ 已完成 |
+| 2 | 热备 | ✅ 已完成（179 文件 / 157.39 MB，失败 0） |
+| 3 | 项目存档（git） | ✅ 已完成（提交 `0e22a58`，60 个文件） |
+| 4 | 记"安装前基线" | ✅ 已完成（179 / 157.6 / 19，文件在 `桌面\dsh-baseline.txt`） |
+| 5 | 退 DSH → 冷备补齐 → 四项校验 | ✅ 已完成（四项全过：179 = 179 文件 / 157.7 MB） |
+| 6 | 安装官方桌面端 | ✅ 已完成（`0.2.0-rc.2`，数字签名有效） |
+| 7 | 装后核验 | ✅ 已完成（见下） |
+
+**装后实测结论（2026-10-02 17:47）**
+
+| 项 | 结果 |
+|---|---|
+| `DSH_HOME` | `C:\Users\35718\.dsh` —— **没变** |
+| `DSH_SESSION_ID` | `session-228b6453-ab14-487d-8e09-ee48520a3907` —— **和升级前同一个会话**，是接着原会话跑的 |
+| `DSH_WEB_URL` | `http://127.0.0.1:19387` —— 桌面端端口（Web 是 3080） |
+| 新增 | `profiles\desktop\`（4 个文件）、1 个新会话；文件数 179 → 187 |
+| `settings.yaml` | 被一次性导入后改名为 `settings.yaml.imported`；**内容原样进了 `profiles\desktop\cordis.patch.yml`**（`model: deepseek-flash`、`reasoningEffort: high`、`ui-theme: system` 都在）。模型名变更是因为旧名 `deepseek-v4-flash-vision-exp` 已下线、统一路由到 `deepseek-flash`（V4.1-Flash，原生 text+image） |
+| 老会话 | 19 个全在 ✅ · `storages` / `attachments` / `.credentials.yaml` 都在 ✅ |
+
+> **`dsh-backup` 先别删**，等桌面端连用几天、历史会话都能打开之后再处理（见 §8）。
+
+> **安装包已经下好了，不用再下**：`C:\Users\35718\Downloads\dsh-latest-windows-x64.exe`
+> 实测版本 **0.2.0-rc.2**、产品名 `DeepSeek Harness`、**数字签名有效**（签名主体 `Hangzhou DeepSeek Artificial Intelligence Co., Ltd.`）。
+
+> 步骤 1–3 的代码块**留档备查，不用再跑**。重跑第 2、3 步都无害；
+> ⚠️ 但**步骤 1 会把已经做好的备份整个删掉**，千万别手滑。
+> **DSH 退出后就看这张表**：从步骤 4 或 5 往下做。
+
+---
+
+### 步骤 1 · 清理上次跑歪的副本（✅ 已完成，留档）
 
 ```powershell
 # 先确认没有 robocopy 在跑
@@ -155,7 +189,10 @@ robocopy "$env:USERPROFILE\.dsh" $dst /E /R:1 /W:1 /NP /NFL /NDL /XJ /XD node_mo
 
 ---
 
-### 步骤 3 · 项目存档（现在也能做）
+### 步骤 3 · 项目存档（✅ 已完成于 2026-10-02，提交 `0e22a58`，留档）
+
+> **这一段不用再跑。** 已提交 60 个文件，工作区干净（`git status` 无输出）。
+> 若以后还想再做一次存档点，直接跑下面的命令即可；工作区干净时它会回你 "nothing to commit"。
 
 工作区那份才是真正的"记忆"，自 2026-09-23 最后一次提交以来攒了一大批未提交内容。
 `.gitignore` 已排除 `x64/`、`*.exe`、`.vs/`、模型与 HDRI，`git add -A` 是安全的（未跟踪内容总共才 1 MB 出头）。
@@ -261,6 +298,7 @@ if (Test-Path "$dst\profiles\node_modules") { "④ 警告：出现了 node_modul
 
 ### 步骤 6 · 安装官方桌面端
 
+0. **建议在退出 DSH 之前就把安装包下好**（浏览器和 DSH 无关）：这样万一下载出问题，还有人可问；退出 DSH 之后就只剩这份手册了。
 1. 打开官方下载页 <https://www.deepseek.com/en/download/>（或直接下 `https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe`）；
 2. 运行 NSIS 安装程序，按提示完成；
 3. ⚠️ **先不要卸载旧 CLI**（npm 全局的 `0.1.2-rc.1`）——它是你的退路；
@@ -370,6 +408,63 @@ robocopy "$env:USERPROFILE\Desktop\dsh-backup" "$env:USERPROFILE\.dsh" /E /R:1 /
 - 想更保险，把备份挪到别的盘或云盘（约 157 MB）。
 - 旧 CLI 确认用不上之后再卸。
 - 那次 `git commit` 之后就有一个"升级前"的项目存档点，随时可以 `git log` 找回。
+
+---
+
+## 8. 后续：将来卸掉老 CLI 的检查清单
+
+> **当前决定（2026-10-02）：老 CLI 先留着、不卸、也不启动。**
+
+**前提**：桌面端连续用几天、确认没问题，再动这一步。
+**在此之前绝对别启动老 CLI** —— 它是 `0.1.2-rc.1`，比桌面端自带的那套旧，而会话格式是**单向迁移**的；新版已经动过数据（`settings.yaml` 就被改名了），旧版再去读可能读不了或读出问题。
+
+### 8.1 先确认两件事
+
+1. **桌面端有没有用过「管理 dsh 命令…」？**
+   用过的话，**卸载桌面端之前必须先在那里点「移除」**，否则安装器不会替你清（官方文档明说）。
+2. **以后还需要 `dsh web`（端口 3080）吗？** 不需要了才卸；需要就留着。
+
+### 8.2 卸载命令
+
+⚠️ 这台机器的 PowerShell 执行策略**禁止运行 `npm.ps1`**（会报 "cannot be loaded because running scripts is disabled"），所以必须显式用 **`npm.cmd`**：
+
+```powershell
+npm.cmd ls -g --depth=0                      # 先看一眼
+npm.cmd uninstall -g @deepseek-ai/dsh
+```
+
+### 8.3 卸载后验证（三点）
+
+```powershell
+# ① PATH 里的老 dsh 应该消失（或已换成桌面端那份）
+Get-Command dsh -All -ErrorAction SilentlyContinue | Select-Object CommandType,Source
+
+# ② 全局包目录里不该再有它
+Test-Path "$env:APPDATA\npm\node_modules\@deepseek-ai\dsh"
+
+# ③ .dsh 必须一点没少（对比卸载前后的数字）
+$h = "$env:USERPROFILE\.dsh"
+$a = Get-ChildItem -Recurse -File $h -EA SilentlyContinue | Measure-Object Length -Sum
+"文件数 : $($a.Count)"
+"总 MB  : {0:N1}" -f ($a.Sum/1MB)
+"本工作区会话数: $((Get-ChildItem -Directory "$h\sessions\--C-Users-35718-Desktop-OpenGL_Learning--").Count)"
+```
+
+判据：①② 如预期；③ 的**文件数与大小不该减少**（桌面端正在跑，小幅增长是正常的）。
+
+### 8.4 可选：回收约 197 MB（不建议急着做）
+
+老 CLI 的 `web` profile 依赖树（`profiles\web\node_modules` 与 `profiles\node_modules` 里的 pnpm 链接场）**只服务于 `web` profile**；桌面端用的是 `profiles\desktop`。卸掉老 CLI 后它们就是死重量。
+
+但**「删了以后重装即再生」是它唯一的卖点**，保守做法是不动。真要清，先确认：
+- 不再需要 `dsh web`；
+- 桌面端能正常启动（它的 `desktop` profile 不依赖这两处）。
+
+### 8.5 别删的东西
+
+- `C:\Users\35718\.dsh` 整体 —— 会话、设置、凭据都在这
+- `C:\Users\35718\Desktop\dsh-backup` —— 升级前快照
+- `C:\Users\35718\Desktop\dsh-baseline.txt` —— 对照用，留着无害
 
 ---
 
