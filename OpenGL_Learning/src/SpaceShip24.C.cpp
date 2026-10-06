@@ -32,7 +32,7 @@
 #include "WarpPillar.h"
 #include "WarpShock.h"
 
-#ifdef SHIP_24_B
+//#ifdef SHIP_24_C
 #include <stb_image.h>
 
 
@@ -160,7 +160,7 @@ int main()
         "res/shader/00_SpaceShip/WarpSC/wire/warp_wire_geo.shader");
     // 折跃：幽灵舰体
     Shader warpGhostShader("res/shader/00_SpaceShip/WarpSC/ghost/warp_ghost_ver.shader",
-        "res/shader/00_SpaceShip/WarpSC/ghost/warp_ghost_frag.shader");
+        "res/shader/00_SpaceShip/WarpSC/ghost/warp_ghost_frag2.0.shader");
     // 折跃：起飞段碎屑（同一份立方体实例化）
     Shader warpDebrisShader("res/shader/00_SpaceShip/WarpSC/debris/warp_debris_ver.shader",
         "res/shader/00_SpaceShip/WarpSC/debris/warp_debris_frag.shader");
@@ -1187,6 +1187,24 @@ int main()
             warpGhostShader.setFloat("uGrowSoft", warp_tune::U_GHOST_GROW_SOFT);
             warpGhostShader.setFloat("uRimPow", warp_tune::U_GHOST_RIM_POW);
             warpGhostShader.setFloat("uBody", warp_tune::U_GHOST_BODY);
+
+            // 抵达段的多道扫描波（7 道、周期 = 1 舰长）：速度与去程扫描对齐，
+            // 也就是"一整舰长用 SCAN_TIME 秒"，于是相位直接取 (tau - TAU_STAR) / SCAN_TIME。
+            // tau = TAU_STAR 时相位为 0，第 1 道正好压在艏上（与参考画面那张表的起点一致）。
+            // 【现行】波列速度与去程扫描脱钩：抵达段有 4.07 秒，用 SCAN_TIME（0.60）等于跑
+            // 6.8 趟，且最紧那一对（0.05 舰长）只停留 0.030 秒，观感是"闪过去"。
+            // 现按参考画面读数取"整段 1.75 个舰长"，即 2.3257 s/舰长。下面那两行是旧写法，留档。
+            // 速度与去程扫描对齐，
+            // 也就是"一整舰长用 SCAN_TIME 秒"，于是相位直接取 (tau - TAU_STAR) / SCAN_TIME。
+            // tau = TAU_STAR 时相位为 0，第 1 道正好压在艏上（与参考画面那张表的起点一致）；
+            // tau = T_TOTAL 时相位正好 1.75，即刚好走完你量的那个路程。
+            warpGhostShader.setFloat("uBandPhase", (gWarp.tau - warp_sc::TAU_STAR) / warp_sc::BAND_SWEEP_TIME);
+            //warpGhostShader.setFloat("uBandW", warp_tune::U_GHOST_BAND_W);   // 旧：世界空间宽度
+            warpGhostShader.setFloat("uBandPx", warp_tune::U_GHOST_BAND_PX);
+            warpGhostShader.setVec3("uBandStrong", warp_tune::U_GHOST_BAND_STRONG);
+            warpGhostShader.setVec3("uBandWeak", warp_tune::U_GHOST_BAND_WEAK);
+            warpGhostShader.setFloat("uBandGate", warp_sc::wireAlpha(gWarp.tau));
+
             spaceship.Draw(warpGhostShader);
 
             glDepthMask(GL_TRUE);
@@ -1290,7 +1308,7 @@ int main()
 
         //==========================================
         // 渲染到屏幕
-        
+
         // ===== 折跃：冲击波扭曲（实现在 WarpDebris.cpp）=====
         //  必须在 PostProcessing 之前：它把扭曲后的画面写回 hdrColorBuffer，
         //  于是后面的亮度提取（bloom）与最终合成都从扭曲后的图像走。
@@ -1299,7 +1317,7 @@ int main()
             WarpShockDistort(warpShockDistortShader, projection, view,
                 shockOut ? shipWireModel : pillarPlane, windowwidth, windowheight, quadVAO);
         }
-        
+
         // ===== 后处理 =====
         PostProcessing(brightPassShader, blurShader, compositeShader, quadVAO);
 
@@ -1734,7 +1752,7 @@ void setupFramebuffers(int width, int height)
     glBindRenderbuffer(GL_RENDERBUFFER, hdrDepthRBO);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, hdrDepthRBO);*/
-    
+
     //  深度改用【纹理】而不是 renderbuffer：后面冲击波的扭曲 pass 要在片元里反算世界坐标，
     //  而 renderbuffer 在着色器里采样不到。前面那段深度 blit 对纹理附件同样有效。
     glGenTextures(1, &hdrDepthTex);
@@ -2245,4 +2263,5 @@ void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos)
 
 
 
-#endif
+
+//#endif

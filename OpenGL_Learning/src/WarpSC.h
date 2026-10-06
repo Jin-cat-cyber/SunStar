@@ -72,6 +72,14 @@ namespace warp_sc
     // 所以和 TAU_STAR 并列声明：全文所有"绝对秒数"都改写成相对这两个时刻的偏移。
     inline constexpr float T_WIRE_END = T_CHARGE + T_VANISH + T_WIRE;
 
+    // ===== 抵达段多道扫描波的速度 ==========================================
+    //  参考画面的读数：从舰头那道（被周期接缝截成两半的那道）起算，到折跃完成
+    //  一共走了 1.75 个舰长。于是把"整段扫过的舰长数"作为唯一旋钮，
+    //  每扫一个舰长的用时是派生量 —— 将来改 TAU_STAR / T_TOTAL，速度自动跟着走，
+    //  而 1.75 这个读数不用动。
+    inline constexpr float BAND_SWEEPS = 1.2f;                                    // 抵达段内整列扫过的舰长数
+    inline constexpr float BAND_SWEEP_TIME = (T_TOTAL - TAU_STAR) / BAND_SWEEPS;    // 每扫一个舰长的用时（派生量，随 BAND_SWEEPS 自动变）
+
     // 闪现通道：上升起点、峰值（等于 TAU_STAR）、衰减终点、衰减幂次。
     // 上升段 0.05 s，衰减段 0.09 s，刻意不对称。
     /*inline constexpr float FLASH_RISE = 0.60f;*/

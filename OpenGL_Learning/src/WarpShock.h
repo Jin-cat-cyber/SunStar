@@ -57,9 +57,19 @@ namespace warp_sc
     inline constexpr float S_ENERGY_HI = 8.0f;    // 上限：聚合端不许无限亮
 
     //  扭曲：单峰剖面 + 屏幕空间径向偏移。
-    inline constexpr float S_PROFILE_W = 8.0f;  //12.0f;   // 剖面半宽（世界单位，沿半径方向）
-    inline constexpr float S_DISTORT_PX = 12.0f;    //8.0f;   // 偏移幅度（像素，@ S_REF_H）
-    inline constexpr float S_REF_H = 1080.0f;     // 上面那个像素数对应的屏幕高度
+    inline constexpr float S_PROFILE_W = 8.0f;      //12.0f;   // 剖面半宽（世界单位，沿半径方向）
+    inline constexpr float S_DISTORT_PX = 20.0f;    //12.0f   //6.0f;    //8.0f;    // 偏移幅度（像素，@ S_REF_H）
+    inline constexpr float S_REF_H = 1080.0f;       // 上面那个像素数对应的屏幕高度
+    
+    //  【留档】下面两条是"整面水波"（多峰）的旋钮，现行剖面已退回单峰，它们暂时不生效。
+    //  想再试就把 warp_shock_distort_frag2.0.shader 里那两行剖面的注释对调。
+    
+    //  波纹波长（世界单位）：只管【疏密】，不管铺多宽 —— 调小读成细纹并容易闪，调大退成"几圈大浪"。
+    //  衰减长度（世界单位）：只管【铺多宽】—— 调大会让屏幕上同时出现更多道，这两件事别混。
+    inline constexpr float S_RIPPLE_L = 40.0f;  // 26.0f;      //18.0f;
+    //  衰减长度（世界单位）：包络 e^(-eps/本值)，到本值处剩 0.37。取 60 覆盖半径 50 到 70 的整张盘。
+    inline constexpr float S_RIPPLE_FALL = 50.0f;   // 80.0f;   //60.0f;
+
 
     // ===== 环带的可见宽度与"侧对补偿" =====================================
     //  环带的世界半宽。环【不是】靠网格做出来的，而是片元按半径把带外丢掉 ——

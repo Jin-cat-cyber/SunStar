@@ -71,6 +71,16 @@ namespace warp_tune
     inline constexpr float U_GHOST_BODY = 0.15f;  // 体色常数项（0 = 只有边缘亮）
     inline const glm::vec3 U_GHOST_COLOR = glm::vec3(0.30f, 0.80f, 1.00f);
 
+    // ===== 抵达段的多道扫描波（7 道，周期 = 1 舰长）========================
+    //  两档亮度照抄那两层自己的颜色，幅度取"幽灵最亮处"与"线框常态"：
+    //    幽灵最亮处 = U_GHOST_COLOR * (U_GHOST_BODY + 1.3) * U_GHOST_GAIN
+    //               = (0.30, 0.80, 1.00) * 1.45 * 1.2，逐通道就是下面这三个数。
+    //  强弱比约 2.5 倍，不是我新给的数，是从两层原来的常量推出来的。
+    inline const glm::vec3 U_GHOST_BAND_STRONG = glm::vec3(0.52f, 1.39f, 1.74f);
+    inline const glm::vec3 U_GHOST_BAND_WEAK = glm::vec3(0.22f, 0.55f, 0.62f);   // = U_WIRE_COLOR_BONE
+    //inline constexpr float U_GHOST_BAND_W = 0.015f;   // 单道波的归一化半宽（舰长 = 1，约 0.8 世界单位）
+    inline constexpr float U_GHOST_BAND_PX = 1.5f;    // 单道波的屏幕空间半宽（像素），全宽 = 3 像素，比线框略粗。
+
 
     // ===== 碎屑 ============================================================
     inline constexpr float U_DEBRIS_STRENGTH = 1.0f;

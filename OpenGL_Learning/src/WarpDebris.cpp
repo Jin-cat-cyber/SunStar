@@ -468,7 +468,17 @@ void WarpShockDistort(Shader& shader, const glm::mat4& projection, const glm::ma
     shader.setVec3("uCenter", center);
     shader.setVec3("uAxisDir", axisDir);
     shader.setFloat("uRadius", r);
+    //  现行扭曲着色器是【无后缀】那份（warp_shock_distort_frag.shader，剖面为单峰高斯），
+    //  它只认 uProfileW，所以下面那两行 uRipple* 是【静默 no-op】——
+    //  setFloat 就是 glUniform1f(glGetUniformLocation(...))，名字不存在时位置是 -1，按规范静默忽略。
+    //  留着是为了切回带 _2.0（多峰留档）那份时不用改 C++；切回去只要换掉 24.D 里那一行路径。
+    //  另：原来 uProfileW 在这里被连设了两次（值相同所以无害），已删掉一行。
+    //  以下两行是旧措辞（它说 uProfileW 只被已注释的旧单峰用，方向正好说反了），留档对比：
+    //  【现行】uProfileW 只被着色器里那段已注释的旧单峰用；现行剖面走下面两个 S_RIPPLE_*。
+    //  这一行留着，是为了回退时把着色器里那两行解注即可，不必再改 C++。
     shader.setFloat("uProfileW", warp_sc::S_PROFILE_W);
+    shader.setFloat("uRippleL", warp_sc::S_RIPPLE_L);
+    shader.setFloat("uRippleFall", warp_sc::S_RIPPLE_FALL);
     //shader.setFloat("uDistortPx", warp_sc::S_DISTORT_PX);
     shader.setFloat("uDistortPx", warp_sc::S_DISTORT_PX * ramp);
     shader.setFloat("uPush", push);

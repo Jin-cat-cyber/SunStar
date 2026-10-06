@@ -151,18 +151,18 @@ int main()
     Shader warpFlashShader("res/shader/00_SpaceShip/Warp/warp_flash_ver.shader",
         "res/shader/00_SpaceShip/Warp/warp_flash_frag.shader");
     // 折跃：电流外壳（同一套 mesh 沿法线外扩一点，加法混合再画一遍）
-    Shader warpShellShader("res/shader/00_SpaceShip/WarpSC/warp_shell_ver.shader",
-        "res/shader/00_SpaceShip/WarpSC/warp_shell_frag2.0.shader");
+    Shader warpShellShader("res/shader/00_SpaceShip/WarpSC/shell/warp_shell_ver.shader",
+        "res/shader/00_SpaceShip/WarpSC/shell/warp_shell_frag2.0.shader");
     // 折跃：线框（几何着色器打重心坐标，片元里只留三条边）
-    Shader warpWireShader("res/shader/00_SpaceShip/WarpSC/warp_wire_ver.shader",
-        "res/shader/00_SpaceShip/WarpSC/warp_wire_frag2.0.shader",
-        "res/shader/00_SpaceShip/WarpSC/warp_wire_geo.shader");
+    Shader warpWireShader("res/shader/00_SpaceShip/WarpSC/wire/warp_wire_ver.shader",
+        "res/shader/00_SpaceShip/WarpSC/wire/warp_wire_frag2.0.shader",
+        "res/shader/00_SpaceShip/WarpSC/wire/warp_wire_geo.shader");
     // 折跃：幽灵舰体
-    Shader warpGhostShader("res/shader/00_SpaceShip/WarpSC/warp_ghost_ver.shader",
-        "res/shader/00_SpaceShip/WarpSC/warp_ghost_frag.shader");
+    Shader warpGhostShader("res/shader/00_SpaceShip/WarpSC/ghost/warp_ghost_ver.shader",
+        "res/shader/00_SpaceShip/WarpSC/ghost/warp_ghost_frag.shader");
     // 折跃：起飞段碎屑（同一份立方体实例化）
-    Shader warpDebrisShader("res/shader/00_SpaceShip/WarpSC/warp_debris_ver.shader",
-        "res/shader/00_SpaceShip/WarpSC/warp_debris_frag.shader");
+    Shader warpDebrisShader("res/shader/00_SpaceShip/WarpSC/debris/warp_debris_ver.shader",
+        "res/shader/00_SpaceShip/WarpSC/debris/warp_debris_frag.shader");
 
     // IBL
     Shader equirectangularToCubemapShader("res/shader/#PBR/IBL3.0/cubemap_ver3.0.shader",

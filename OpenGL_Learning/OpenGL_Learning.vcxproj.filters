@@ -363,6 +363,12 @@
     <ClCompile Include="src\SpaceShip24.B.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\SpaceShip24.C.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip24.D.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -694,19 +700,24 @@
     <None Include="res\shader\00_SpaceShip\Warp\warp_wire_geo.shader" />
     <None Include="res\shader\00_SpaceShip\Forward_Shading\WarpSC\spaceship_frag4.0.shader" />
     <None Include="res\shader\00_SpaceShip\Forward_Shading\WarpSC\spaceship_ver4.0.shader" />
-    <None Include="res\shader\00_SpaceShip\WarpSC\warp_wire_frag2.0.shader" />
-    <None Include="res\shader\00_SpaceShip\WarpSC\warp_wire_geo.shader" />
-    <None Include="res\shader\00_SpaceShip\WarpSC\warp_wire_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\wire\warp_wire_frag2.0.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\wire\warp_wire_geo.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\wire\warp_wire_ver.shader" />
     <None Include="res\shader\00_SpaceShip\WarpSC\warp_ghost_ver.shader" />
-    <None Include="res\shader\00_SpaceShip\WarpSC\warp_ghost_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\ghost\warp_ghost_frag.shader" />
     <None Include="res\shader\00_SpaceShip\WarpSC\warp_debris_ver.shader" />
     <None Include="res\shader\00_SpaceShip\WarpSC\warp_debris_frag.shader" />
-    <None Include="res\shader\00_SpaceShip\WarpSC\warp_shell_frag2.0.shader" />
-    <None Include="res\shader\00_SpaceShip\WarpSC\warp_shell_ver.shader" />
-    <None Include="res\shader\00_SpaceShip\WarpSC\warp_shock_ver.shader" />
-    <None Include="res\shader\00_SpaceShip\WarpSC\warp_shock_frag.shader" />
-    <None Include="res\shader\00_SpaceShip\WarpSC\warp_shock_distort_ver.shader" />
-    <None Include="res\shader\00_SpaceShip\WarpSC\warp_shock_distort_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\shell\warp_shell_frag2.0.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\shell\warp_shell_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\shock\warp_shock_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\shock\warp_shock_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\shock\warp_shock_distort_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\shock\warp_shock_distort_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\ghost\warp_ghost_frag2.0.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\ghost\warp_ghost_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\debris\warp_debris_frag.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\debris\warp_debris_ver.shader" />
+    <None Include="res\shader\00_SpaceShip\WarpSC\shock\warp_shock_distort_frag2.0.shader" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\texture\container.jpg">
