@@ -20,12 +20,12 @@
 namespace warp_tune
 {
     // ===== 舰体 PBR：溶解、切口与边缘光 ====================================
-    inline constexpr float U_WHITE_K = 6.0f;     // 白热系数
-    inline constexpr float U_TRANSLUCENCY = 0.40f;    // 半透明平台的抖散密度（被丢弃的格子比例）
+    inline constexpr float U_WHITE_K = 6.0f;        // 白热系数
+    inline constexpr float U_TRANSLUCENCY = 0.40f;  // 半透明平台的抖散密度（被丢弃的格子比例）
     inline constexpr float U_FRONT_SOFT = 0.03f;    // 半透明波前沿的过渡宽度（轴向单位，必须 > 0）
     inline constexpr float U_NOISE_FREQ = 9.0f;     // 溶解噪声频率（同时决定抖散格子大小）
-    inline constexpr float U_EDGE = 0.06f;    // 切口发光带宽
-    inline constexpr float RIM_BASE = 0.6f;     // 边缘光基数
+    inline constexpr float U_EDGE = 0.06f;          // 切口发光带宽
+    inline constexpr float RIM_BASE = 0.6f;         // 边缘光基数
     inline constexpr float RIM_CHARGE_GAIN = 4.0f;     // 蓄能期边缘光的额外倍数
     //inline constexpr float RIM_STRENGTH_RATE = 1.0f + RIM_CHARGE_GAIN;
     inline const glm::vec3 U_DISSOLVE_COLOR = glm::vec3(0.25f, 0.95f, 0.80f);   // 剥离区与切口颜色
@@ -37,49 +37,60 @@ namespace warp_tune
 
 
     // ===== 冲击波（垂直纵轴的平圆环，两道）====================================
-    //  亮度 = U_SHOCK_GAIN × 能量律(1/r)，所以这里给的是"最宽处"的强度；
-    //  聚合到轴心时会被能量律放大到 8 倍（上限已在 WarpShock.h 里钳住）。
+    /*  
+        亮度 = U_SHOCK_GAIN × 能量律(1 / r)，所以这里给的是"最宽处"的强度；
+      聚合到轴心时会被能量律放大到 8 倍（上限已在 WarpShock.h 里钳住）。*/  
     inline constexpr float U_SHOCK_GAIN = 0.20f;
     inline const glm::vec3 U_SHOCK_TINT = glm::vec3(0.80f, 0.92f, 1.00f);
-    //  行进色：色相由半径决定，于是"色"和"波峰"共用同一个驱动量。
-    //  这两个是【相对色】—— 最终颜色 = U_PILLAR_COLOR × 相对色（乘法链上已经有一个颜色项了）。
-    //  分量写 1.0 表示"不变"；想还原基准色就把两个都写 (1,1,1)。
+    /*  
+        行进色：色相由半径决定，于是"色"和"波峰"共用同一个驱动量。
+      这两个是【相对色】—— 最终颜色 = U_PILLAR_COLOR × 相对色（乘法链上已经有一个颜色项了）。
+      分量写 1.0 表示"不变"；想还原基准色就把两个都写 (1,1,1)。*/
     inline const glm::vec3 U_SHOCK_TINT_NEAR = glm::vec3(2.10f, 1.15f, 0.95f);   // r 小：推向白热
     inline const glm::vec3 U_SHOCK_TINT_FAR = glm::vec3(0.80f, 0.92f, 1.00f);   // r 大：推向冷蓝
 
+    //  ===== 透明环（alpha 版，只给 24.E 用）=================================
+    /*  
+        环的最大不透明度。加法版没有这个量 —— 加法只能往上加光，
+      而 alpha 混合下背景按 (1 - a) 保留，于是"透过它看背景被染色"这件事才成立。
+      0 = 全透明（看不见），1 = 全遮住；0.35 到 0.55 是可调区间。*/
+    inline constexpr float U_SHOCK_ALPHA_MAX = 0.20f;
+
     // ===== 电流外壳（含多边形能量网格）=====================================
-    inline constexpr float U_SHELL_GAIN = 0.01f;   // 整体强度（乘 shellAlpha）；0.01 经 gamma 约 22% 的灰，调到 0.5 会盖住舰体细节
+    inline constexpr float U_SHELL_GAIN = 0.01f;        // 整体强度（乘 shellAlpha）；0.01 经 gamma 约 22% 的灰，调到 0.5 会盖住舰体细节
     
-    inline constexpr float U_SHELL_WORLD_K = 0.012f;   // 外壳厚度 = shipBoundR * K
-    inline constexpr float U_GRID_FREQ = 12.0f;   // 网格密度（每单位归一化坐标的格数）
-    inline constexpr float U_GRID_WIDTH = 0.035f;  // 格线宽度（单元格为单位，别超过 0.2）
-    inline constexpr float U_GRID_MIX = 1.0f;    // 第二组 45° 格线权重：0 = 退回只有正方格
-    inline constexpr float U_GRID_STRENGTH = 0.60f;   // 网格亮度
+    inline constexpr float U_SHELL_WORLD_K = 0.012f;    // 外壳厚度 = shipBoundR * K
+    inline constexpr float U_GRID_FREQ = 12.0f;         // 网格密度（每单位归一化坐标的格数）
+    inline constexpr float U_GRID_WIDTH = 0.035f;       // 格线宽度（单元格为单位，别超过 0.2）
+    inline constexpr float U_GRID_MIX = 1.0f;           // 第二组 45° 格线权重：0 = 退回只有正方格
+    inline constexpr float U_GRID_STRENGTH = 0.60f;     // 网格亮度
     inline const glm::vec3 U_SHELL_COLOR = glm::vec3(0.35f, 0.75f, 1.0f);
 
     // ===== 线框骨架 ========================================================
-    inline constexpr float U_WIRE_WIDTH = 1.5f;    // 屏幕空间线宽（约等于像素）
+    inline constexpr float U_WIRE_WIDTH = 1.5f;         // 屏幕空间线宽（约等于像素）
     inline const glm::vec3 U_WIRE_COLOR = glm::vec3(0.35f, 0.90f, 1.00f);
-    //  落点骨架专用的暗一档颜色：幽灵船退掉之后只剩它，那个亮度显眼。
+    /*  
+        落点骨架专用的暗一档颜色：幽灵船退掉之后只剩它，那个亮度显眼。*/
     inline const glm::vec3 U_WIRE_COLOR_BONE = glm::vec3(0.22f, 0.55f, 0.62f);   // 约 0.62 倍
 
     // ===== 幽灵舰体 ========================================================
-    inline constexpr float U_GHOST_GAIN = 1.2f;   // 乘 (1 - solidify)
-    inline constexpr float U_GHOST_EXPAND_K = 0.01f;  // 外扩厚度 = shipBoundR * K
-    inline constexpr float U_GHOST_GROW_SOFT = 0.10f;  // 生长前沿的软化宽度
-    inline constexpr float U_GHOST_RIM_POW = 2.5f;   // 菲涅尔幂次
-    inline constexpr float U_GHOST_BODY = 0.15f;  // 体色常数项（0 = 只有边缘亮）
+    inline constexpr float U_GHOST_GAIN = 1.2f;         // 乘 (1 - solidify)
+    inline constexpr float U_GHOST_EXPAND_K = 0.01f;    // 外扩厚度 = shipBoundR * K
+    inline constexpr float U_GHOST_GROW_SOFT = 0.10f;   // 生长前沿的软化宽度
+    inline constexpr float U_GHOST_RIM_POW = 2.5f;      // 菲涅尔幂次
+    inline constexpr float U_GHOST_BODY = 0.15f;        // 体色常数项（0 = 只有边缘亮）
     inline const glm::vec3 U_GHOST_COLOR = glm::vec3(0.30f, 0.80f, 1.00f);
 
     // ===== 抵达段的多道扫描波（7 道，周期 = 1 舰长）========================
-    //  两档亮度照抄那两层自己的颜色，幅度取"幽灵最亮处"与"线框常态"：
-    //    幽灵最亮处 = U_GHOST_COLOR * (U_GHOST_BODY + 1.3) * U_GHOST_GAIN
-    //               = (0.30, 0.80, 1.00) * 1.45 * 1.2，逐通道就是下面这三个数。
-    //  强弱比约 2.5 倍，不是我新给的数，是从两层原来的常量推出来的。
+    /*  
+        两档亮度照抄那两层自己的颜色，幅度取"幽灵最亮处"与"线框常态"：
+        幽灵最亮处 = U_GHOST_COLOR * (U_GHOST_BODY + 1.3) * U_GHOST_GAIN
+                   = (0.30, 0.80, 1.00) * 1.45 * 1.2，逐通道就是下面这三个数。
+      强弱比约 2.5 倍，不是我新给的数，是从两层原来的常量推出来的。*/
     inline const glm::vec3 U_GHOST_BAND_STRONG = glm::vec3(0.52f, 1.39f, 1.74f);
     inline const glm::vec3 U_GHOST_BAND_WEAK = glm::vec3(0.22f, 0.55f, 0.62f);   // = U_WIRE_COLOR_BONE
     //inline constexpr float U_GHOST_BAND_W = 0.015f;   // 单道波的归一化半宽（舰长 = 1，约 0.8 世界单位）
-    inline constexpr float U_GHOST_BAND_PX = 1.5f;    // 单道波的屏幕空间半宽（像素），全宽 = 3 像素，比线框略粗。
+    inline constexpr float U_GHOST_BAND_PX = 1.5f;      // 单道波的屏幕空间半宽（像素），全宽 = 3 像素，比线框略粗。
 
 
     // ===== 碎屑 ============================================================

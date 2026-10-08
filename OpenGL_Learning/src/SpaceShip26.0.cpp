@@ -31,13 +31,34 @@
 #include "WarpTuning.h"
 #include "WarpPillar.h"
 #include "WarpShock.h"
+#include "SpaceShipWarp.h"
+#include "TAA.h"
 
-#ifdef SHIP_24_C
+#ifdef SHIP_26_0
 #include <stb_image.h>
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // 窗口大小回调函数
 void processInput(GLFWwindow* window);  // 输入检查函数
+//  TAA 速度缓冲（批次 2）：只覆盖"世界空间里真的会动"的刚体，也就是舰体。
+//  它只被本版本使用，所以放在本文件当文件级静态量，不动 GBK 的 Globals.h。
+static unsigned int velocityFBO = 0;
+static unsigned int velocityTex = 0;
+static glm::mat4 taaPrevShipModel = glm::mat4(1.0f);   // 上一帧的 spaceshipModel
+
+//  TAA 去遮挡用的"上一帧场景深度"：单独一张、NEAREST、只被深度 blit 触碰。
+//  上一版把它塞在历史颜色的 alpha 里，被线性过滤污染，才导致静止画面的高频抖动 —— 这里不再共用。
+static unsigned int taaPrevDepthFBO = 0;
+static unsigned int taaPrevDepthTex = 0;
+
+//// 临时探针：TAA 黑描边定位（问题排除后整段连同下面 processInput 里那两块一起删）
+//  J 键：关掉写回时的反锐化（uSharpen 强制 0）；K 键：跳过时间累积（uHasHistory 强制 0，
+//  于是画面就是"当前帧原样"，只有锐化还在跑）。两个一起按就是完全没有 TAA 的画面。
+//  默认两个都是 false，也就是与接线之前逐字节等价的路径。
+static bool taaSharpenOff = false;
+static bool taaBypass = false;
+static bool taaSharpenKeyPressed = false;
+static bool taaBypassKeyPressed = false;
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);  // 鼠标 移动 回调函数
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);   // 鼠标 滚轮 回调函数
 void setupFramebuffers(int eidth, int height);  //  离屏渲染帧缓冲
@@ -124,7 +145,7 @@ int main()
     setupFramebuffers(windowwidth, windowheight); // 设置离屏渲染帧缓冲
 
     // 创建着色器对象
-   /* Shader planetshader("res/shader/00_SpaceShip/instancingVER.shader",
+    /* Shader planetshader("res/shader/00_SpaceShip/instancingVER.shader",
         "res/shader/00_SpaceShip/instancingFRAG3.0.shader");
     Shader asteroidShader("res/shader/00_SpaceShip/aster_ver.shader",
         "res/shader/00_SpaceShip/aster_frag3.0.shader");*/
@@ -132,6 +153,7 @@ int main()
         // G-buffer
         //Shader gBufferPlanetShader("res/shader/00_SpaceShip/G_buffer/gBuffer_planet_ver.shader",
         //    "res/shader/00_SpaceShip/G_buffer/gBuffer_planet_frag.shader");
+
     Shader gBufferAsteroidShader("res/shader/00_SpaceShip/G_buffer/gBuffer_asteroid_ver.shader",
         "res/shader/00_SpaceShip/G_buffer/gBuffer_asteroid_frag.shader");
 
@@ -166,10 +188,20 @@ int main()
         "res/shader/00_SpaceShip/WarpSC/debris/warp_debris_frag.shader");
     // 折跃：冲击波（顶点着色器是自己的，片元复用碎屑那份 —— 四个 varying 语义相同）
     Shader warpShockShader("res/shader/00_SpaceShip/WarpSC/shock/warp_shock_ver.shader",
-        "res/shader/00_SpaceShip/WarpSC/shock/warp_shock_frag.shader");
+        "res/shader/00_SpaceShip/WarpSC/shock/warp_shock_frag2.0.shader");
     // 折跃：冲击波的屏幕空间扭曲（全屏 pass，吃 quadVAO）
     Shader warpShockDistortShader("res/shader/00_SpaceShip/WarpSC/shock/warp_shock_distort_ver.shader",
         "res/shader/00_SpaceShip/WarpSC/shock/warp_shock_distort_frag.shader");
+
+    //  TAA 时间维重建（resolve）：读本帧场景 + 深度 + 历史，写另一张历史，再 blit 回 hdrColorBuffer。
+    //  顶点着色器与调试版共用（同一个 quadVAO 的属性布局）。
+    Shader taaResolveShader("res/shader/00_SpaceShip/TAA/taa_ver.shader",
+        "res/shader/00_SpaceShip/TAA/taa_frag.shader");
+    Shader velocityShader("res/shader/00_SpaceShip/TAA/velocity_ver.shader",
+        "res/shader/00_SpaceShip/TAA/velocity_frag.shader");
+    //  写回用的反锐化（顶点沿用 taa_ver.shader，同一个 quadVAO 的属性布局）
+    Shader taaSharpenShader("res/shader/00_SpaceShip/TAA/taa_ver.shader",
+        "res/shader/00_SpaceShip/TAA/sharpen_frag.shader");
 
     // IBL
     Shader equirectangularToCubemapShader("res/shader/#PBR/IBL3.0/cubemap_ver3.0.shader",
@@ -256,9 +288,9 @@ int main()
     //shipBoundR *= 0.0005f;      // Spaceship::GetModelMatrix() 里的缩放
 
     // 飞船包围半径，以及轴向极值（计划书 §3.5 的溶解前沿要用）
-    float shipBoundR = 0.0f;
-    float shipAxisMinY = 1e30f;    // 局部 Y 的最小值：机头在这一端
-    float shipAxisMaxY = -1e30f;
+    shipBoundR = 0.0f;
+    shipAxisMinY = 1e30f;    // 局部 Y 的最小值：机头在这一端
+    shipAxisMaxY = -1e30f;
     for (auto& m : spaceship.meshes)
         for (auto& v : m.vertices)
         {
@@ -268,9 +300,9 @@ int main()
         }
     shipBoundR *= 0.0005f;      // Spaceship::GetModelMatrix() 里的缩放
 
-    // ⚠ 注意：shipAxisMinY / shipAxisMaxY 【不乘 0.0005】。
-    // 它们要在着色器里与 aPos 同空间比较，而 aPos 是原始局部坐标。乘了的话
-    // 前沿会缩到 1/2000，整艘舰永远停在"全剥完"状态。
+    /* * 注意：shipAxisMinY / shipAxisMaxY 【不乘 0.0005】。
+    它们要在着色器里与 aPos 同空间比较，而 aPos 是原始局部坐标。乘了的话
+    前沿会缩到 1/2000，整艘舰永远停在"全剥完"状态。*/
 
     ////// 临时探针：量舰体轴向范围与原点偏心（跑一次即可，看完删掉或注释保留）
     //std::printf("[hull] axisY obj [%.1f, %.1f]  world [%.4f, %.4f]  bowR=%.4f  len=%.4f\n",
@@ -458,6 +490,7 @@ int main()
 
             if (wstep.teleport)
             {
+                gTaa.reset = true;   // 整屏平移 100 单位：每个像素看到的表面都换了（计划书 §8.3）
                 // 舰体位移 delta。相机要不要跟着位移只看模式：只有跟随模式的
                 // 相机锚在舰身上（下面那个相机块自身就被 if (currentMode ==
                 // MODE_FOLLOW) 包着），另外两种模式的相机是玩家自己的
@@ -699,9 +732,10 @@ int main()
         //glm::mat4 view = camera.GetViewMatrix();
 
                 // FOV 冲击：闪现前后把视场角收紧 Φ，再放回来，读作一次推镜。
-        glm::mat4 projection = glm::perspective(
-            glm::radians(camera.Fov - warp_sc::FOV_KICK * (WARP_DISTANCE / 100.0f) * warp_sc::fovKick(gWarp.tau) * camGate),
-            aspect, 0.1f, 2000.0f);
+        //  FOV 冲击的实际值：投影与 TAA 的天空支路必须用同一份。否则推进镜头的那几帧里，
+        //  天空的重投影会差一个 kick 的量（那是可见的，不是 ULP）。
+        const float fovEff = camera.Fov - warp_sc::FOV_KICK * (WARP_DISTANCE / 100.0f) * warp_sc::fovKick(gWarp.tau) * camGate;
+        glm::mat4 projection = glm::perspective(glm::radians(fovEff), aspect, 0.1f, 2000.0f);
 
         // 短促抖动：沿 heading 的一个位移脉冲。**只在本帧的 view 上生效，用完立刻还原。**
         // 绝不能把它留在 camera.Position 里 —— 跟随阻尼下一帧会从"被抖过的位置"起步，
@@ -711,6 +745,20 @@ int main()
         camera.Position += camShake;
         glm::mat4 view = camera.GetViewMatrix();
         camera.Position -= camShake;
+
+        // ===== TAA：亚像素抖动与时间维快照（计划书 §6.4、§7.1）=====
+        //  抖动加在投影矩阵的第三列（透视项）：只有乘上 z_e，这个偏移在透视除法之后才是一个与
+        //  深度无关的固定像素偏移；加在平移列会随深度缩放，等于把画面斜切。阴影投影不抖。
+        const glm::vec2 taaJitter = taa::jitter(gTaa.frameIndex % taa::JITTER_N);
+        projection[2][0] += -2.0f * taaJitter.x / static_cast<float>(winWidth);
+        projection[2][1] += -2.0f * taaJitter.y / static_cast<float>(winHeight);
+        //  存"这一帧真正用的"那一套：view 与 proj 分开存（天空支路要用单独的上一帧投影；
+        //  朝向矩阵从 view 的左上 3x3 转置取）。VP 现用现乘。
+        gTaa.curView = view;
+        gTaa.curProj = projection;
+        gTaa.curTanHalfFov = tanf(glm::radians(fovEff) * 0.5f);
+        gTaa.curAspect = aspect;
+        gTaa.curJitter = taaJitter;
 
 
         // ===== G-Buffer Pass =====
@@ -777,14 +825,16 @@ int main()
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         // === SSAO Blur Pass ===
-        glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFBO);
+        //  【现行】SSAO 不再做盒式模糊：那层噪声交给 TAA 收敛（计划书 §9 批次 3 的顺带收益）。
+        //  以下是 4×4 盒式模糊时期的写法，留档对比；要回退就把这两处（这里 + 光照 pass 的采样）一起改回来。
+        /*glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFBO);
         glClear(GL_COLOR_BUFFER_BIT);
         ssaoBlurShader.use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
         glBindVertexArray(quadVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);*/
 
 
         // === 光照 Pass ===
@@ -807,7 +857,8 @@ int main()
         glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
         deferredLightingShader.setInt("depthMap", 4);
         glActiveTexture(GL_TEXTURE5);
-        glBindTexture(GL_TEXTURE_2D, ssaoColorBufferBlur);
+        //glBindTexture(GL_TEXTURE_2D, ssaoColorBufferBlur);
+        glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer); // 停用模糊版：噪声交给 TAA 收敛
         deferredLightingShader.setInt("ssao", 5);
         glActiveTexture(GL_TEXTURE6);
         glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
@@ -1091,37 +1142,7 @@ int main()
         //if (wch.c > 0.001f)
         if (warp_sc::shellAlpha(gWarp.tau) > 0.001f)
         {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_ONE, GL_ONE);      // 加法混合
-            glDepthMask(GL_FALSE);            // 不写深度，别挡住后面要画的东西
-            glCullFace(GL_FRONT);             // 只画背面：读起来才是"裹住"而不是"镀一层"
-
-            warpShellShader.use();
-            warpShellShader.setMat4("projection", projection);
-            warpShellShader.setMat4("view", view);
-            //  外壳在扫描开始时就归零（见 shellAlpha），所以它永远活不到 τ*，
-            //  可以放心跟 spaceshipModel（含前冲与拉伸，贴在舰体表面上）。
-            //  注意：若以后又把它的寿命拉过 τ*，就必须改用不含滑入的那一份矩阵，
-            //  否则会被滑入的 −SLIDE_ARRIVAL_K 个半舰长甩在起点那一侧。
-            warpShellShader.setMat4("model", spaceshipModel);   // 与 PBR pass 同一份
-
-            warpShellShader.setVec3("camPos", camera.Position);
-            warpShellShader.setVec3("uShellColor", warp_tune::U_SHELL_COLOR);
-            warpShellShader.setFloat("uShellStrength", warp_sc::shellAlpha(gWarp.tau)
-                * warp_tune::U_SHELL_GAIN);
-            warpShellShader.setFloat("uShellWorld", shipBoundR * warp_tune::U_SHELL_WORLD_K);
-            warpShellShader.setFloat("uObjRadius", shipBoundR / 0.0005f);
-            warpShellShader.setFloat("uTime", currentFrame);
-            warpShellShader.setFloat("uGridFreq", warp_tune::U_GRID_FREQ);       // 格子密度：26.8 / 12 ≈ 2.2 世界单位一格
-            warpShellShader.setFloat("uGridWidth", warp_tune::U_GRID_WIDTH);     // 格线宽度，别超过 0.2
-            warpShellShader.setFloat("uGridMix", warp_tune::U_GRID_MIX);         // 1 = 两组叠加；调 0 就退回纯正方格
-            warpShellShader.setFloat("uGridStrength", warp_tune::U_GRID_STRENGTH);
-            spaceship.Draw(warpShellShader);
-
-            glCullFace(GL_BACK);
-            glDepthMask(GL_TRUE);
-            glDisable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            warpShellPass(warpShellShader, projection, view, spaceshipModel, camera.Position, currentFrame, spaceship);
         }
 
         // ===== 折跃：目的地蓝图（SC 分支已删除）=====
@@ -1143,8 +1164,8 @@ int main()
             ? (warp_sc::P_PLANE_SIDE * warp_sc::SLIDE_ARRIVAL_K * gShipBowOffset) : 0.0f;
         const glm::mat4 pillarPlane =
             glm::translate(glm::mat4(1.0f), ship.RenderForward(alpha) * pillarSlide) * shipWireModel;
-        WarpPillarDraw(warpDebrisShader, projection, view, camera.Position, shipBoundR, pillarPlane);
-
+        //WarpPillarDraw(warpDebrisShader, projection, view, camera.Position, shipBoundR, pillarPlane);
+        warpPillarPass(warpDebrisShader, projection, view, camera.Position, pillarPlane);
 
         // ===== 折跃：冲击波（实现在 WarpDebris.cpp）=====
         //  两道波绕舰体纵轴、共用同一支绘制，区别只在锚点：
@@ -1152,7 +1173,10 @@ int main()
         //    抵达发散波 → 光柱那张面（波从材质出生的地方散开）
         {
             const bool shockOut = warp_sc::shockOutLive(gWarp.tau);
-            WarpShockDraw(warpShockShader, projection, view, camera.Position, shipBoundR,
+            //  末位 true = 透明环（alpha 混合）。改回 false 就回到加法版，一行的事。
+            /*WarpShockDraw(warpShockShader, projection, view, camera.Position, shipBoundR,
+                shockOut ? shipWireModel : pillarPlane, true);*/
+            warpShockPass(warpShockShader, projection, view, camera.Position,
                 shockOut ? shipWireModel : pillarPlane);
         }
 
@@ -1166,50 +1190,7 @@ int main()
         // 本工程从不启用面剔除，正反两面都会加进来，正好读作"能看见内部结构"。
         if (wch.w > 0.001f && gWarp.tau >= warp_sc::TAU_STAR)
         {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_ONE, GL_ONE);
-            glDepthMask(GL_FALSE);
-
-            warpGhostShader.use();
-            warpGhostShader.setMat4("projection", projection);
-            warpGhostShader.setMat4("view", view);
-            warpGhostShader.setMat4("model", shipWireModel);   // 与线框同一份：落点的最终形状
-            warpGhostShader.setVec3("camPos", camera.Position);
-            warpGhostShader.setVec3("uGhostColor", warp_tune::U_GHOST_COLOR);
-
-            // 用 1 - solidify 而不是 1 - wch.a：后者挂的是梯形通道，末段会自己升回来，
-            // 让幽灵舰体在收尾时重新冒出来（此前被 wch.w 的旧门控挡住，延长骨架窗口后就会露出来）。
-            warpGhostShader.setFloat("uGhostStrength", warp_sc::ghostAlpha(gWarp.tau) * warp_tune::U_GHOST_GAIN);
-            warpGhostShader.setFloat("uGhostExpand", shipBoundR * warp_tune::U_GHOST_EXPAND_K);
-            warpGhostShader.setFloat("uAxisMinY", shipAxisMinY);
-            warpGhostShader.setFloat("uAxisMaxY", shipAxisMaxY);
-            warpGhostShader.setFloat("uGrow", warp_sc::wireGrow(gWarp.tau));
-            warpGhostShader.setFloat("uGrowSoft", warp_tune::U_GHOST_GROW_SOFT);
-            warpGhostShader.setFloat("uRimPow", warp_tune::U_GHOST_RIM_POW);
-            warpGhostShader.setFloat("uBody", warp_tune::U_GHOST_BODY);
-
-            // 抵达段的多道扫描波（7 道、周期 = 1 舰长）：速度与去程扫描对齐，
-            // 也就是"一整舰长用 SCAN_TIME 秒"，于是相位直接取 (tau - TAU_STAR) / SCAN_TIME。
-            // tau = TAU_STAR 时相位为 0，第 1 道正好压在艏上（与参考画面那张表的起点一致）。
-            // 【现行】波列速度与去程扫描脱钩：抵达段有 4.07 秒，用 SCAN_TIME（0.60）等于跑
-            // 6.8 趟，且最紧那一对（0.05 舰长）只停留 0.030 秒，观感是"闪过去"。
-            // 现按参考画面读数取"整段 1.75 个舰长"，即 2.3257 s/舰长。下面那两行是旧写法，留档。
-            // 速度与去程扫描对齐，
-            // 也就是"一整舰长用 SCAN_TIME 秒"，于是相位直接取 (tau - TAU_STAR) / SCAN_TIME。
-            // tau = TAU_STAR 时相位为 0，第 1 道正好压在艏上（与参考画面那张表的起点一致）；
-            // tau = T_TOTAL 时相位正好 1.75，即刚好走完你量的那个路程。
-            warpGhostShader.setFloat("uBandPhase", (gWarp.tau - warp_sc::TAU_STAR) / warp_sc::BAND_SWEEP_TIME);
-            //warpGhostShader.setFloat("uBandW", warp_tune::U_GHOST_BAND_W);   // 旧：世界空间宽度
-            warpGhostShader.setFloat("uBandPx", warp_tune::U_GHOST_BAND_PX);
-            warpGhostShader.setVec3("uBandStrong", warp_tune::U_GHOST_BAND_STRONG);
-            warpGhostShader.setVec3("uBandWeak", warp_tune::U_GHOST_BAND_WEAK);
-            warpGhostShader.setFloat("uBandGate", warp_sc::wireAlpha(gWarp.tau));
-
-            spaceship.Draw(warpGhostShader);
-
-            glDepthMask(GL_TRUE);
-            glDisable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            warpGhostPass(warpGhostShader, projection, view, shipWireModel, camera.Position, spaceship);
         }
 
 
@@ -1219,36 +1200,7 @@ int main()
         // 画在**起点**（它用的是同一个 shipModel），违反"去程不产生线框"。
         if (wch.w > 0.001f && gWarp.tau >= warp_sc::TAU_STAR)
         {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_ONE, GL_ONE);        // 加法混合
-            glDepthMask(GL_FALSE);              // 只读深度、不写深度
-            //glDisable(GL_CULL_FACE);            // 两面都画：读起来才是"全息透视线框"
-
-            warpWireShader.use();
-            warpWireShader.setMat4("projection", projection);
-            warpWireShader.setMat4("view", view);
-            // 线框
-            //warpWireShader.setMat4("model", spaceshipModel);   // 与 PBR pass 同一份
-
-            // 线框故意用"不拉伸"的那一份：它是舰体的最终形状（蓝图），
-            // 拉伸只属于被拽出去的实体。外壳 pass 仍用拉伸后的矩阵，
-            // 因为它贴在舰体表面上，必须跟着形变走。
-            warpWireShader.setMat4("model", shipWireModel);
-
-            //warpWireShader.setVec3("uWireColor", warp_tune::U_WIRE_COLOR);
-            warpWireShader.setVec3("uWireColor", warp_tune::U_WIRE_COLOR_BONE);
-            //warpWireShader.setFloat("uWireAlpha", wch.w);
-            warpWireShader.setFloat("uWireAlpha", warp_sc::wireAlpha(gWarp.tau));   // 与蓝图同一条包络
-            warpWireShader.setFloat("uWireGrow", warp_sc::wireGrow(gWarp.tau));
-            warpWireShader.setFloat("uWireWidth", warp_tune::U_WIRE_WIDTH);
-            warpWireShader.setFloat("uAxisMinY", shipAxisMinY);
-            warpWireShader.setFloat("uAxisMaxY", shipAxisMaxY);
-            spaceship.Draw(warpWireShader);
-
-            //glEnable(GL_CULL_FACE);
-            glDepthMask(GL_TRUE);
-            glDisable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            warpWirePass(warpWireShader, projection, view, shipWireModel, spaceship);
         }
 
         // 拒绝反馈红闪：逐帧衰减，与折跃时间线无关。刻意不乘 camGate —— 它是给玩家的
@@ -1269,41 +1221,8 @@ int main()
 
         if (flashAmount > 0.0f || rejectFlash > 0.0f)
         {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_ONE, GL_ONE);        // 加法混合
-            glDisable(GL_DEPTH_TEST);           // 全屏 quad 不需要深度
-            glDepthMask(GL_FALSE);
-
-            // 舰体的屏幕位置（NDC），作为 bloom 的圆心。直接投影舰体位置，
-            // 比用 gl_FragCoord 反算省一个分辨率 uniform；clip.w 太小时（点在
-            // 相机后面）保持 (0,0)，宁可圆心偏掉也不要除出 NaN。
-            glm::vec2 flashCenter(0.0f);
-            const glm::vec4 clip = projection * view * glm::vec4(ship.RenderPosition(alpha), 1.0f);
-            if (clip.w > 1e-4f) flashCenter = glm::vec2(clip.x / clip.w, clip.y / clip.w);
-
-            //warpFlashShader.use();
-            //warpFlashShader.setFloat("uFlash", flashAmount);
-            //warpFlashShader.setFloat("uFlashBase", 6.0f);
-            //warpFlashShader.setFloat("uFlashCore", 10.0f);
-            //warpFlashShader.setVec2("uFlashCenter", flashCenter);
-            // 两者互斥：拒绝只发生在"不在折跃、不在冷却"时，白闪只在折跃期间。
-            const bool red = (rejectFlash > 0.0f);
-            warpFlashShader.use();
-            warpFlashShader.setFloat("uFlash", red ? rejectFlash : flashAmount);
-            warpFlashShader.setFloat("uFlashBase", red ? warp_tune::U_FLASH_REJECT_BASE : warp_tune::U_FLASH_BASE);
-            warpFlashShader.setFloat("uFlashCore", red ? warp_tune::U_FLASH_REJECT_CORE : warp_tune::U_FLASH_CORE);
-            warpFlashShader.setVec3("uFlashColor", red ? warp_tune::U_FLASH_REJECT_COLOR : warp_tune::U_FLASH_COLOR);
-            warpFlashShader.setVec2("uFlashCenter", flashCenter);
-
-
-            glBindVertexArray(quadVAO);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-            glBindVertexArray(0);
-
-            glEnable(GL_DEPTH_TEST);
-            glDepthMask(GL_TRUE);
-            glDisable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            warpFlashPass(warpFlashShader, flashAmount, rejectFlash, projection, view,
+                ship.RenderPosition(alpha), quadVAO);
         }
 
         //==========================================
@@ -1314,8 +1233,120 @@ int main()
         //  于是后面的亮度提取（bloom）与最终合成都从扭曲后的图像走。
         {
             const bool shockOut = warp_sc::shockOutLive(gWarp.tau);
-            WarpShockDistort(warpShockDistortShader, projection, view,
+            /*WarpShockDistort(warpShockDistortShader, projection, view,
+                shockOut ? shipWireModel : pillarPlane, windowwidth, windowheight, quadVAO);*/
+            warpShockDistortPass(warpShockDistortShader, projection, view,
                 shockOut ? shipWireModel : pillarPlane, windowwidth, windowheight, quadVAO);
+        }
+
+        // ===== TAA：舰体速度 prepass（计划书 §9 批次 2）=====
+        //  相机-only 重投影对"世界空间里在动的刚体"不成立，全场景只有舰体会动（前冲、滑入、拉伸
+        //  都由它的模型矩阵承载）。只画舰体：颜色输出 uvPrev − uvCur，a = 1 当有效标志。
+        {
+            velocityShader.use();
+            velocityShader.setMat4("uVPCur", gTaa.curProj * gTaa.curView);
+            velocityShader.setMat4("uModelCur", spaceshipModel);
+            velocityShader.setMat4("uModelPrev", taaPrevShipModel);
+            velocityShader.setMat4("uVPPrev", gTaa.prevProj * gTaa.prevView);
+            velocityShader.setVec2("uScreenSize", glm::vec2(static_cast<float>(winWidth), static_cast<float>(winHeight)));
+
+            glBindFramebuffer(GL_FRAMEBUFFER, velocityFBO);
+            
+            //  用 glClearBufferfv 而不是 glClear：glClear 采用全局的 glClearColor，而它的 alpha 是 1.0
+            //  （L700），会把速度纹理的 alpha 全清成 1 → TAA 认为整屏都有速度 → 背景也走"uvPrev = uv"
+            //  也就是完全不重投影 → 上一帧画过舰体的背景像素会把舰体一直粘在屏幕上（像镜子）。
+            //  glClearBufferfv 只清附件 0，不碰深度附件，也不看 glClearColor。
+            const float velClear[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            glClearBufferfv(GL_COLOR, 0, velClear);
+
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LEQUAL);              // 舰体自己的深度就在缓冲里，用 LEQUAL 才不会被自己挡掉
+            glDepthMask(GL_FALSE);               // 不写深度（不动场景深度）
+            glDisable(GL_BLEND);
+
+            spaceship.Draw(velocityShader);
+
+            glDepthFunc(GL_LESS);
+            glDepthMask(GL_TRUE);
+            glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+        }
+
+
+        // ===== TAA：时间维重建（计划书 §8.2）=====
+        //  读本帧 hdrColorBuffer + hdrDepthTex + 历史（read 那张），写历史（write 那张），再把 write
+        //  那张 blit 回 hdrColorBuffer —— 于是 PostProcessing 及其后一行都不用改，而 PostProcessing
+        //  之后画的镜头光晕天然在时间 pass 之外。
+        {
+            const glm::mat3 rCur = glm::transpose(glm::mat3(gTaa.curView));
+            const glm::mat3 rPrev = glm::transpose(glm::mat3(gTaa.prevView));
+            //  权重：失效帧全取当前帧（顺带把历史填成有效数据）；折跃活跃期抬高当前帧权重，
+            //  因为一次折跃持续 5.62 秒，整段清零等于五秒多没有抗锯齿（计划书 §8.3）。
+            const float taaWeight = gTaa.reset ? taa::W_RESET : (gWarp.active ? taa::W_WARP : taa::W_CURRENT);
+
+            taaResolveShader.use();
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, hdrColorBuffer);
+            taaResolveShader.setInt("uScene", 0);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, hdrDepthTex);
+            taaResolveShader.setInt("uDepth", 1);
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, taaHistoryColorBuffer[gTaa.historyRead]);
+            taaResolveShader.setInt("uHistory", 2);
+            glActiveTexture(GL_TEXTURE4);
+            glBindTexture(GL_TEXTURE_2D, velocityTex);
+            taaResolveShader.setInt("uVelocity", 4);
+
+            taaResolveShader.setMat4("uInvVP", glm::inverse(gTaa.curProj * gTaa.curView));
+            taaResolveShader.setMat4("uVPPrev", gTaa.prevProj * gTaa.prevView);
+            taaResolveShader.setMat4("uProjPrev", gTaa.prevProj);
+            taaResolveShader.setMat4("uInvVPPrev", glm::inverse(gTaa.prevProj * gTaa.prevView));
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_2D, taaPrevDepthTex);
+            taaResolveShader.setInt("uPrevDepth", 3);
+            taaResolveShader.setMat3("uOrientCur", rCur);
+            taaResolveShader.setMat3("uSkyRot", rPrev * glm::transpose(rCur));
+            taaResolveShader.setFloat("uTanHalfFov", gTaa.curTanHalfFov);
+            taaResolveShader.setFloat("uAspect", gTaa.curAspect);
+            taaResolveShader.setVec2("uScreenSize",
+                glm::vec2(static_cast<float>(winWidth), static_cast<float>(winHeight)));
+            taaResolveShader.setFloat("uWeight", taaWeight);
+            taaResolveShader.setFloat("uGamma", taa::GAMMA);
+            taaResolveShader.setInt("uHasHistory", (gTaa.reset || taaBypass) ? 0 : 1);
+            taaResolveShader.setVec3("uCamPos", camera.Position);
+            taaResolveShader.setVec3("uCamPosPrev", gTaa.prevCamPos);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, taaHistoryFBO[gTaa.historyWrite]);
+            glDisable(GL_DEPTH_TEST);
+            glDisable(GL_BLEND);
+
+            glBindVertexArray(quadVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            glBindVertexArray(0);
+
+            //  搬回 hdrColorBuffer：改成"画一遍反锐化"，而不是 blit（blit 只能原样拷贝）。
+            //  历史那张不是当前 FBO 的附件，所以采样它不会形成反馈回路。
+            taaSharpenShader.use();
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, taaHistoryColorBuffer[gTaa.historyWrite]);
+            taaSharpenShader.setInt("uImage", 0);
+            taaSharpenShader.setVec2("uScreenSize",
+                glm::vec2(static_cast<float>(winWidth), static_cast<float>(winHeight)));
+            taaSharpenShader.setFloat("uSharpen", taaSharpenOff ? 0.0f : taa::SHARPEN);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+            glDisable(GL_BLEND);
+            glBindVertexArray(quadVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            glBindVertexArray(0);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glEnable(GL_DEPTH_TEST);
+
+            //  本帧写入的那张成为下一帧的历史。
+            const int taaSwap = gTaa.historyRead;
+            gTaa.historyRead = gTaa.historyWrite;
+            gTaa.historyWrite = taaSwap;
         }
 
         // ===== 后处理 =====
@@ -1341,6 +1372,23 @@ int main()
         if (blendEnabled) glEnable(GL_BLEND);
         else glDisable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // 恢复默认混合函数
+
+        // ===== TAA：本帧归档为下一帧的历史（计划书 §6.4）=====
+        gTaa.prevView = gTaa.curView;
+        gTaa.prevProj = gTaa.curProj;
+        gTaa.prevJitter = gTaa.curJitter;
+        gTaa.prevCamPos = camera.Position;
+        taaPrevShipModel = spaceshipModel;
+
+        //  【去遮挡】把本帧最终的场景深度拷一份留到下一帧用（与工程里 G-Buffer 深度那段同一套 blit 写法）。
+        //  必须放在本帧所有写深度的 pass 之后，所以钉在帧末。
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, hdrFBO);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, taaPrevDepthFBO);
+        glBlitFramebuffer(0, 0, winWidth, winHeight, 0, 0, winWidth, winHeight,
+            GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        gTaa.frameIndex++;
+        gTaa.reset = false;
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -1647,6 +1695,26 @@ void processInput(GLFWwindow* window)
         unifyKeyPressed = false;
     }
 
+    //// 临时探针：J 关锐化 / K 跳过时间累积（定位黑描边用，见文件头 static 那一段的说明）
+    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS && !taaSharpenKeyPressed)
+    {
+        taaSharpenOff = !taaSharpenOff;
+        taaSharpenKeyPressed = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_RELEASE)
+    {
+        taaSharpenKeyPressed = false;
+    }
+    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS && !taaBypassKeyPressed)
+    {
+        taaBypass = !taaBypass;
+        taaBypassKeyPressed = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_RELEASE)
+    {
+        taaBypassKeyPressed = false;
+    }
+
 }
 
 // 鼠标回调函数
@@ -1808,6 +1876,56 @@ void setupFramebuffers(int width, int height)
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "SSAO Blur Framebuffer not complete!" << std::endl;
 
+    // --- 5) TAA 历史颜色（乒乓两张，渲染分辨率、RGBA16F、线性过滤）---
+    //  必须线性过滤：重投影后的 uvPrev 是任意小数坐标；必须 16F：TAA 在 tonemap 之前，颜色是线性 HDR。
+    glGenFramebuffers(2, taaHistoryFBO);
+    glGenTextures(2, taaHistoryColorBuffer);
+    for (int i = 0; i < 2; i++)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, taaHistoryFBO[i]);
+        glBindTexture(GL_TEXTURE_2D, taaHistoryColorBuffer[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, taaHistoryColorBuffer[i], 0);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            std::cout << "TAA History FBO incomplete! " << i << std::endl;
+    }
+
+    // 速度缓冲：渲染分辨率、NEAREST（TAA 只在【本像素】取它的值，不能插值）
+    glGenFramebuffers(1, &velocityFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, velocityFBO);
+    glGenTextures(1, &velocityTex);
+    glBindTexture(GL_TEXTURE_2D, velocityTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, velocityTex, 0);
+    //  深度附件挂【已有的场景深度】：这样 prepass 是用场景深度做 LEQUAL 测试，
+    //  被小行星/行星挡住的那部分舰体不写速度（那些像素本来就该走相机重投影）。
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, hdrDepthTex, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Velocity FBO incomplete!" << std::endl;
+
+    // --- TAA 去遮挡：上一帧场景深度（深度专用 FBO，只有深度附件）---
+    glGenFramebuffers(1, &taaPrevDepthFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, taaPrevDepthFBO);
+    glGenTextures(1, &taaPrevDepthTex);
+    glBindTexture(GL_TEXTURE_2D, taaPrevDepthTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, taaPrevDepthTex, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "TAA PrevDepth FBO incomplete!" << std::endl;
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -1835,6 +1953,16 @@ void rebuildFramebuffers(int width, int height)
     if (pingpongColorbuffers[0]) { glDeleteTextures(1, &pingpongColorbuffers[0]); pingpongColorbuffers[0] = 0; }
     if (pingpongColorbuffers[1]) { glDeleteTextures(1, &pingpongColorbuffers[1]); pingpongColorbuffers[1] = 0; }
 
+    // 删除 TAA 历史资源
+    if (taaHistoryFBO[0]) { glDeleteFramebuffers(1, &taaHistoryFBO[0]); taaHistoryFBO[0] = 0; }
+    if (taaHistoryFBO[1]) { glDeleteFramebuffers(1, &taaHistoryFBO[1]); taaHistoryFBO[1] = 0; }
+    if (taaHistoryColorBuffer[0]) { glDeleteTextures(1, &taaHistoryColorBuffer[0]); taaHistoryColorBuffer[0] = 0; }
+    if (taaHistoryColorBuffer[1]) { glDeleteTextures(1, &taaHistoryColorBuffer[1]); taaHistoryColorBuffer[1] = 0; }
+    if (velocityFBO) { glDeleteFramebuffers(1, &velocityFBO); velocityFBO = 0; }
+    if (velocityTex) { glDeleteTextures(1, &velocityTex); velocityTex = 0; }
+    if (taaPrevDepthFBO) { glDeleteFramebuffers(1, &taaPrevDepthFBO); taaPrevDepthFBO = 0; }
+    if (taaPrevDepthTex) { glDeleteTextures(1, &taaPrevDepthTex); taaPrevDepthTex = 0; }
+
     // 删除 G-Buffer 资源
     if (gBuffer) { glDeleteFramebuffers(1, &gBuffer);     gBuffer = 0; }
     if (gPosition) { glDeleteTextures(1, &gPosition);       gPosition = 0; }
@@ -1851,6 +1979,7 @@ void rebuildFramebuffers(int width, int height)
 
     // 重新创建帧缓冲
     setupFramebuffers(width, height);
+    gTaa.reset = true;   // 历史纹理被重建，内容与尺寸都不再对应（计划书 §8.3）
 }
 
 // 小行星带初始化

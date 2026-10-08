@@ -10,7 +10,7 @@
 //  【形状来由】改过两次：圆柱壳（侧视是一道竖直的墙）→ 球壳（像气泡）→ 平的圆环。
 //  最终以参考画面为准：那是水波式的【同心圆】，而它的中心落在纵轴上。
 //
-//  ⚠️ 平的环没有厚度，所以【正侧看时会退化成一条线】—— 这是几何的固有代价，不是 bug。
+//  * 平的环没有厚度，所以【正侧看时会退化成一条线】—— 这是几何的固有代价，不是 bug。
 //     片元里用 facing 对"侧对"做了补偿，档位见 S_FACING_FLOOR。
 //
 //  强度 = 能量律 × 窗口包络：
@@ -33,7 +33,7 @@ namespace warp_sc
 {
     // ===== 去程收束波 ======================================================
     //  窗口 = 【扫描开始 → τ*】，也就是"舰体被抽走"的【全程】（0.60 秒）。
-    //  ⚠️ 船不是蓄能完了才开始消失的：扫描从 FRONT_GEO_START = 0.95 就开始了，
+    //  * 船不是蓄能完了才开始消失的：扫描从 FRONT_GEO_START = 0.95 就开始了，
     //     蓄能段 [0, 1.35] 与扫描段 [0.95, 1.55] 是【重叠】的。
     //     只取 [1.35, 1.55]（= T_VANISH，0.20 秒）的话，60 单位半径对应 300 单位/秒，
     //     30 fps 下只有 6 帧，读出来是"闪一下"而不是"一道波"。
@@ -93,8 +93,8 @@ namespace warp_sc
     //  扭曲幅度的收尾占比：它【不】乘上面那条亮度包络（两者同步变淡会失去"亮脊当边界"的读感，
     //  见计划书 §9.4），但也不能在窗口边界硬停 —— 所以给一条【更晚、更短】的纯收尾。
     //  前 (1 - S_DIST_FALL_F) 段保持满幅，最后这一段平滑归零，末端恰好为 0。
-    //  ⚠️ 用它的那个函数 shockDistortRamp 必须写在 shockProgress 之后（见文件末尾）。
-    //  ⚠️ 不变量：riseF + S_DIST_FALL_F <= 1（超了淡入淡出会重叠，峰值到不了 1）。
+    //  * 用它的那个函数 shockDistortRamp 必须写在 shockProgress 之后（见文件末尾）。
+    //  * 不变量：riseF + S_DIST_FALL_F <= 1（超了淡入淡出会重叠，峰值到不了 1）。
     //     现在去程 0.25 + 0.15 = 0.40、抵达 0.10 + 0.15 = 0.25，安全。
     inline constexpr float S_DIST_FALL_F = 0.15f;
 
@@ -187,6 +187,9 @@ namespace warp_sc
 class Shader;
 void WarpShockDraw(Shader& shader, const glm::mat4& projection, const glm::mat4& view,
     const glm::vec3& camPos, float shipBoundR, const glm::mat4& axisModel);
+
+void WarpShockDraw(Shader& shader, const glm::mat4& projection, const glm::mat4& view,
+    const glm::vec3& camPos, float shipBoundR, const glm::mat4& axisModel, bool alphaRing);
 
 //  屏幕空间扭曲：渲染到 pingpongFBO[0]，再 blit 回 hdrColorBuffer —— 于是后处理链读到的是
 //  扭曲后的画面，连 bloom 也从它里面提，波带的光晕会跟着一起扭。

@@ -64,6 +64,33 @@ inline unsigned int	gAlbedo = 0;
 inline unsigned int	gPBR = 0;
 inline unsigned int gDepthRBO = 0;
 
+// ===== TAA：每帧时间维状态 =====
+//  必须每帧显式快照：相机抖动只加到临时的 camera.Position 上（算完 view 立刻减回），
+//  下一帧无法重新算出一份"当时的 view"，所以本帧与上一帧的 VP 都得存下来。
+struct TaaState
+{
+    glm::mat4 curView = glm::mat4(1.0f);
+    glm::mat4 prevView = glm::mat4(1.0f);
+    glm::mat4 curProj = glm::mat4(1.0f);
+    glm::mat4 prevProj = glm::mat4(1.0f);
+    float curTanHalfFov = 0.0f;   // 本帧【实际用的】tan(fov/2)：含 FOV 冲击，天空支路要用
+    float curAspect = 1.0f;
+    glm::vec3 prevCamPos = glm::vec3(0.0f);   // 上一帧相机位置：去遮挡检测要与"上一帧量出的距离"同源
+    glm::vec2 curJitter = glm::vec2(0.0f);
+    glm::vec2 prevJitter = glm::vec2(0.0f);
+    int frameIndex = 0;      // 抖动序列下标，取模 JITTER_N 使用
+    bool reset = true;       // 历史失效：首帧、窗口尺寸变化、折跃传送那一帧
+    int historyRead = 0;     // 历史乒乓：本帧读哪一张
+    int historyWrite = 1;    // 本帧写哪一张，帧末与 read 交换
+};
+inline TaaState gTaa;
+// ===== TAA：历史颜色（乒乓两张）=====
+//  必须【渲染分辨率】+ GL_RGBA16F + GL_LINEAR：重投影后的 uvPrev 是任意小数坐标（要线性过滤），
+//  而 TAA 在 tonemap 之前、颜色是线性 HDR（要 16F）。见计划书 §8.1。
+inline unsigned int taaHistoryFBO[2] = { 0, 0 };
+inline unsigned int taaHistoryColorBuffer[2] = { 0, 0 };
+
+
 // ===== PBR 离屏资源（inline：跨 TU 单实例）=====
 inline unsigned int captureFBO = 0;
 inline unsigned int captureRBO = 0;
@@ -151,8 +178,11 @@ inline bool tKeyPressed    = false;
 // 拿不到 main 的局部量，所以在 main 里算完半径后回填一次。
 inline glm::vec3 gPlanetPos = glm::vec3(0.0f, -3.0f, 0.0f);
 inline float gPlanetRadius = 0.0f;
-inline float gShipBowOffset = 0.0f;      // 舰首到模型原点的距离；折跃落点合法性要用
-inline float WARP_REJECT_FLASH = 0.30f;   // 拒绝反馈红闪时长（秒）
+inline float gShipBowOffset = 0.0f;         // 舰首到模型原点的距离；折跃落点合法性要用
+inline float WARP_REJECT_FLASH = 0.30f;     // 拒绝反馈红闪时长（秒）
+inline float shipBoundR = 0.0f;            // 舰体包围球半径（阴影/剔除/折跃共用）
+inline float shipAxisMinY = 0.0f;          // 模型局部 Y 最小值（机头在这一端）
+inline float shipAxisMaxY = 0.0f;          // 模型局部 Y 最大值
 
 
 // ===== 尘埃星环 =====

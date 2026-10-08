@@ -32,7 +32,7 @@
 #include "WarpPillar.h"
 #include "WarpShock.h"
 
-#ifdef SHIP_24_C
+#ifdef SHIP_24_E
 #include <stb_image.h>
 
 
@@ -166,7 +166,7 @@ int main()
         "res/shader/00_SpaceShip/WarpSC/debris/warp_debris_frag.shader");
     // 折跃：冲击波（顶点着色器是自己的，片元复用碎屑那份 —— 四个 varying 语义相同）
     Shader warpShockShader("res/shader/00_SpaceShip/WarpSC/shock/warp_shock_ver.shader",
-        "res/shader/00_SpaceShip/WarpSC/shock/warp_shock_frag.shader");
+        "res/shader/00_SpaceShip/WarpSC/shock/warp_shock_frag2.0.shader");
     // 折跃：冲击波的屏幕空间扭曲（全屏 pass，吃 quadVAO）
     Shader warpShockDistortShader("res/shader/00_SpaceShip/WarpSC/shock/warp_shock_distort_ver.shader",
         "res/shader/00_SpaceShip/WarpSC/shock/warp_shock_distort_frag.shader");
@@ -1152,8 +1152,9 @@ int main()
         //    抵达发散波 → 光柱那张面（波从材质出生的地方散开）
         {
             const bool shockOut = warp_sc::shockOutLive(gWarp.tau);
+            //  末位 true = 透明环（alpha 混合）。改回 false 就回到加法版，一行的事。
             WarpShockDraw(warpShockShader, projection, view, camera.Position, shipBoundR,
-                shockOut ? shipWireModel : pillarPlane);
+                shockOut ? shipWireModel : pillarPlane, true);
         }
 
         // ===== 折跃：幽灵舰体（落点半透明舰体）=====

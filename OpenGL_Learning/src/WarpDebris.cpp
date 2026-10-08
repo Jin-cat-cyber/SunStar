@@ -341,10 +341,16 @@ void WarpPillarDraw(Shader& shader, const glm::mat4& projection, const glm::mat4
 
 // ===== GL 侧：冲击波（两道波共用这一支）=================================
 //  锚点矩阵的 Y 轴就是波的中心轴、原点就是波的原点：
-//    去程收束波传 shipWireModel；抵达发散波传光柱那张面（pillarPlane）。
-//  与碎屑/光柱同样的尺度还原：锚点里含 scale(0.0005)，而本模块坐标按世界单位写。
+//      去程收束波传 shipWireModel；抵达发散波传光柱那张面（pillarPlane）。
+//      与碎屑/光柱同样的尺度还原：锚点里含 scale(0.0005)，而本模块坐标按世界单位写。
 void WarpShockDraw(Shader& shader, const glm::mat4& projection, const glm::mat4& view,
     const glm::vec3& camPos, float shipBoundR, const glm::mat4& axisModel)
+{
+    WarpShockDraw(shader, projection, view, camPos, shipBoundR, axisModel, false);
+}
+
+void WarpShockDraw(Shader& shader, const glm::mat4& projection, const glm::mat4& view,
+    const glm::vec3& camPos, float shipBoundR, const glm::mat4& axisModel, bool alphaRing)
 {
     if (!gWarp.active) return;
 
@@ -359,20 +365,23 @@ void WarpShockDraw(Shader& shader, const glm::mat4& projection, const glm::mat4&
         : warp_sc::shockWindowIn(gWarp.tau);   // 窗口包络：两端归零
 
     const glm::mat4 anchor = axisModel * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f / 0.0005f));
-    //  圆盘躺在锚点的 XZ 平面里、法线是其 Y 轴（= 舰体纵轴）。
-    //  【现行】缩放用【环半径 + 2.5 个带宽】。系数不能小于 sqrt(ln(1/0.002)) = 2.4929：
-    //  片元的丢弃阈值是 band <= 0.002；网格外缘若比它更靠内，最外一圈还留着约 1.8% 的亮度，
-    //  而它外面什么都没有，圆盘边缘就会读出一条硬台阶（旧的 2.0 正是如此）。
-    //  以下两行是高斯环带时期的旧说法，数值已过时，留档对比：
-    //  缩放用的是【环半径 + 2 个带宽】而不是环半径：环带以 r 为中心、内外各 uBandW，
-    //  网格若正好只到 r，外侧那半边就没有像素可画，圆的边缘会变成一刀切的硬边。
-    
-    //const float ringScale = r + 2.0f * warp_sc::S_BAND_W;       // 
+    /*  圆盘躺在锚点的 XZ 平面里、法线是其 Y 轴（= 舰体纵轴）。
+      【现行】缩放用【环半径 + 2.5 个带宽】。系数不能小于 sqrt(ln(1/0.002)) = 2.4929：
+      片元的丢弃阈值是 band <= 0.002；网格外缘若比它更靠内，最外一圈还留着约 1.8% 的亮度，
+      而它外面什么都没有，圆盘边缘就会读出一条硬台阶（旧的 2.0 正是如此）。
+      以下两行是高斯环带时期的旧说法，数值已过时，留档对比：
+      缩放用的是【环半径 + 2 个带宽】而不是环半径：环带以 r 为中心、内外各 uBandW，
+      网格若正好只到 r，外侧那半边就没有像素可画，圆的边缘会变成一刀切的硬边。*/
+
+      //const float ringScale = r + 2.0f * warp_sc::S_BAND_W;       // 
     const float ringScale = r + 2.5f * warp_sc::S_BAND_W;       // 更柔和
     const glm::mat4 model = anchor * glm::scale(glm::mat4(1.0f), glm::vec3(ringScale, 1.0f, ringScale));
 
     glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE);
+    //  alphaRing 走【预乘 alpha】：着色器输出的 rgb 已经乘过 a，
+    //  于是"背景按 (1 - a) 保留"与"亮脊直接加在结果上"在同一遍里同时成立。
+    if (alphaRing) glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);   // 预乘 alpha
+    else           glBlendFunc(GL_ONE, GL_ONE);
     glDepthMask(GL_FALSE);
 
     shader.use();
@@ -382,8 +391,8 @@ void WarpShockDraw(Shader& shader, const glm::mat4& projection, const glm::mat4&
     shader.setVec3("camPos", camPos);
     shader.setVec3("uDebrisColor", warp_tune::U_PILLAR_COLOR);
     //shader.setVec3("uShockTint", warp_tune::U_SHOCK_TINT);    // 不设就是 (0,0,0) —— 波会全黑
-    
-        //  行进色用【窗口进度】而不是半径：今天两者恒等（S_OUT_R0 与 S_REF_R 都是 60），
+
+    //  行进色用【窗口进度】而不是半径：今天两者恒等（S_OUT_R0 与 S_REF_R 都是 60），
     //  但以后改任何一侧的半径都不会再连累配色 —— 半径是"走多远"，进度是"走到哪一刻"。
     //  顺带让 S_REF_R 回到只管能量律一条语义。
     const float colorP = out ? warp_sc::shockProgress(gWarp.tau, warp_sc::S_OUT_T0, warp_sc::S_OUT_T1)
@@ -392,12 +401,17 @@ void WarpShockDraw(Shader& shader, const glm::mat4& projection, const glm::mat4&
 
     shader.setVec3("uShockTint",
         glm::mix(warp_tune::U_SHOCK_TINT_NEAR, warp_tune::U_SHOCK_TINT_FAR, colorK));
-    
+
     shader.setFloat("uDebrisStrength", warp_tune::U_SHOCK_GAIN * energy * env);
     shader.setFloat("uRingR", r);
     shader.setFloat("uRingScale", ringScale);   // 网格的世界外半径，片元用它把物体半径换算成世界半径
     shader.setFloat("uBandW", warp_sc::S_BAND_W);
     shader.setFloat("uFacingFloor", warp_sc::S_FACING_FLOOR);
+
+    //  【现行】透明环要的两个量。只有 warp_shock_frag2.0 声明它们，
+    //  加法那份里不存在同名 uniform，位置是 -1，setFloat 按规范静默忽略 —— 所以不必分支。
+    shader.setFloat("uShockEnv", env);
+    shader.setFloat("uAlphaMax", warp_tune::U_SHOCK_ALPHA_MAX);
 
     glBindVertexArray(shockVAO);
     glDrawArrays(GL_TRIANGLES, 0, kShockVerts);
@@ -407,7 +421,6 @@ void WarpShockDraw(Shader& shader, const glm::mat4& projection, const glm::mat4&
     glDisable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
-
 
 // ===== GL 侧：冲击波的屏幕空间扭曲 ======================================
 //  【现行】逐像素用深度反算世界坐标，算出它到【那圈圆环】的距离（面外分量也算在内，
