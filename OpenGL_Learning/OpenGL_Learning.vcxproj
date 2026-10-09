@@ -145,8 +145,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\SMAA.cpp" />
     <ClCompile Include="src\SpaceShip26.0.cpp" />
     <ClCompile Include="src\SpaceShip27.0.cpp" />
+    <ClCompile Include="src\SpaceShip27.A.cpp" />
+    <ClCompile Include="src\SpaceShip27.B.cpp" />
     <ClCompile Include="src\SpaceShipWarp.cpp" />
     <ClCompile Include="src\PostProcess.cpp" />
     <ClCompile Include="src\InitPBR.cpp" />
@@ -270,6 +273,7 @@
     <ClCompile Include="src\WarpDebris.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\SMAA.h" />
     <ClInclude Include="src\SpaceShipWarp.h" />
     <ClInclude Include="src\PhysicsSelfTest.h" />
     <ClInclude Include="src\PostProcess.h" />

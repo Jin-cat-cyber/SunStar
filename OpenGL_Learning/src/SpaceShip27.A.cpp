@@ -34,7 +34,7 @@
 #include "SpaceShipWarp.h"
 #include "SMAA.h"
 
-#ifdef SHIP_27_0
+//#ifdef SHIP_27_A
 #include <stb_image.h>
 
 
@@ -42,6 +42,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // �
 void processInput(GLFWwindow* window);  // 输入检查函数
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);  // 鼠标 移动 回调函数
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);   // 鼠标 滚轮 回调函数
+void window_focus_callback(GLFWwindow* window, int focused);  // 窗口焦点回调（抢回焦点时重置鼠标首帧标志）
 void setupFramebuffers(int eidth, int height);  //  离屏渲染帧缓冲
 void rebuildFramebuffers(int width, int height);  //  重建离屏渲染帧缓冲
 
@@ -105,6 +106,7 @@ int main()
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); // 设置窗口大小回调函数
     glfwSetCursorPosCallback(window, mouse_callback); // 设置鼠标移动回调函数
     glfwSetScrollCallback(window, scroll_callback); // 设置鼠标滚轮回调函数
+    glfwSetWindowFocusCallback(window, window_focus_callback); // 设置窗口焦点回调函数
 
     // 捕获鼠标（隐藏鼠标光标，并提供无限的鼠标移动）
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -115,6 +117,11 @@ int main()
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+    //  打印实际使用的 GPU：核显会打印 Intel/AMD 集显的名字，独显会打印 NVIDIA 的名字。
+    //  Optimus 笔记本上"上下文建在核显"是很多怪现象的根因（叠加层/截图挂不上、性能不对）。
+    std::cout << "GL_VENDOR:   " << reinterpret_cast<const char*>(glGetString(GL_VENDOR)) << std::endl;
+    std::cout << "GL_RENDERER: " << reinterpret_cast<const char*>(glGetString(GL_RENDERER)) << std::endl;
+
 
     // 纹理y轴翻转(因为OpenGL的y轴坐标是从下往上，而图片的y轴坐标是从上往下)
     stbi_set_flip_vertically_on_load(true);
@@ -1202,7 +1209,7 @@ int main()
         //  位置：合成之后、镜头光晕之前。合成已经把 tonemap + gamma 做完，写进默认帧缓冲的
         //  就是我们要吃的 LDR 图；镜头光晕是加法叠加的成品，不该被磨边。
         //  不改 PostProcess.{h,cpp}：合成照旧写默认帧缓冲，这里用两次 blit 进出。
-                
+
         //  GL 状态按【真值】保存再还原（工程里有过"以为在还原、其实是首次开启"的坑）。
         //  M 键可整段关掉：关掉时这里什么都不做，画面与没接 SMAA 时一致。
         if (smaaEnabled)
@@ -1467,9 +1474,18 @@ void processInput(GLFWwindow* window)
             // 保存当前窗口状态
             glfwGetWindowPos(window, &savedX, &savedY);
             glfwGetWindowSize(window, &savedWidth, &savedHeight);
+            /*GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+            const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+            glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);*/
+            //  改成【无边框窗口全屏】，不再用独占全屏：独占全屏会拿走显示模式，
+            //  系统叠加层（Win+Shift+S 截图）与 NVIDIA 的 Alt+F1/F9 都挂不上窗口；
+            //  无边框全屏尺寸=桌面分辨率，观感一致，但这些叠加层能正常画在窗口之上。
             GLFWmonitor* monitor = glfwGetPrimaryMonitor();
             const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-            glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+            int monX = 0, monY = 0;
+            glfwGetMonitorPos(monitor, &monX, &monY);
+            glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
+            glfwSetWindowMonitor(window, nullptr, monX, monY, mode->width, mode->height, mode->refreshRate);
             isFullscreen = true;
             firstMouse = true; // 重置鼠标首次移动标志
         }
@@ -1484,6 +1500,7 @@ void processInput(GLFWwindow* window)
         f11Pressed = true;
         if (isFullscreen)
         {
+            glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_TRUE);   // 恢复窗口边框（进无边框全屏时关掉了）
             glfwSetWindowMonitor(window, nullptr, savedX, savedY, savedWidth, savedHeight, 0);
             isFullscreen = false;
             firstMouse = true; // 重置鼠标首次移动标志
@@ -1547,6 +1564,17 @@ void processInput(GLFWwindow* window)
         smaaKeyPressed = false;
     }
 
+}
+
+// 焦点回调：被别的程序（截图工具、录屏、浏览器）抢走焦点再拿回来时，鼠标位置上带着一次巨大的跳变
+// （光标被系统挪走过），不重置 firstMouse，相机会被那一次位移整个甩出去 —— 这正是"按 Win+Shift+S
+// 之后镜头跑了"的来源。F10/F11 里那两句 firstMouse = true 只覆盖"自己切全屏"这一条路。
+void window_focus_callback(GLFWwindow* window, int focused)
+{
+    if (focused == GLFW_TRUE)
+    {
+        firstMouse = true;
+    }
 }
 
 // 鼠标回调函数
@@ -2171,4 +2199,4 @@ void RockViewFrustumCull(GLFWwindow* window, const glm::vec3& lightPos)
 
 
 
-#endif
+//#endif

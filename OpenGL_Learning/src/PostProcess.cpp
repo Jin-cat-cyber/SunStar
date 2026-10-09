@@ -53,6 +53,11 @@ void PostProcessing(Shader& brightPassShader, Shader& blurShader, Shader& compos
     //glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 
     // ------- 合成到屏幕 -------
+        
+    //  离屏是渲染尺寸、这里是显示尺寸：合成的全屏 quad 必须显式设 viewport，
+    //  否则它继承上一段 pass 留下的渲染尺寸，画面会缩到一角。SSAA_SCALE = 1.0 时本行是无操作。
+    //glViewport(0, 0, displaywidth, displayheight);
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);   // 回到默认帧缓冲
     //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // 老版本
     // 只清理颜色缓冲，不清理深度缓冲，以此来保留深度信息，确保后续渲染的物体不会被清除
@@ -77,4 +82,12 @@ void PostProcessing(Shader& brightPassShader, Shader& blurShader, Shader& compos
         0, 0, windowwidth, windowheight,
         GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
+    // SSAA
+    //glBlitFramebuffer(0, 0, windowwidth, windowheight,
+    //    0, 0, displaywidth, displayheight,
+    //    GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+    //glBlitFramebuffer(0, 0, displaywidth, displayheight,
+    //    0, 0, displaywidth, displayheight,
+    //    GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 }

@@ -384,6 +384,15 @@
     <ClCompile Include="src\SpaceShip27.0.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\SMAA.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip27.A.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SpaceShip27.B.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -474,6 +483,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\TAA.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SMAA.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

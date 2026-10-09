@@ -27,15 +27,18 @@ inline bool  firstMouse = true;
 
 // ===== 输入状态 / 开关 =====
 inline bool cursorLocked = true;
-inline bool tabKeyPressed = false;   // 用于检测 TAB 键的上升沿
-inline bool f10Pressed = false;    // 用于检测 F10 键的上升沿
-inline bool f11Pressed = false;    // 用于检测 F11 键的上升沿
-inline bool isFullscreen = false; // 是否全屏
+inline bool tabKeyPressed = false;      // 用于检测 TAB 键的上升沿
+inline bool f10Pressed = false;         // 用于检测 F10 键的上升沿
+inline bool f11Pressed = false;         // 用于检测 F11 键的上升沿
+inline bool isFullscreen = false;       // 是否全屏
 inline bool shadows = true;
 inline bool PCSS = false;
 inline bool ssaoEnabled = true;
 inline bool unify = true;
-
+//  M 键：SMAA 总开关（调参阶段做 A/B 对比用）。关掉时整段跳过 —— 连两次 blit 都不做，
+//  于是画面与"根本没接 SMAA"逐干净的对照。
+inline bool smaaEnabled = true;
+inline bool smaaKeyPressed = false;
 
 inline bool shadowKeyPressed = false;
 inline bool PCSSKeyPressed = false;
@@ -64,31 +67,46 @@ inline unsigned int	gAlbedo = 0;
 inline unsigned int	gPBR = 0;
 inline unsigned int gDepthRBO = 0;
 
-// ===== TAA：每帧时间维状态 =====
-//  必须每帧显式快照：相机抖动只加到临时的 camera.Position 上（算完 view 立刻减回），
-//  下一帧无法重新算出一份"当时的 view"，所以本帧与上一帧的 VP 都得存下来。
-struct TaaState
-{
-    glm::mat4 curView = glm::mat4(1.0f);
-    glm::mat4 prevView = glm::mat4(1.0f);
-    glm::mat4 curProj = glm::mat4(1.0f);
-    glm::mat4 prevProj = glm::mat4(1.0f);
-    float curTanHalfFov = 0.0f;   // 本帧【实际用的】tan(fov/2)：含 FOV 冲击，天空支路要用
-    float curAspect = 1.0f;
-    glm::vec3 prevCamPos = glm::vec3(0.0f);   // 上一帧相机位置：去遮挡检测要与"上一帧量出的距离"同源
-    glm::vec2 curJitter = glm::vec2(0.0f);
-    glm::vec2 prevJitter = glm::vec2(0.0f);
-    int frameIndex = 0;      // 抖动序列下标，取模 JITTER_N 使用
-    bool reset = true;       // 历史失效：首帧、窗口尺寸变化、折跃传送那一帧
-    int historyRead = 0;     // 历史乒乓：本帧读哪一张
-    int historyWrite = 1;    // 本帧写哪一张，帧末与 read 交换
-};
-inline TaaState gTaa;
-// ===== TAA：历史颜色（乒乓两张）=====
-//  必须【渲染分辨率】+ GL_RGBA16F + GL_LINEAR：重投影后的 uvPrev 是任意小数坐标（要线性过滤），
-//  而 TAA 在 tonemap 之前、颜色是线性 HDR（要 16F）。见计划书 §8.1。
-inline unsigned int taaHistoryFBO[2] = { 0, 0 };
-inline unsigned int taaHistoryColorBuffer[2] = { 0, 0 };
+//// ===== TAA：每帧时间维状态 =====
+////  必须每帧显式快照：相机抖动只加到临时的 camera.Position 上（算完 view 立刻减回），
+////  下一帧无法重新算出一份"当时的 view"，所以本帧与上一帧的 VP 都得存下来。
+//struct TaaState
+//{
+//    glm::mat4 curView = glm::mat4(1.0f);
+//    glm::mat4 prevView = glm::mat4(1.0f);
+//    glm::mat4 curProj = glm::mat4(1.0f);
+//    glm::mat4 prevProj = glm::mat4(1.0f);
+//    float curTanHalfFov = 0.0f;   // 本帧【实际用的】tan(fov/2)：含 FOV 冲击，天空支路要用
+//    float curAspect = 1.0f;
+//    glm::vec3 prevCamPos = glm::vec3(0.0f);   // 上一帧相机位置：去遮挡检测要与"上一帧量出的距离"同源
+//    glm::vec2 curJitter = glm::vec2(0.0f);
+//    glm::vec2 prevJitter = glm::vec2(0.0f);
+//    int frameIndex = 0;      // 抖动序列下标，取模 JITTER_N 使用
+//    bool reset = true;       // 历史失效：首帧、窗口尺寸变化、折跃传送那一帧
+//    int historyRead = 0;     // 历史乒乓：本帧读哪一张
+//    int historyWrite = 1;    // 本帧写哪一张，帧末与 read 交换
+//};
+//inline TaaState gTaa;
+//// ===== TAA：历史颜色（乒乓两张）=====
+////  必须【渲染分辨率】+ GL_RGBA16F + GL_LINEAR：重投影后的 uvPrev 是任意小数坐标（要线性过滤），
+////  而 TAA 在 tonemap 之前、颜色是线性 HDR（要 16F）。见计划书 §8.1。
+//inline unsigned int taaHistoryFBO[2] = { 0, 0 };
+//inline unsigned int taaHistoryColorBuffer[2] = { 0, 0 };
+
+
+//  ===== SMAA（形态学抗锯齿）：两遍全屏 + 两次 blit，作用在【合成之后的 LDR 图】上 =====
+//  为什么吃 LDR：阈值是按亮度定的绝对量（0.06 = 亮度差 6%），tonemap + gamma 之后的图才是
+//  感知均匀的 [0,1]；混合也是感知混合（把 10.0 的高光混进 0.05 的暗部会读成"边缘发光"）。
+//  为什么用 blit 进出默认帧缓冲：这样不必改共享的 PostProcess.{h,cpp}，合成照旧写默认帧缓冲。
+inline unsigned int smaaFBO[2] = { 0, 0 };          // [0] = 输入副本，[1] = 混合输出
+inline unsigned int smaaColorBuffer[2] = { 0, 0 };
+inline unsigned int smaaEdgeFBO = 0;
+inline unsigned int smaaEdgeTex = 0;
+
+//  观感常量：要调就调这三个（写法与工程里 `const int samples = 4;` 一致）
+inline constexpr float SMAA_THRESHOLD = 0.06f;       // 边缘阈值：亮度差超过它才算边。高了边不够、低了连纹理一起磨
+inline constexpr float SMAA_LOCAL_CONTRAST = 0.15f;  // 局部对比自适应：亮处把阈值抬高；0 = 关闭
+inline constexpr int   SMAA_MAX_STEPS = 8;           // 第二遍的搜索步数上限（主要开销旋钮）
 
 
 // ===== PBR 离屏资源（inline：跨 TU 单实例）=====

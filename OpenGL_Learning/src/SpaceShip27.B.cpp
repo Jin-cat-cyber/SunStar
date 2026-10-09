@@ -34,7 +34,7 @@
 #include "SpaceShipWarp.h"
 #include "SMAA.h"
 
-#ifdef SHIP_27_0
+#ifdef SHIP_27_B
 #include <stb_image.h>
 
 
@@ -42,9 +42,15 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // �
 void processInput(GLFWwindow* window);  // 输入检查函数
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);  // 鼠标 移动 回调函数
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);   // 鼠标 滚轮 回调函数
+void window_focus_callback(GLFWwindow* window, int focused);  // 窗口焦点回调（抢回焦点时重置鼠标首帧标志）
 void setupFramebuffers(int eidth, int height);  //  离屏渲染帧缓冲
 void rebuildFramebuffers(int width, int height);  //  重建离屏渲染帧缓冲
-
+//  离屏渲染尺寸与默认帧缓冲尺寸分开：windowwidth/windowheight 继续表示【离屏渲染尺寸】
+//  （6 个共享 TU 共 23 处读它，含义不变就不用改它们），SSAA 只改它乘的倍率；
+//  displaywidth/displayheight 表示【默认帧缓冲尺寸】，只给输出侧（合成 viewport、深度 blit、SMAA）用。
+int displaywidth = SCR_WIDTH;
+int displayheight = SCR_HEIGHT;
+constexpr float SSAA_SCALE = 1.25f;   // 1.0 = 关；1.25 对应填充率 1.56×
 
 // 星球相关函数
 void RocksModelMatricesInit(unsigned int& amount, Model& rock);
@@ -93,7 +99,10 @@ int main()
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Hello OpenGL", NULL, NULL);
 
     // 获取实际窗口大小（因为在某些平台上，窗口的实际大小可能与请求的大小不同）
-    glfwGetFramebufferSize(window, &windowwidth, &windowheight);
+    //glfwGetFramebufferSize(window, &windowwidth, &windowheight);
+    glfwGetFramebufferSize(window, &displaywidth, &displayheight);
+    windowwidth = static_cast<int>(displaywidth * SSAA_SCALE + 0.5f);
+    windowheight = static_cast<int>(displayheight * SSAA_SCALE + 0.5f);
 
     if (window == NULL)
     {
@@ -105,6 +114,7 @@ int main()
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); // 设置窗口大小回调函数
     glfwSetCursorPosCallback(window, mouse_callback); // 设置鼠标移动回调函数
     glfwSetScrollCallback(window, scroll_callback); // 设置鼠标滚轮回调函数
+    glfwSetWindowFocusCallback(window, window_focus_callback); // 设置窗口焦点回调函数
 
     // 捕获鼠标（隐藏鼠标光标，并提供无限的鼠标移动）
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -115,6 +125,11 @@ int main()
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+    //  打印实际使用的 GPU：核显会打印 Intel/AMD 集显的名字，独显会打印 NVIDIA 的名字。
+    //  Optimus 笔记本上"上下文建在核显"是很多怪现象的根因（叠加层/截图挂不上、性能不对）。
+    std::cout << "GL_VENDOR:   " << reinterpret_cast<const char*>(glGetString(GL_VENDOR)) << std::endl;
+    std::cout << "GL_RENDERER: " << reinterpret_cast<const char*>(glGetString(GL_RENDERER)) << std::endl;
+
 
     // 纹理y轴翻转(因为OpenGL的y轴坐标是从下往上，而图片的y轴坐标是从上往下)
     stbi_set_flip_vertically_on_load(true);
@@ -1202,12 +1217,13 @@ int main()
         //  位置：合成之后、镜头光晕之前。合成已经把 tonemap + gamma 做完，写进默认帧缓冲的
         //  就是我们要吃的 LDR 图；镜头光晕是加法叠加的成品，不该被磨边。
         //  不改 PostProcess.{h,cpp}：合成照旧写默认帧缓冲，这里用两次 blit 进出。
-                
+
         //  GL 状态按【真值】保存再还原（工程里有过"以为在还原、其实是首次开启"的坑）。
         //  M 键可整段关掉：关掉时这里什么都不做，画面与没接 SMAA 时一致。
         if (smaaEnabled)
         {
-            smaa::Pass(smaaEdgeShader, smaaBlendShader, windowwidth, windowheight, quadVAO);
+            //smaa::Pass(smaaEdgeShader, smaaBlendShader, windowwidth, windowheight, quadVAO);
+            smaa::Pass(smaaEdgeShader, smaaBlendShader, displaywidth, displayheight, quadVAO);
         }
 
         // 5. 渲染镜头光晕
@@ -1252,12 +1268,20 @@ int main()
 // 窗口回调函数
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    glViewport(0, 0, width, height); // glViewport 用于设置视口大小
+    //glViewport(0, 0, width, height); // glViewport 用于设置视口大小
 
-    windowwidth = width;
-    windowheight = height;
+    //windowwidth = width;
+    //windowheight = height;
 
-    rebuildFramebuffers(width, height); // 重新创建帧缓冲对象
+    //rebuildFramebuffers(width, height); // 重新创建帧缓冲对象
+
+    displaywidth = width;
+    displayheight = height;
+    windowwidth = static_cast<int>(width * SSAA_SCALE + 0.5f);
+    windowheight = static_cast<int>(height * SSAA_SCALE + 0.5f);
+    glViewport(0, 0, windowwidth, windowheight); // 离屏这一侧仍用渲染尺寸
+
+    rebuildFramebuffers(windowwidth, windowheight); // 重新创建帧缓冲对象（离屏用渲染尺寸）
 
     lastX = width / 2.0f;
     lastY = height / 2.0f;
@@ -1467,9 +1491,18 @@ void processInput(GLFWwindow* window)
             // 保存当前窗口状态
             glfwGetWindowPos(window, &savedX, &savedY);
             glfwGetWindowSize(window, &savedWidth, &savedHeight);
+            /*GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+            const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+            glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);*/
+            //  改成【无边框窗口全屏】，不再用独占全屏：独占全屏会拿走显示模式，
+            //  系统叠加层（Win+Shift+S 截图）与 NVIDIA 的 Alt+F1/F9 都挂不上窗口；
+            //  无边框全屏尺寸=桌面分辨率，观感一致，但这些叠加层能正常画在窗口之上。
             GLFWmonitor* monitor = glfwGetPrimaryMonitor();
             const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-            glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+            int monX = 0, monY = 0;
+            glfwGetMonitorPos(monitor, &monX, &monY);
+            glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
+            glfwSetWindowMonitor(window, nullptr, monX, monY, mode->width, mode->height, mode->refreshRate);
             isFullscreen = true;
             firstMouse = true; // 重置鼠标首次移动标志
         }
@@ -1484,6 +1517,7 @@ void processInput(GLFWwindow* window)
         f11Pressed = true;
         if (isFullscreen)
         {
+            glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_TRUE);   // 恢复窗口边框（进无边框全屏时关掉了）
             glfwSetWindowMonitor(window, nullptr, savedX, savedY, savedWidth, savedHeight, 0);
             isFullscreen = false;
             firstMouse = true; // 重置鼠标首次移动标志
@@ -1547,6 +1581,17 @@ void processInput(GLFWwindow* window)
         smaaKeyPressed = false;
     }
 
+}
+
+// 焦点回调：被别的程序（截图工具、录屏、浏览器）抢走焦点再拿回来时，鼠标位置上带着一次巨大的跳变
+// （光标被系统挪走过），不重置 firstMouse，相机会被那一次位移整个甩出去 —— 这正是"按 Win+Shift+S
+// 之后镜头跑了"的来源。F10/F11 里那两句 firstMouse = true 只覆盖"自己切全屏"这一条路。
+void window_focus_callback(GLFWwindow* window, int focused)
+{
+    if (focused == GLFW_TRUE)
+    {
+        firstMouse = true;
+    }
 }
 
 // 鼠标回调函数
@@ -1709,8 +1754,13 @@ void setupFramebuffers(int width, int height)
         std::cout << "SSAO Blur Framebuffer not complete!" << std::endl;
 
     // --- 5) SMAA：合成之后的 LDR 工作区（两遍全屏用）---
+    ////  颜色两张都用 RGBA8 / LINEAR：读出来的是 [0,1] 的 LDR 图，混邻居必须 LINEAR。
+    //smaa::Init(width, height);
+
     //  颜色两张都用 RGBA8 / LINEAR：读出来的是 [0,1] 的 LDR 图，混邻居必须 LINEAR。
-    smaa::Init(width, height);
+    //  尺寸必须传【显示尺寸】：SMAA 跑在合成之后，吃的是已经降采样到显示尺寸的 LDR 图；
+    //  若传渲染尺寸，两遍全屏会在错的像素尺度上搜端点（不报错，但磨边失效）。
+    smaa::Init(displaywidth, displayheight);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
